@@ -375,13 +375,14 @@ class SheetUtils {
         });
     }
     static getColumnByName(sheet, columnName) {
-        var _a;
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet);
         }
-        return (_a = this.findColumnByName(sheet, columnName)) !== null && _a !== void 0 ? _a : (() => {
-            throw new Error(`"${columnName}" can't be found on "${sheet.getSheetName()}" sheet`);
-        })();
+        const column = this.findColumnByName(sheet, columnName);
+        if (column != null) {
+            return column;
+        }
+        throw new Error(`"${sheet.getSheetName()}" sheet: "${columnName}" column can't be found`);
     }
 }
 class Utils {
