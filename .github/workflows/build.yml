@@ -37,7 +37,7 @@ jobs:
         VERSION=$( cat .nvmrc )
         VERSION=$( echo -e "${VERSION}" | tr -d '[:space:]' )
         if [[ "$VERSION" =~ ^v[0-9]+$ ]]; then
-          VERSION=${USING:1}
+          VERSION=${VERSION:1}
         fi
         echo "Action's Node.js version: $VERSION"
         echo "result=$VERSION" >> $GITHUB_OUTPUT
