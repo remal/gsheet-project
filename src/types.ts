@@ -16,9 +16,8 @@ interface Link {
     title?: string
 }
 
-interface LinkWithOffset {
+interface UrlWithTextOffset {
     url: string
-    title?: string
     start: number
     end: number
 }

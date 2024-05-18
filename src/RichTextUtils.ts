@@ -2,7 +2,7 @@ class RichTextUtils {
 
     static createLinksValue(links: Link[]): RichTextValue {
         let text = ''
-        const linksWithOffsets: LinkWithOffset[] = []
+        const linksWithOffsets: UrlWithTextOffset[] = []
         links.forEach(link => {
             if (text.length) {
                 text += '\n'
@@ -14,7 +14,6 @@ class RichTextUtils {
 
             linksWithOffsets.push({
                 url: link.url,
-                title: link.title,
                 start: text.length,
                 end: text.length + link.title.length,
             })

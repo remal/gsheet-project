@@ -26,8 +26,8 @@ class HierarchyFormatter {
         const lastRow = sheet.getLastRow()
         const getAllIds = (column: number): string[][] => {
             return sheet.getRange(GSheetProjectSettings.firstDataRow, column, lastRow, 1)
-                .getValue()
-                .map(it => it[0])
+                .getValues()
+                .map(it => it[0].toString())
                 .map(GSheetProjectSettings.issueIdsExtractor)
         }
 
@@ -37,7 +37,7 @@ class HierarchyFormatter {
             let isChanged = false
             for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index - 1]
-                if (!parentIssueIds.length) {
+                if (!parentIssueIds?.length) {
                     continue
                 }
 
@@ -47,7 +47,7 @@ class HierarchyFormatter {
                 }
 
                 const issueIndex = 1 + allIssueIds.findIndex(ids =>
-                    ids.some(id => parentIssueIds.includes(id)),
+                    ids?.some(id => parentIssueIds.includes(id)),
                 )
                 const newIndex = issueIndex + 1
                 if (newIndex === index) {

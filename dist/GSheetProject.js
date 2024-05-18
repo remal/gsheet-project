@@ -17,17 +17,19 @@ class GSheetProject {
         });
     }
     static onEdit(event) {
-        this.onEditRange(event.range);
+        this.onEditRange(event === null || event === void 0 ? void 0 : event.range);
     }
     static onFormSubmit(event) {
-        this.onEditRange(event.range);
+        this.onEditRange(event === null || event === void 0 ? void 0 : event.range);
     }
     static onEditRange(range) {
         Utils.entryPoint(() => {
             ExecutionCache.resetCache();
-            IssueIdFormatter.formatIssueId(range);
-            HierarchyFormatter.formatHierarchy(range);
-            IssueInfoLoader.loadIssueInfo(range);
+            if (range != null) {
+                IssueIdFormatter.formatIssueId(range);
+                HierarchyFormatter.formatHierarchy(range);
+                IssueInfoLoader.loadIssueInfo(range);
+            }
         });
     }
 }
@@ -95,8 +97,8 @@ class HierarchyFormatter {
         const lastRow = sheet.getLastRow();
         const getAllIds = (column) => {
             return sheet.getRange(GSheetProjectSettings.firstDataRow, column, lastRow, 1)
-                .getValue()
-                .map(it => it[0])
+                .getValues()
+                .map(it => it[0].toString())
                 .map(GSheetProjectSettings.issueIdsExtractor);
         };
         while (true) {
@@ -105,14 +107,14 @@ class HierarchyFormatter {
             let isChanged = false;
             for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index - 1];
-                if (!parentIssueIds.length) {
+                if (!(parentIssueIds === null || parentIssueIds === void 0 ? void 0 : parentIssueIds.length)) {
                     continue;
                 }
                 const previousParentIssueIds = index >= 2 ? allParentIssueIds[index - 2] : [];
                 if (Utils.arrayEquals(parentIssueIds, previousParentIssueIds)) {
                     continue;
                 }
-                const issueIndex = 1 + allIssueIds.findIndex(ids => ids.some(id => parentIssueIds.includes(id)));
+                const issueIndex = 1 + allIssueIds.findIndex(ids => ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)));
                 const newIndex = issueIndex + 1;
                 if (newIndex === index) {
                     continue;
@@ -304,7 +306,6 @@ class RichTextUtils {
             }
             linksWithOffsets.push({
                 url: link.url,
-                title: link.title,
                 start: text.length,
                 end: text.length + link.title.length,
             });
@@ -508,6 +509,15 @@ class Utils {
         return result;
     }
     static arrayEquals(array1, array2) {
+        if (array1 === array2) {
+            return true;
+        }
+        else if (array1 == null) {
+            return false;
+        }
+        else if (array2 == null) {
+            return false;
+        }
         if (array1.length !== array2.length) {
             return false;
         }
