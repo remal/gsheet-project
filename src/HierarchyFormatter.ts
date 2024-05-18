@@ -24,7 +24,7 @@ class HierarchyFormatter {
         }
 
         const lastRow = sheet.getLastRow()
-        const getAllIds = (column: number): string[][] => {
+        const getAllIds = (column: number): (string[] | null)[] => {
             return sheet.getRange(GSheetProjectSettings.firstDataRow, column, lastRow, 1)
                 .getValues()
                 .map(it => it[0].toString())

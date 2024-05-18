@@ -36,7 +36,7 @@ class IssueInfoLoader {
         const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
         const issueIdRange = sheet.getRange(row, issueIdColumn)
         const issueIds = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue())
-        if (!issueIds.length) {
+        if (!issueIds?.length) {
             return
         }
 

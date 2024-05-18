@@ -1,4 +1,4 @@
-type IssueIdsExtractor = (text: string) => string[]
+type IssueIdsExtractor = (text: string) => string[] | null
 type IssueIdDecorator = (issueId: string) => string
 type IssueIdToUrl = (issueId: string) => string
 type IssueIdsToUrl = (issueIds: string[]) => string

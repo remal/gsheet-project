@@ -132,6 +132,7 @@ class HierarchyFormatter {
 }
 class IssueIdFormatter {
     static formatIssueId(range) {
+        var _a;
         const columnNames = [
             GSheetProjectSettings.issueIdColumnName,
             GSheetProjectSettings.parentIssueIdColumnName,
@@ -142,7 +143,7 @@ class IssueIdFormatter {
                 if (!columnNames.some(name => RangeUtils.doesRangeHaveColumn(cell, name))) {
                     continue;
                 }
-                const ids = GSheetProjectSettings.issueIdsExtractor(cell.getValue());
+                const ids = (_a = GSheetProjectSettings.issueIdsExtractor(cell.getValue())) !== null && _a !== void 0 ? _a : [];
                 const links = ids.map(id => {
                     return {
                         url: GSheetProjectSettings.issueIdToUrl(id),
@@ -186,7 +187,7 @@ class IssueInfoLoader {
         const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName);
         const issueIdRange = sheet.getRange(row, issueIdColumn);
         const issueIds = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue());
-        if (!issueIds.length) {
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
             return;
         }
         console.log(`"${sheet.getSheetName()}" sheet: processing row #${row}`);

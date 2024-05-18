@@ -12,7 +12,7 @@ class IssueIdFormatter {
                     continue
                 }
 
-                const ids = GSheetProjectSettings.issueIdsExtractor(cell.getValue())
+                const ids = GSheetProjectSettings.issueIdsExtractor(cell.getValue()) ?? []
                 const links: Link[] = ids.map(id => {
                     return {
                         url: GSheetProjectSettings.issueIdToUrl(id),
