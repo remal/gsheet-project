@@ -11,7 +11,12 @@ class Settings {
             const scopeRow = this.findScopeRow(settingsSheet, settingsScope)
 
             const columns: string[] = []
-            const columnsValues = settingsSheet.getRange(scopeRow + 1, 1, settingsSheet.getLastColumn(), 1,).getValues()[0]
+            const columnsValues = settingsSheet.getRange(
+                scopeRow + 1,
+                1,
+                settingsSheet.getLastColumn(),
+                1,
+            ).getValues()[0]
             for (const column of columnsValues) {
                 const name = column.toString().trim()
                 if (name.length) {
