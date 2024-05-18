@@ -14,8 +14,8 @@ class Settings {
             const columnsValues = settingsSheet.getRange(
                 scopeRow + 1,
                 1,
-                settingsSheet.getLastColumn(),
                 1,
+                settingsSheet.getLastColumn(),
             ).getValues()[0]
             for (const column of columnsValues) {
                 const name = column.toString().trim()

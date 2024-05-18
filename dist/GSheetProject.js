@@ -97,14 +97,13 @@ class HierarchyFormatter {
         }
         const lastRow = sheet.getLastRow();
         const getAllIds = (column) => {
-            return sheet.getRange(GSheetProjectSettings.firstDataRow, column, lastRow, 1)
+            return sheet.getRange(GSheetProjectSettings.firstDataRow, column, lastRow - GSheetProjectSettings.firstDataRow, 1)
                 .getValues()
                 .map(cols => cols[0].toString())
                 .map(text => GSheetProjectSettings.issueIdsExtractor(text));
         };
         // group children:
         grouping: do {
-            const allIssueIds = getAllIds(issueIdColumn);
             const allParentIssueIds = getAllIds(parentIssueIdColumn);
             for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index];
@@ -154,7 +153,7 @@ class HierarchyFormatter {
                 const newIndex = issueIndex + 1;
                 const row = GSheetProjectSettings.firstDataRow + index;
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex;
-                sheet.moveRows(sheet.getRange(row, 1), newRow);
+                sheet.moveRows(sheet.getRange(row, 1, groupSize, 1), newRow);
                 continue moving;
             }
         } while (false);
@@ -360,7 +359,7 @@ class Settings {
         return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsSheet, settingsScope], () => {
             const scopeRow = this.findScopeRow(settingsSheet, settingsScope);
             const columns = [];
-            const columnsValues = settingsSheet.getRange(scopeRow + 1, 1, settingsSheet.getLastColumn(), 1).getValues()[0];
+            const columnsValues = settingsSheet.getRange(scopeRow + 1, 1, 1, settingsSheet.getLastColumn()).getValues()[0];
             for (const column of columnsValues) {
                 const name = column.toString().trim();
                 if (name.length) {
