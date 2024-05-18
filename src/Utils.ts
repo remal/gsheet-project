@@ -85,12 +85,10 @@ class Utils {
         return result as any as T
     }
 
-    static arrayEquals<T>(array1?: T[], array2?: T[]): boolean {
+    static arrayEquals<T>(array1: T[] | null | undefined, array2: T[] | null | undefined): boolean {
         if (array1 === array2) {
             return true
-        } else if (array1 == null) {
-            return false
-        } else if (array2 == null) {
+        } else if (array1 == null || array2 == null) {
             return false
         }
 

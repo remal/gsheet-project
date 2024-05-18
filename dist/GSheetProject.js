@@ -114,7 +114,10 @@ class HierarchyFormatter {
                 if (Utils.arrayEquals(parentIssueIds, previousParentIssueIds)) {
                     continue;
                 }
-                const issueIndex = 1 + allIssueIds.findIndex(ids => ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)));
+                const issueIndex = allIssueIds.findIndex(ids => ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)));
+                if (issueIndex == null) {
+                    continue;
+                }
                 const newIndex = issueIndex + 1;
                 if (newIndex === index) {
                     continue;
@@ -513,10 +516,7 @@ class Utils {
         if (array1 === array2) {
             return true;
         }
-        else if (array1 == null) {
-            return false;
-        }
-        else if (array2 == null) {
+        else if (array1 == null || array2 == null) {
             return false;
         }
         if (array1.length !== array2.length) {
