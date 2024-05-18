@@ -52,6 +52,7 @@ class HierarchyFormatter {
                 if (issueIndex == null) {
                     continue
                 }
+
                 const newIndex = issueIndex + 1
                 if (newIndex === index) {
                     continue
@@ -60,7 +61,11 @@ class HierarchyFormatter {
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex
                 sheet.moveRows(sheet.getRange(index, 1), newRow)
                 isChanged = true
-                index = Math.min(index, newIndex)
+                if (newIndex > index) {
+                    break
+                } else {
+                    index = newIndex
+                }
             }
 
             if (!isChanged) {
