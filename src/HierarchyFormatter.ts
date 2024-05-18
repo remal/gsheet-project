@@ -35,7 +35,7 @@ class HierarchyFormatter {
             const allIssueIds = getAllIds(issueIdColumn)
             const allParentIssueIds = getAllIds(parentIssueIdColumn)
             let isChanged = false
-            for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
+            index: for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index]
                 if (!parentIssueIds?.length) {
                     continue
@@ -67,6 +67,9 @@ class HierarchyFormatter {
                         break
                     }
                     ++newIndex
+                    if (newIndex === index) {
+                        continue index
+                    }
                 }
 
                 const row = GSheetProjectSettings.firstDataRow + index
