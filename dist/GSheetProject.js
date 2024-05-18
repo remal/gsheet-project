@@ -111,17 +111,24 @@ class HierarchyFormatter {
                 if (!(parentIssueIds === null || parentIssueIds === void 0 ? void 0 : parentIssueIds.length)) {
                     continue;
                 }
-                const previousParentIssueIds = index >= 1 ? allParentIssueIds[index - 1] : [];
+                const previousParentIssueIds = allParentIssueIds[index - 1];
                 if (Utils.arrayEquals(parentIssueIds, previousParentIssueIds)) {
                     continue;
                 }
                 const issueIndex = allIssueIds.findIndex(ids => ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)));
-                if (issueIndex == null || issueIndex === index) {
+                if (issueIndex < 0 || issueIndex === index) {
                     continue;
                 }
-                const newIndex = issueIndex + 1;
+                let newIndex = issueIndex + 1;
                 if (newIndex === index) {
                     continue;
+                }
+                for (let otherIndex = issueIndex + 1; otherIndex < (issueIndex < index ? index : allParentIssueIds.length); ++otherIndex) {
+                    const nextParentIssueIds = allParentIssueIds[index + 1];
+                    if (!Utils.arrayEquals(parentIssueIds, nextParentIssueIds)) {
+                        break;
+                    }
+                    ++newIndex;
                 }
                 const row = GSheetProjectSettings.firstDataRow + index;
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex;
