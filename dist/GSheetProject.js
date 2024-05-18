@@ -10,6 +10,7 @@ class GSheetProject {
     }
     osEdit(event) {
         ExecutionCache.resetCache();
+        StyleIssueId.formatIssueId(event.range, this.settings.issueIdsExtractor, this.settings.issueIdDecorator, this.settings.issueIdToUrl, this.settings.issueColumnName, this.settings.parentIssueColumnName);
     }
 }
 class GSheetProjectSettings {
@@ -20,8 +21,9 @@ class GSheetProjectSettings {
         this.issueIdsExtractor = (_) => {
             throw new Error('issueIdsExtractor is not set');
         };
-        this.issueIdToLink = (_) => {
-            throw new Error('issueIdToLink is not set');
+        this.issueIdDecorator = (id) => id;
+        this.issueIdToUrl = (_) => {
+            throw new Error('issueIdToUrl is not set');
         };
     }
 }
@@ -75,6 +77,31 @@ class RangeUtils {
             }
         }
         return false;
+    }
+}
+class RichTextUtils {
+    static createLinksValue(links) {
+        let text = '';
+        const linksWithOffsets = [];
+        links.forEach(link => {
+            var _a;
+            if (text.length) {
+                text += '\n';
+            }
+            if (!((_a = link.title) === null || _a === void 0 ? void 0 : _a.length)) {
+                link.title = link.url;
+            }
+            linksWithOffsets.push({
+                url: link.url,
+                title: link.title,
+                start: text.length,
+                end: text.length + link.title.length,
+            });
+            text += link.title;
+        });
+        const builder = SpreadsheetApp.newRichTextValue().setText(text);
+        linksWithOffsets.forEach(link => builder.setLinkUrl(link.start, link.end, link.url));
+        return builder.build();
     }
 }
 class Settings {
@@ -190,6 +217,26 @@ class SheetUtils {
         return (_a = this.findColumnByName(sheet, columnName)) !== null && _a !== void 0 ? _a : (() => {
             throw new Error(`"${columnName}" can't be found on "${sheet.getSheetName()}" sheet`);
         })();
+    }
+}
+class StyleIssueId {
+    static formatIssueId(range, issueIdsExtractor, issueIdDecorator, issueIdToUrl, ...columnNames) {
+        for (const y of Utils.range(1, range.getHeight())) {
+            for (const x of Utils.range(1, range.getWidth())) {
+                const cell = range.getCell(y, x);
+                if (!columnNames.some(name => RangeUtils.doesRangeHaveColumn(cell, name))) {
+                    continue;
+                }
+                const ids = issueIdsExtractor(cell.getValue());
+                const links = ids.map(id => {
+                    return {
+                        url: issueIdToUrl(id),
+                        title: issueIdDecorator(id),
+                    };
+                });
+                cell.setValue(RichTextUtils.createLinksValue(links));
+            }
+        }
     }
 }
 class Utils {

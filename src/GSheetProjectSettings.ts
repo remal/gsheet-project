@@ -5,11 +5,12 @@ class GSheetProjectSettings {
     issueColumnName: string = "Issue"
     parentIssueColumnName: string = "Parent Issue"
 
-    issueIdsExtractor: (string: string) => string[] = (_) => {
+    issueIdsExtractor: IssueIdsExtractor = (_) => {
         throw new Error('issueIdsExtractor is not set')
     }
-    issueIdToLink: (id: string) => string = (_) => {
-        throw new Error('issueIdToLink is not set')
+    issueIdDecorator: IssueIdDecorator = (id) => id
+    issueIdToUrl: IssueIdToUrl = (_) => {
+        throw new Error('issueIdToUrl is not set')
     }
 
 }

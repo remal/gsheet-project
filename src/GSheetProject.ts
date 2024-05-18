@@ -17,6 +17,14 @@ class GSheetProject {
 
     osEdit(event: SheetsOnEdit) {
         ExecutionCache.resetCache()
+        StyleIssueId.formatIssueId(
+            event.range,
+            this.settings.issueIdsExtractor,
+            this.settings.issueIdDecorator,
+            this.settings.issueIdToUrl,
+            this.settings.issueColumnName,
+            this.settings.parentIssueColumnName,
+        )
     }
 
 }
