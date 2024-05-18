@@ -3,9 +3,10 @@ class GSheetProject {
     private issueIdFormatter: IssueIdFormatter
     private issueInfoLoader: IssueInfoLoader
 
-    constructor(settings: GSheetProjectSettings) {
-        this.issueIdFormatter = new IssueIdFormatter(settings);
-        this.issueInfoLoader = new IssueInfoLoader(settings);
+    constructor(settings: Partial<GSheetProjectSettings>) {
+        const allSettings: GSheetProjectSettings = Object.assign({}, DEFAULT_GSHEET_PROJECT_SETTINGS, settings) as any
+        this.issueIdFormatter = new IssueIdFormatter(allSettings);
+        this.issueInfoLoader = new IssueInfoLoader(allSettings);
     }
 
 
