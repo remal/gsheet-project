@@ -33,32 +33,18 @@ const DEFAULT_GSHEET_PROJECT_SETTINGS = {
     settingsSheetName: "Settings",
     issueIdColumnName: "Issue",
     parentIssueIdColumnName: "Parent Issue",
-    idDoneCalculator: () => {
-        throw new Error('idDoneCalculator is not set');
-    },
+    idDoneCalculator: () => Utils.throwNotConfigured("idDoneCalculator"),
     stringFields: {},
     booleanFields: {},
     childIssueMetrics: [],
     blockerIssueMetrics: [],
-    issueIdsExtractor: () => {
-        throw new Error('issueIdsExtractor is not set');
-    },
+    issueIdsExtractor: () => Utils.throwNotConfigured("issueIdsExtractor"),
     issueIdDecorator: (id) => id,
-    issueIdToUrl: () => {
-        throw new Error('issueIdToUrl is not set');
-    },
-    issuesLoader: () => {
-        throw new Error('issuesLoader is not set');
-    },
-    childIssuesLoader: () => {
-        throw new Error('childIssuesLoader is not set');
-    },
-    blockerIssuesLoader: () => {
-        throw new Error('blockerIssuesLoader is not set');
-    },
-    issueIdGetter: () => {
-        throw new Error('issueIdGetter is not set');
-    },
+    issueIdToUrl: () => Utils.throwNotConfigured("issueIdToUrl"),
+    issuesLoader: () => Utils.throwNotConfigured("issuesLoader"),
+    childIssuesLoader: () => Utils.throwNotConfigured("childIssuesLoader"),
+    blockerIssuesLoader: () => Utils.throwNotConfigured("blockerIssuesLoader"),
+    issueIdGetter: () => Utils.throwNotConfigured("issueIdGetter"),
 };
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
@@ -131,7 +117,7 @@ class IssueInfoLoader {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
             const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, this.settings.issueIdColumnName) != null;
             if (!hasIssueIdColumn) {
-                return;
+                continue;
             }
             for (const row of Utils.range(this.settings.firstDataRow, sheet.getLastRow())) {
                 this.loadIssueInfoForRow(sheet, row);
@@ -283,7 +269,7 @@ class Settings {
             settingsSheet = SheetUtils.getSheetByName(settingsSheet);
         }
         settingsScope = Utils.normalizeName(settingsScope);
-        return ExecutionCache.getOrComputeCache(['settings', 'map', settingsSheet, settingsScope], () => {
+        return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsSheet, settingsScope], () => {
             const scopeRow = this.findScopeRow(settingsSheet, settingsScope);
             const columns = [];
             const columnsValues = settingsSheet.getRange(scopeRow + 1, 1, settingsSheet.getLastColumn(), 1).getValues()[0];
@@ -378,7 +364,7 @@ class SheetUtils {
             return null;
         }
         columnName = Utils.normalizeName(columnName);
-        return ExecutionCache.getOrComputeCache([sheet, columnName], () => {
+        return ExecutionCache.getOrComputeCache(['findColumnByName', sheet, columnName], () => {
             for (const col of Utils.range(1, sheet.getLastColumn())) {
                 const name = Utils.normalizeName(sheet.getRange(1, col).getValue());
                 if (name === columnName) {
@@ -454,5 +440,8 @@ class Utils {
     }
     static isFunction(value) {
         return typeof value === 'function';
+    }
+    static throwNotConfigured(name) {
+        throw new Error(`Not configured: ${name}`);
     }
 }
