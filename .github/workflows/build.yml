@@ -34,12 +34,11 @@ jobs:
     - name: Read action's Node.js version
       id: readNodeVersion
       run: |
-        USING=$( yq .runs.using ./action.yml )
-        if ! [[ "$USING" =~ ^node[0-9]+$ ]]; then
-          echo "::error::action.yml: .runs.using doesn't start with 'node': '$USING'"
-          exit 1
+        VERSION=$( cat .nvmrc )
+        VERSION=$( echo -e "${VERSION}" | tr -d '[:space:]' )
+        if [[ "$USING" =~ ^v[0-9]+$ ]]; then
+          VERSION=${USING:1}
         fi
-        VERSION=${USING:4}
         echo "Action's Node.js version: $VERSION"
         echo "result=$VERSION" >> $GITHUB_OUTPUT
 
