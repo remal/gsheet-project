@@ -44,16 +44,16 @@ class IssueLoader {
         issueIdRange.setBackground('#eee')
         try {
             const rootIssues = GSheetProjectSettings.issuesLoader(issueIds)
-            const childIssues = new Lazy(() =>
-                GSheetProjectSettings.childIssuesLoader(issueIds)
-                    .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue))),
-            )
-            const blockerIssues = new Lazy(() =>
-                GSheetProjectSettings.blockerIssuesLoader(
-                    rootIssues.concat(childIssues.get())
-                        .map(issue => GSheetProjectSettings.issueIdGetter(issue)),
-                ),
-            )
+            const childIssues = new Lazy(() => {
+                return GSheetProjectSettings.childIssuesLoader(issueIds)
+                    .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue)))
+            })
+            const blockerIssues = new Lazy(() => {
+                const ids = rootIssues.concat(childIssues.get())
+                    .map(issue => GSheetProjectSettings.issueIdGetter(issue))
+                return GSheetProjectSettings.blockerIssuesLoader(ids)
+                    .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue)))
+            })
 
             const isDoneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.isDoneColumnName)
             if (isDoneColumn != null) {
@@ -102,9 +102,7 @@ class IssueLoader {
                         metricRange.setFormula(`="${foundIssues.length}"`)
                     }
 
-                    if (metric.color != null) {
-                        metricRange.setFontColor(metric.color)
-                    }
+                    metricRange.setFontColor(metric.color)
                 }
             }
 

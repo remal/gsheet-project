@@ -19,7 +19,7 @@ class IssueIdFormatter {
                         title: GSheetProjectSettings.issueIdDecorator(id),
                     }
                 })
-                cell.setValue(RichTextUtils.createLinksValue(links))
+                cell.setRichTextValue(RichTextUtils.createLinksValue(links))
             }
         }
     }

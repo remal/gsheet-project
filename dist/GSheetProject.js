@@ -39,19 +39,20 @@ GSheetProjectSettings.firstDataRow = 2;
 GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.issueIdColumnName = "Issue";
 GSheetProjectSettings.parentIssueIdColumnName = "Parent Issue";
-GSheetProjectSettings.issueIdGetter = () => Utils.throwNotConfigured('issueIdGetter');
+GSheetProjectSettings.isDoneColumnName = "Done";
+GSheetProjectSettings.issueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor');
+GSheetProjectSettings.issueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator');
+GSheetProjectSettings.issueIdToUrl = () => Utils.throwNotConfigured('issueIdToUrl');
+GSheetProjectSettings.issueIdsToUrl = () => Utils.throwNotConfigured('issueIdsToUrl');
 GSheetProjectSettings.issuesLoader = () => Utils.throwNotConfigured('issuesLoader');
 GSheetProjectSettings.childIssuesLoader = () => Utils.throwNotConfigured('childIssuesLoader');
 GSheetProjectSettings.blockerIssuesLoader = () => Utils.throwNotConfigured('blockerIssuesLoader');
+GSheetProjectSettings.issueIdGetter = () => Utils.throwNotConfigured('issueIdGetter');
 GSheetProjectSettings.idDoneCalculator = () => Utils.throwNotConfigured('idDoneCalculator');
 GSheetProjectSettings.stringFields = {};
 GSheetProjectSettings.booleanFields = {};
 GSheetProjectSettings.childIssueMetrics = [];
 GSheetProjectSettings.blockerIssueMetrics = [];
-GSheetProjectSettings.issueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor');
-GSheetProjectSettings.issueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator');
-GSheetProjectSettings.issueIdToUrl = () => Utils.throwNotConfigured('issueIdToUrl');
-GSheetProjectSettings.issueIdsToUrl = () => Utils.throwNotConfigured('issueIdsToUrl');
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
         const stringKey = JSON.stringify(key, (_, value) => {
@@ -159,7 +160,7 @@ class IssueIdFormatter {
                         title: GSheetProjectSettings.issueIdDecorator(id),
                     };
                 });
-                cell.setValue(RichTextUtils.createLinksValue(links));
+                cell.setRichTextValue(RichTextUtils.createLinksValue(links));
             }
         }
     }
@@ -203,10 +204,16 @@ class IssueLoader {
         issueIdRange.setBackground('#eee');
         try {
             const rootIssues = GSheetProjectSettings.issuesLoader(issueIds);
-            const childIssues = new Lazy(() => GSheetProjectSettings.childIssuesLoader(issueIds)
-                .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue))));
-            const blockerIssues = new Lazy(() => GSheetProjectSettings.blockerIssuesLoader(rootIssues.concat(childIssues.get())
-                .map(issue => GSheetProjectSettings.issueIdGetter(issue))));
+            const childIssues = new Lazy(() => {
+                return GSheetProjectSettings.childIssuesLoader(issueIds)
+                    .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue)));
+            });
+            const blockerIssues = new Lazy(() => {
+                const ids = rootIssues.concat(childIssues.get())
+                    .map(issue => GSheetProjectSettings.issueIdGetter(issue));
+                return GSheetProjectSettings.blockerIssuesLoader(ids)
+                    .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue)));
+            });
             const isDoneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.isDoneColumnName);
             if (isDoneColumn != null) {
                 const isDone = GSheetProjectSettings.idDoneCalculator(rootIssues, childIssues.get());
@@ -248,9 +255,7 @@ class IssueLoader {
                     else {
                         metricRange.setFormula(`="${foundIssues.length}"`);
                     }
-                    if (metric.color != null) {
-                        metricRange.setFontColor(metric.color);
-                    }
+                    metricRange.setFontColor(metric.color);
                 }
             };
             calculateIssueMetrics(childIssues, GSheetProjectSettings.childIssueMetrics);
