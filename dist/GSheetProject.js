@@ -1,7 +1,8 @@
 class GSheetProject {
     constructor(settings) {
-        this.issueIdFormatter = new IssueIdFormatter(settings);
-        this.issueInfoLoader = new IssueInfoLoader(settings);
+        const allSettings = Object.assign({}, DEFAULT_GSHEET_PROJECT_SETTINGS, settings);
+        this.issueIdFormatter = new IssueIdFormatter(allSettings);
+        this.issueInfoLoader = new IssueInfoLoader(allSettings);
     }
     onOpen(event) {
         Utils.entryPoint(() => {
@@ -27,41 +28,38 @@ class GSheetProject {
         });
     }
 }
-class GSheetProjectSettings {
-    constructor() {
-        this.firstDataRow = 2;
-        this.settingsSheetName = "Settings";
-        this.issueIdColumnName = "Issue";
-        this.parentIssueIdColumnName = "Parent Issue";
-        this.idDoneCalculator = () => {
-            throw new Error('idDoneCalculator is not set');
-        };
-        this.stringFields = {};
-        this.booleanFields = {};
-        this.childIssueMetrics = [];
-        this.blockerIssueMetrics = [];
-        this.issueIdsExtractor = () => {
-            throw new Error('issueIdsExtractor is not set');
-        };
-        this.issueIdDecorator = (id) => id;
-        this.issueIdToUrl = () => {
-            throw new Error('issueIdToUrl is not set');
-        };
-        this.issueIdsToUrl = null;
-        this.issuesLoader = () => {
-            throw new Error('issuesLoader is not set');
-        };
-        this.childIssuesLoader = () => {
-            throw new Error('childIssuesLoader is not set');
-        };
-        this.blockerIssuesLoader = () => {
-            throw new Error('blockerIssuesLoader is not set');
-        };
-        this.issueIdGetter = () => {
-            throw new Error('issueIdGetter is not set');
-        };
-    }
-}
+const DEFAULT_GSHEET_PROJECT_SETTINGS = {
+    firstDataRow: 2,
+    settingsSheetName: "Settings",
+    issueIdColumnName: "Issue",
+    parentIssueIdColumnName: "Parent Issue",
+    idDoneCalculator: () => {
+        throw new Error('idDoneCalculator is not set');
+    },
+    stringFields: {},
+    booleanFields: {},
+    childIssueMetrics: [],
+    blockerIssueMetrics: [],
+    issueIdsExtractor: () => {
+        throw new Error('issueIdsExtractor is not set');
+    },
+    issueIdDecorator: (id) => id,
+    issueIdToUrl: () => {
+        throw new Error('issueIdToUrl is not set');
+    },
+    issuesLoader: () => {
+        throw new Error('issuesLoader is not set');
+    },
+    childIssuesLoader: () => {
+        throw new Error('childIssuesLoader is not set');
+    },
+    blockerIssuesLoader: () => {
+        throw new Error('blockerIssuesLoader is not set');
+    },
+    issueIdGetter: () => {
+        throw new Error('issueIdGetter is not set');
+    },
+};
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
         const stringKey = JSON.stringify(key, (_, value) => {
