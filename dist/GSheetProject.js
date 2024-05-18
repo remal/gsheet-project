@@ -58,7 +58,7 @@ class ExecutionCache {
             return value;
         });
         if (this.data.has(stringKey)) {
-            return this.data[stringKey];
+            return this.data.get(stringKey);
         }
         const result = compute();
         this.data.set(stringKey, result);
@@ -290,7 +290,7 @@ class Settings {
                 const item = new Map();
                 const values = settingsSheet.getRange(row, 1, 1, columns.length).getValues()[0];
                 for (let i = 0; i < columns.length; ++i) {
-                    item[columns[i]] = values[i].toString().trim();
+                    item.set(columns[i], values[i].toString().trim());
                 }
                 result.push(item);
             }
@@ -312,7 +312,7 @@ class Settings {
                 if (!key.length) {
                     break;
                 }
-                result[key] = value;
+                result.set(key, value);
             }
             return result;
         });
@@ -375,14 +375,13 @@ class SheetUtils {
         });
     }
     static getColumnByName(sheet, columnName) {
+        var _a;
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet);
         }
-        const column = this.findColumnByName(sheet, columnName);
-        if (column != null) {
-            return column;
-        }
-        throw new Error(`"${sheet.getSheetName()}" sheet: "${columnName}" column can't be found`);
+        return (_a = this.findColumnByName(sheet, columnName)) !== null && _a !== void 0 ? _a : (() => {
+            throw new Error(`"${sheet.getSheetName()}" sheet: "${columnName}" column can't be found`);
+        })();
     }
 }
 class Utils {

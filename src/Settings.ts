@@ -35,7 +35,7 @@ class Settings {
                 const item = new Map<string, string>()
                 const values = settingsSheet.getRange(row, 1, 1, columns.length).getValues()[0]
                 for (let i = 0; i < columns.length; ++i) {
-                    item[columns[i]] = values[i].toString().trim()
+                    item.set(columns[i], values[i].toString().trim())
                 }
                 result.push(item)
             }
@@ -61,7 +61,7 @@ class Settings {
                 if (!key.length) {
                     break
                 }
-                result[key] = value
+                result.set(key, value)
             }
             return result
         })

@@ -13,7 +13,7 @@ class ExecutionCache {
         })
 
         if (this.data.has(stringKey)) {
-            return this.data[stringKey]
+            return this.data.get(stringKey)
         }
 
         const result = compute()

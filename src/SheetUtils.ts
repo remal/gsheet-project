@@ -53,12 +53,9 @@ class SheetUtils {
             sheet = this.getSheetByName(sheet)
         }
 
-        const column = this.findColumnByName(sheet, columnName)
-        if (column != null) {
-            return column
-        }
-
-        throw new Error(`"${sheet.getSheetName()}" sheet: "${columnName}" column can't be found`)
+        return this.findColumnByName(sheet, columnName) ?? (() => {
+            throw new Error(`"${sheet.getSheetName()}" sheet: "${columnName}" column can't be found`)
+        })()
     }
 
 }
