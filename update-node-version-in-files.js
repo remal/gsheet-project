@@ -35,10 +35,10 @@ function writeJsonFile(path, json) {
     json.engines.node = `>=${nodeVersion}`
 
     if (json.devDependencies[`@tsconfig/node${nodeVersion}`] == null) {
-        json.devDependencies[`@tsconfig/node${nodeVersion}`] = '1.0.0'
+        //json.devDependencies[`@tsconfig/node${nodeVersion}`] = '1.0.0'
     }
     if (json.devDependencies['@types/node'] == null) {
-        json.devDependencies['@types/node'] = `${nodeVersion}.0.0`
+        //json.devDependencies['@types/node'] = `${nodeVersion}.0.0`
     }
 
     ;[
