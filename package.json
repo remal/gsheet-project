@@ -11,7 +11,9 @@
     "dist": "yarn run compile && yarn node prepare-dist"
   },
   "devDependencies": {
+    "@tsconfig/node20": "1.0.0",
     "@types/google-apps-script": "1.0.83",
+    "@types/node": "20.0.0",
     "rimraf": "5.0.7",
     "typescript": "5.4.5"
   }

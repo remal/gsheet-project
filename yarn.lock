@@ -26,10 +26,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tsconfig/node20@npm:1.0.0":
+  version: 1.0.0
+  resolution: "@tsconfig/node20@npm:1.0.0"
+  checksum: 10c0/596310c92deb1c3b999abdd25473f2d9fb338a16ddd51e2592a37a5ad7cb8817c19861d05eb3cca990d5da5b5f5d8f2e370c6600a049f0645bf1b7d021336f83
+  languageName: node
+  linkType: hard
+
 "@types/google-apps-script@npm:1.0.83":
   version: 1.0.83
   resolution: "@types/google-apps-script@npm:1.0.83"
   checksum: 10c0/57ee29f3dd252859435dfbb254b6f1098c4abc71ae9f296075b4e8e487de19e98785328671a07397394c88f2fa348d60bdbbf560182dfea5e384fdbd7756c8f9
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:20.0.0":
+  version: 20.0.0
+  resolution: "@types/node@npm:20.0.0"
+  checksum: 10c0/34d67327d4145b406c0eff4f4b76a1d38a5ace393918381db0991e24ed0cc084450eb3341a80fca074e3eed1c4ae445e92749fd475026a16f14d2305871c280d
   languageName: node
   linkType: hard
 
@@ -156,7 +170,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "gsheet-project@workspace:."
   dependencies:
+    "@tsconfig/node20": "npm:1.0.0"
     "@types/google-apps-script": "npm:1.0.83"
+    "@types/node": "npm:20.0.0"
     rimraf: "npm:5.0.7"
     typescript: "npm:5.4.5"
   languageName: unknown
