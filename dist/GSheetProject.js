@@ -99,55 +99,65 @@ class HierarchyFormatter {
         const getAllIds = (column) => {
             return sheet.getRange(GSheetProjectSettings.firstDataRow, column, lastRow, 1)
                 .getValues()
-                .map(it => it[0].toString())
-                .map(GSheetProjectSettings.issueIdsExtractor);
+                .map(cols => cols[0].toString())
+                .map(text => GSheetProjectSettings.issueIdsExtractor(text));
         };
-        while (true) {
+        // group children:
+        grouping: do {
             const allIssueIds = getAllIds(issueIdColumn);
             const allParentIssueIds = getAllIds(parentIssueIdColumn);
-            let isChanged = false;
-            index: for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
+            for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index];
                 if (!(parentIssueIds === null || parentIssueIds === void 0 ? void 0 : parentIssueIds.length)) {
                     continue;
                 }
-                const previousParentIssueIds = allParentIssueIds[index - 1];
-                if (Utils.arrayEquals(parentIssueIds, previousParentIssueIds)) {
+                let previousIndex = null;
+                for (let prevIndex = index - 1; 0 <= prevIndex; --prevIndex) {
+                    const prevParentIssueIds = allParentIssueIds[prevIndex];
+                    if (Utils.arrayEquals(parentIssueIds, prevParentIssueIds)) {
+                        previousIndex = prevIndex;
+                    }
+                }
+                if (previousIndex != null && previousIndex < index - 1) {
+                    const newIndex = previousIndex + 1;
+                    const row = GSheetProjectSettings.firstDataRow + index;
+                    const newRow = GSheetProjectSettings.firstDataRow + newIndex;
+                    sheet.moveRows(sheet.getRange(row, 1), newRow);
+                    continue grouping;
+                }
+            }
+        } while (false);
+        // move children:
+        moving: do {
+            const allIssueIds = getAllIds(issueIdColumn);
+            const allParentIssueIds = getAllIds(parentIssueIdColumn);
+            for (let index = 0; index < allParentIssueIds.length; ++index) {
+                const currentIndex = index;
+                const parentIssueIds = allParentIssueIds[currentIndex];
+                if (!(parentIssueIds === null || parentIssueIds === void 0 ? void 0 : parentIssueIds.length)) {
                     continue;
                 }
-                const issueIndex = allIssueIds.findIndex(ids => ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)));
-                if (issueIndex < 0 || issueIndex === index) {
-                    continue;
-                }
-                let newIndex = issueIndex + 1;
-                if (newIndex === index) {
-                    continue;
-                }
-                for (let otherIndex = issueIndex + 1; otherIndex < (issueIndex < index ? index : allParentIssueIds.length); ++otherIndex) {
-                    const nextParentIssueIds = allParentIssueIds[index + 1];
-                    if (!Utils.arrayEquals(parentIssueIds, nextParentIssueIds)) {
+                let groupSize = 1;
+                for (; index < allParentIssueIds.length; ++index) {
+                    const nextParentIssueIds = allParentIssueIds[index];
+                    if (Utils.arrayEquals(parentIssueIds, nextParentIssueIds)) {
+                        ++groupSize;
+                    }
+                    else {
                         break;
                     }
-                    ++newIndex;
-                    if (newIndex === index) {
-                        continue index;
-                    }
                 }
+                const issueIndex = allIssueIds.findIndex(ids => ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)));
+                if (issueIndex < 0 || issueIndex == currentIndex || issueIndex == currentIndex - 1) {
+                    continue;
+                }
+                const newIndex = issueIndex + 1;
                 const row = GSheetProjectSettings.firstDataRow + index;
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex;
                 sheet.moveRows(sheet.getRange(row, 1), newRow);
-                isChanged = true;
-                if (newIndex > index) {
-                    break;
-                }
-                else {
-                    index = newIndex;
-                }
+                continue moving;
             }
-            if (!isChanged) {
-                break;
-            }
-        }
+        } while (false);
     }
 }
 class IssueIdFormatter {
