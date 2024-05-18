@@ -1,5 +1,5 @@
 repositories:
-- remal-github-actions/template-typescript
+- remal/gsheet-project
 
 transformations:
 - name: .gitattributes
