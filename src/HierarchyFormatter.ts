@@ -36,12 +36,12 @@ class HierarchyFormatter {
             const allParentIssueIds = getAllIds(parentIssueIdColumn)
             let isChanged = false
             for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
-                const parentIssueIds = allParentIssueIds[index - 1]
+                const parentIssueIds = allParentIssueIds[index]
                 if (!parentIssueIds?.length) {
                     continue
                 }
 
-                const previousParentIssueIds = index >= 2 ? allParentIssueIds[index - 2] : []
+                const previousParentIssueIds = index >= 1 ? allParentIssueIds[index - 1] : []
                 if (Utils.arrayEquals(parentIssueIds, previousParentIssueIds)) {
                     continue
                 }
