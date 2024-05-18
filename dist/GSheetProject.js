@@ -29,6 +29,7 @@ class GSheetProject {
 }
 class GSheetProjectSettings {
     constructor() {
+        this.firstDataRow = 2;
         this.settingsSheetName = "Settings";
         this.issueIdColumnName = "Issue";
         this.parentIssueIdColumnName = "Parent Issue";
@@ -61,7 +62,6 @@ class GSheetProjectSettings {
         };
     }
 }
-const DATA_FIRST_ROW = 2;
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
         const stringKey = JSON.stringify(key, (_, value) => {
@@ -123,7 +123,7 @@ class IssueInfoLoader {
         const sheet = range.getSheet();
         const rows = Array.from(Utils.range(1, range.getHeight()))
             .map(y => range.getCell(y, 1).getRow())
-            .filter(row => row >= DATA_FIRST_ROW)
+            .filter(row => row >= this.settings.firstDataRow)
             .filter(Utils.distinct);
         for (const row of rows) {
             this.loadIssueInfoForRow(sheet, row);
@@ -135,13 +135,13 @@ class IssueInfoLoader {
             if (!hasIssueIdColumn) {
                 return;
             }
-            for (const row of Utils.range(DATA_FIRST_ROW, sheet.getLastRow())) {
+            for (const row of Utils.range(this.settings.firstDataRow, sheet.getLastRow())) {
                 this.loadIssueInfoForRow(sheet, row);
             }
         }
     }
     loadIssueInfoForRow(sheet, row) {
-        if (row < DATA_FIRST_ROW
+        if (row < this.settings.firstDataRow
             || sheet.isRowHiddenByUser(row)) {
             return;
         }
