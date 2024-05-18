@@ -1,16 +1,9 @@
 class IssueIdFormatter {
 
-    private settings: GSheetProjectSettings
-
-    constructor(settings: GSheetProjectSettings) {
-        this.settings = settings;
-    }
-
-
-    formatIssueId(range: Range) {
+    static formatIssueId(range: Range) {
         const columnNames = [
-            this.settings.issueIdColumnName,
-            this.settings.parentIssueIdColumnName,
+            GSheetProjectSettings.issueIdColumnName,
+            GSheetProjectSettings.parentIssueIdColumnName,
         ]
         for (const y of Utils.range(1, range.getHeight())) {
             for (const x of Utils.range(1, range.getWidth())) {
@@ -19,11 +12,11 @@ class IssueIdFormatter {
                     continue
                 }
 
-                const ids = this.settings.issueIdsExtractor(cell.getValue())
+                const ids = GSheetProjectSettings.issueIdsExtractor(cell.getValue())
                 const links: Link[] = ids.map(id => {
                     return {
-                        url: this.settings.issueIdToUrl(id),
-                        title: this.settings.issueIdDecorator(id),
+                        url: GSheetProjectSettings.issueIdToUrl(id),
+                        title: GSheetProjectSettings.issueIdDecorator(id),
                     }
                 })
                 cell.setValue(RichTextUtils.createLinksValue(links))

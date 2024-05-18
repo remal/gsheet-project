@@ -1,50 +1,41 @@
 class IssueInfoLoader {
 
-    private settings: GSheetProjectSettings
-
-    constructor(settings: GSheetProjectSettings) {
-        this.settings = settings;
-    }
-
-
-    loadIssueInfo(range: Range) {
-        if (!RangeUtils.doesRangeHaveColumn(range, this.settings.issueIdColumnName)) {
+    static loadIssueInfo(range: Range) {
+        if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.issueIdColumnName)) {
             return
         }
 
         const sheet = range.getSheet()
         const rows = Array.from(Utils.range(1, range.getHeight()))
             .map(y => range.getCell(y, 1).getRow())
-            .filter(row => row >= this.settings.firstDataRow)
+            .filter(row => row >= GSheetProjectSettings.firstDataRow)
             .filter(Utils.distinct)
         for (const row of rows) {
             this.loadIssueInfoForRow(sheet, row)
         }
     }
 
-    loadAllIssueInfo() {
+    static loadAllIssueInfo() {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
-            const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, this.settings.issueIdColumnName) != null
+            const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName) != null
             if (!hasIssueIdColumn) {
-                continue
+                return
             }
 
-            for (const row of Utils.range(this.settings.firstDataRow, sheet.getLastRow())) {
+            for (const row of Utils.range(GSheetProjectSettings.firstDataRow, sheet.getLastRow())) {
                 this.loadIssueInfoForRow(sheet, row)
             }
         }
     }
 
-    private loadIssueInfoForRow(sheet: Sheet, row: number) {
-        if (row < this.settings.firstDataRow
-            || sheet.isRowHiddenByUser(row)
-        ) {
+    private static loadIssueInfoForRow(sheet: Sheet, row: number) {
+        if (row < GSheetProjectSettings.firstDataRow) {
             return
         }
 
-        const issueIdColumn = SheetUtils.getColumnByName(sheet, this.settings.issueIdColumnName)
+        const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
         const issueIdRange = sheet.getRange(row, issueIdColumn)
-        const issueIds = this.settings.issueIdsExtractor(issueIdRange.getValue())
+        const issueIds = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue())
         if (!issueIds.length) {
             return
         }
@@ -52,25 +43,25 @@ class IssueInfoLoader {
         console.log(`"${sheet.getSheetName()}" sheet: processing row #${row}`)
         issueIdRange.setBackground('#eee')
         try {
-            const rootIssues = this.settings.issuesLoader(issueIds)
+            const rootIssues = GSheetProjectSettings.issuesLoader(issueIds)
             const childIssues = new Lazy(() =>
-                this.settings.childIssuesLoader(issueIds)
-                    .filter(issue => !issueIds.includes(this.settings.issueIdGetter(issue))),
+                GSheetProjectSettings.childIssuesLoader(issueIds)
+                    .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue))),
             )
             const blockerIssues = new Lazy(() =>
-                this.settings.blockerIssuesLoader(
+                GSheetProjectSettings.blockerIssuesLoader(
                     rootIssues.concat(childIssues.get())
-                        .map(issue => this.settings.issueIdGetter(issue)),
+                        .map(issue => GSheetProjectSettings.issueIdGetter(issue)),
                 ),
             )
 
-            const isDoneColumn = SheetUtils.findColumnByName(sheet, this.settings.isDoneColumnName)
+            const isDoneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.isDoneColumnName)
             if (isDoneColumn != null) {
-                const isDone = this.settings.idDoneCalculator(rootIssues, childIssues.get())
+                const isDone = GSheetProjectSettings.idDoneCalculator(rootIssues, childIssues.get())
                 sheet.getRange(row, isDoneColumn).setValue(isDone ? 'Yes' : '')
             }
 
-            for (const [columnName, getter] of Object.entries(this.settings.stringFields)) {
+            for (const [columnName, getter] of Object.entries(GSheetProjectSettings.stringFields)) {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName)
                 if (fieldColumn != null) {
                     sheet.getRange(row, fieldColumn).setValue(rootIssues
@@ -80,10 +71,10 @@ class IssueInfoLoader {
                 }
             }
 
-            for (const [columnName, getter] of Object.entries(this.settings.booleanFields)) {
+            for (const [columnName, getter] of Object.entries(GSheetProjectSettings.booleanFields)) {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName)
                 if (fieldColumn != null) {
-                    const isTrue = rootIssues.some(getter)
+                    const isTrue = rootIssues.every(getter)
                     sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '')
                 }
             }
@@ -103,8 +94,8 @@ class IssueInfoLoader {
                         continue
                     }
 
-                    const metricIssueIds = foundIssues.map(issue => this.settings.issueIdGetter(issue))
-                    const link = this.settings.issueIdsToUrl?.call(null, metricIssueIds)
+                    const metricIssueIds = foundIssues.map(issue => GSheetProjectSettings.issueIdGetter(issue))
+                    const link = GSheetProjectSettings.issueIdsToUrl?.call(null, metricIssueIds)
                     if (link != null) {
                         metricRange.setFormula(`=HYPERLINK("${link}", "${foundIssues.length}")`)
                     } else {
@@ -117,8 +108,8 @@ class IssueInfoLoader {
                 }
             }
 
-            calculateIssueMetrics(childIssues, this.settings.childIssueMetrics)
-            calculateIssueMetrics(blockerIssues, this.settings.blockerIssueMetrics)
+            calculateIssueMetrics(childIssues, GSheetProjectSettings.childIssueMetrics)
+            calculateIssueMetrics(blockerIssues, GSheetProjectSettings.blockerIssueMetrics)
 
         } finally {
             issueIdRange.setBackground(null)

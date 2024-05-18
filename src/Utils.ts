@@ -61,12 +61,56 @@ class Utils {
         }
     }
 
+    static merge<T extends Record<string, any>, P extends Partial<T>>(...objects: P[]): T {
+        const result = {}
+        for (const object of objects) {
+            if (object == null) {
+                continue
+            }
+
+            for (const key of Object.keys(object)) {
+                const value = object[key] as any
+                if (value === undefined) {
+                    continue
+                }
+
+                const currentValue = result[key]
+                if (this.isRecord(value) && this.isRecord(currentValue)) {
+                    result[key] = this.merge(currentValue, value)
+                }
+
+                result[key] = value
+            }
+        }
+        return result as any as T
+    }
+
+    static arrayEquals<T>(array1: T[], array2: T[]): boolean {
+        if (array1.length !== array2.length) {
+            return false
+        }
+
+        for (let i = 0; i < array1.length; ++i) {
+            const element1 = array1[i]
+            const element2 = array2[i]
+            if (element1 !== element2) {
+                return false
+            }
+        }
+
+        return true
+    }
+
     static isString(value: unknown): value is string {
         return typeof value === 'string'
     }
 
     static isFunction(value: unknown): value is Function {
         return typeof value === 'function'
+    }
+
+    static isRecord(value: unknown): value is Record<string, any> {
+        return typeof value === 'object' && !Array.isArray(value)
     }
 
     static throwNotConfigured<T>(name: string): T {

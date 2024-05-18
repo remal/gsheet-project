@@ -1,59 +1,30 @@
-const DEFAULT_GSHEET_PROJECT_SETTINGS: Partial<GSheetProjectSettings> = {
+class GSheetProjectSettings {
 
-    firstDataRow: 2,
+    static firstDataRow: number = 2
 
-    settingsSheetName: "Settings",
+    static settingsSheetName: string = "Settings"
 
-    issueIdColumnName: "Issue",
-    parentIssueIdColumnName: "Parent Issue",
+    static issueIdColumnName: string = "Issue"
+    static parentIssueIdColumnName: string = "Parent Issue"
 
-    idDoneCalculator: () => Utils.throwNotConfigured("idDoneCalculator"),
+    static issueIdGetter: IssueStringFieldGetter = () => Utils.throwNotConfigured('issueIdGetter')
 
-    stringFields: {},
-    booleanFields: {},
+    static issuesLoader: IssuesLoader = () => Utils.throwNotConfigured('issuesLoader')
+    static childIssuesLoader: IssuesLoader = () => Utils.throwNotConfigured('childIssuesLoader')
+    static blockerIssuesLoader: IssuesLoader = () => Utils.throwNotConfigured('blockerIssuesLoader')
 
-    childIssueMetrics: [],
-    blockerIssueMetrics: [],
+    static isDoneColumnName?: string
+    static idDoneCalculator: IssueAggregateBooleanFieldGetter = () => Utils.throwNotConfigured('idDoneCalculator')
 
-    issueIdsExtractor: () => Utils.throwNotConfigured("issueIdsExtractor"),
-    issueIdDecorator: (id) => id,
-    issueIdToUrl: () => Utils.throwNotConfigured("issueIdToUrl"),
+    static stringFields: Record<string, IssueStringFieldGetter> = {}
+    static booleanFields: Record<string, IssueBooleanFieldGetter> = {}
 
-    issuesLoader: () => Utils.throwNotConfigured("issuesLoader"),
-    childIssuesLoader: () => Utils.throwNotConfigured("childIssuesLoader"),
-    blockerIssuesLoader: () => Utils.throwNotConfigured("blockerIssuesLoader"),
+    static childIssueMetrics: IssueMetric[] = []
+    static blockerIssueMetrics: IssueMetric[] = []
 
-    issueIdGetter: () => Utils.throwNotConfigured("issueIdGetter"),
-
-}
-
-interface GSheetProjectSettings {
-
-    firstDataRow: number
-
-    settingsSheetName: string
-
-    issueIdColumnName: string
-    parentIssueIdColumnName: string
-
-    isDoneColumnName?: string
-    idDoneCalculator: IssueIsDoneCalculator
-
-    stringFields: Record<string, IssueStringFieldGetter>
-    booleanFields: Record<string, IssueBooleanFieldGetter>
-
-    childIssueMetrics: IssueMetric[]
-    blockerIssueMetrics: IssueMetric[]
-
-    issueIdsExtractor: IssueIdsExtractor
-    issueIdDecorator: IssueIdDecorator
-    issueIdToUrl: IssueIdToUrl
-    issueIdsToUrl?: IssueIdsToUrl
-
-    issuesLoader: IssuesLoader
-    childIssuesLoader: IssuesLoader
-    blockerIssuesLoader: IssuesLoader
-
-    issueIdGetter: IssueStringFieldGetter
+    static issueIdsExtractor: IssueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor')
+    static issueIdDecorator: IssueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator')
+    static issueIdToUrl: IssueIdToUrl = () => Utils.throwNotConfigured('issueIdToUrl')
+    static issueIdsToUrl?: IssueIdsToUrl = () => Utils.throwNotConfigured('issueIdsToUrl')
 
 }

@@ -1,51 +1,55 @@
 class GSheetProject {
-    constructor(settings) {
-        const allSettings = Object.assign({}, DEFAULT_GSHEET_PROJECT_SETTINGS, settings);
-        this.issueIdFormatter = new IssueIdFormatter(allSettings);
-        this.issueInfoLoader = new IssueInfoLoader(allSettings);
+    static reloadIssues() {
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache();
+            IssueInfoLoader.loadAllIssueInfo();
+        });
     }
-    onOpen(event) {
+    static onOpen(event) {
         Utils.entryPoint(() => {
             ExecutionCache.resetCache();
         });
     }
-    onChange(event) {
+    static onChange(event) {
         Utils.entryPoint(() => {
             ExecutionCache.resetCache();
+            HierarchyFormatter.formatAllHierarchy();
         });
     }
-    osEdit(event) {
-        Utils.entryPoint(() => {
-            ExecutionCache.resetCache();
-            this.issueIdFormatter.formatIssueId(event.range);
-            this.issueInfoLoader.loadIssueInfo(event.range);
-        });
+    static onEdit(event) {
+        this.onEditRange(event.range);
     }
-    refresh() {
+    static onFormSubmit(event) {
+        this.onEditRange(event.range);
+    }
+    static onEditRange(range) {
         Utils.entryPoint(() => {
             ExecutionCache.resetCache();
-            this.issueInfoLoader.loadAllIssueInfo();
+            IssueIdFormatter.formatIssueId(range);
+            HierarchyFormatter.formatHierarchy(range);
+            IssueInfoLoader.loadIssueInfo(range);
         });
     }
 }
-const DEFAULT_GSHEET_PROJECT_SETTINGS = {
-    firstDataRow: 2,
-    settingsSheetName: "Settings",
-    issueIdColumnName: "Issue",
-    parentIssueIdColumnName: "Parent Issue",
-    idDoneCalculator: () => Utils.throwNotConfigured("idDoneCalculator"),
-    stringFields: {},
-    booleanFields: {},
-    childIssueMetrics: [],
-    blockerIssueMetrics: [],
-    issueIdsExtractor: () => Utils.throwNotConfigured("issueIdsExtractor"),
-    issueIdDecorator: (id) => id,
-    issueIdToUrl: () => Utils.throwNotConfigured("issueIdToUrl"),
-    issuesLoader: () => Utils.throwNotConfigured("issuesLoader"),
-    childIssuesLoader: () => Utils.throwNotConfigured("childIssuesLoader"),
-    blockerIssuesLoader: () => Utils.throwNotConfigured("blockerIssuesLoader"),
-    issueIdGetter: () => Utils.throwNotConfigured("issueIdGetter"),
-};
+class GSheetProjectSettings {
+}
+GSheetProjectSettings.firstDataRow = 2;
+GSheetProjectSettings.settingsSheetName = "Settings";
+GSheetProjectSettings.issueIdColumnName = "Issue";
+GSheetProjectSettings.parentIssueIdColumnName = "Parent Issue";
+GSheetProjectSettings.issueIdGetter = () => Utils.throwNotConfigured('issueIdGetter');
+GSheetProjectSettings.issuesLoader = () => Utils.throwNotConfigured('issuesLoader');
+GSheetProjectSettings.childIssuesLoader = () => Utils.throwNotConfigured('childIssuesLoader');
+GSheetProjectSettings.blockerIssuesLoader = () => Utils.throwNotConfigured('blockerIssuesLoader');
+GSheetProjectSettings.idDoneCalculator = () => Utils.throwNotConfigured('idDoneCalculator');
+GSheetProjectSettings.stringFields = {};
+GSheetProjectSettings.booleanFields = {};
+GSheetProjectSettings.childIssueMetrics = [];
+GSheetProjectSettings.blockerIssueMetrics = [];
+GSheetProjectSettings.issueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor');
+GSheetProjectSettings.issueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator');
+GSheetProjectSettings.issueIdToUrl = () => Utils.throwNotConfigured('issueIdToUrl');
+GSheetProjectSettings.issueIdsToUrl = () => Utils.throwNotConfigured('issueIdsToUrl');
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
         const stringKey = JSON.stringify(key, (_, value) => {
@@ -69,14 +73,66 @@ class ExecutionCache {
     }
 }
 ExecutionCache.data = new Map();
-class IssueIdFormatter {
-    constructor(settings) {
-        this.settings = settings;
+class HierarchyFormatter {
+    static formatHierarchy(range) {
+        if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.issueIdColumnName)
+            && !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.parentIssueIdColumnName)) {
+            return;
+        }
+        this.formatSheetHierarchy(range.getSheet());
     }
-    formatIssueId(range) {
+    static formatAllHierarchy() {
+        for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
+            this.formatSheetHierarchy(sheet);
+        }
+    }
+    static formatSheetHierarchy(sheet) {
+        const issueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName);
+        const parentIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName);
+        if (issueIdColumn == null || parentIssueIdColumn == null) {
+            return;
+        }
+        const lastRow = sheet.getLastRow();
+        const getAllIds = (column) => {
+            return sheet.getRange(GSheetProjectSettings.firstDataRow, column, lastRow, 1)
+                .getValue()
+                .map(it => it[0])
+                .map(GSheetProjectSettings.issueIdsExtractor);
+        };
+        while (true) {
+            const allIssueIds = getAllIds(issueIdColumn);
+            const allParentIssueIds = getAllIds(parentIssueIdColumn);
+            let isChanged = false;
+            for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
+                const parentIssueIds = allParentIssueIds[index - 1];
+                if (!parentIssueIds.length) {
+                    continue;
+                }
+                const previousParentIssueIds = index >= 2 ? allParentIssueIds[index - 2] : [];
+                if (Utils.arrayEquals(parentIssueIds, previousParentIssueIds)) {
+                    continue;
+                }
+                const issueIndex = 1 + allIssueIds.findIndex(ids => ids.some(id => parentIssueIds.includes(id)));
+                const newIndex = issueIndex + 1;
+                if (newIndex === index) {
+                    continue;
+                }
+                const newRow = GSheetProjectSettings.firstDataRow + newIndex;
+                sheet.moveRows(sheet.getRange(index, 1), newRow);
+                isChanged = true;
+                index = Math.min(index, newIndex);
+            }
+            if (!isChanged) {
+                break;
+            }
+        }
+    }
+}
+class IssueIdFormatter {
+    static formatIssueId(range) {
         const columnNames = [
-            this.settings.issueIdColumnName,
-            this.settings.parentIssueIdColumnName,
+            GSheetProjectSettings.issueIdColumnName,
+            GSheetProjectSettings.parentIssueIdColumnName,
         ];
         for (const y of Utils.range(1, range.getHeight())) {
             for (const x of Utils.range(1, range.getWidth())) {
@@ -84,11 +140,11 @@ class IssueIdFormatter {
                 if (!columnNames.some(name => RangeUtils.doesRangeHaveColumn(cell, name))) {
                     continue;
                 }
-                const ids = this.settings.issueIdsExtractor(cell.getValue());
+                const ids = GSheetProjectSettings.issueIdsExtractor(cell.getValue());
                 const links = ids.map(id => {
                     return {
-                        url: this.settings.issueIdToUrl(id),
-                        title: this.settings.issueIdDecorator(id),
+                        url: GSheetProjectSettings.issueIdToUrl(id),
+                        title: GSheetProjectSettings.issueIdDecorator(id),
                     };
                 });
                 cell.setValue(RichTextUtils.createLinksValue(links));
@@ -97,58 +153,54 @@ class IssueIdFormatter {
     }
 }
 class IssueInfoLoader {
-    constructor(settings) {
-        this.settings = settings;
-    }
-    loadIssueInfo(range) {
-        if (!RangeUtils.doesRangeHaveColumn(range, this.settings.issueIdColumnName)) {
+    static loadIssueInfo(range) {
+        if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.issueIdColumnName)) {
             return;
         }
         const sheet = range.getSheet();
         const rows = Array.from(Utils.range(1, range.getHeight()))
             .map(y => range.getCell(y, 1).getRow())
-            .filter(row => row >= this.settings.firstDataRow)
+            .filter(row => row >= GSheetProjectSettings.firstDataRow)
             .filter(Utils.distinct);
         for (const row of rows) {
             this.loadIssueInfoForRow(sheet, row);
         }
     }
-    loadAllIssueInfo() {
+    static loadAllIssueInfo() {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
-            const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, this.settings.issueIdColumnName) != null;
+            const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName) != null;
             if (!hasIssueIdColumn) {
-                continue;
+                return;
             }
-            for (const row of Utils.range(this.settings.firstDataRow, sheet.getLastRow())) {
+            for (const row of Utils.range(GSheetProjectSettings.firstDataRow, sheet.getLastRow())) {
                 this.loadIssueInfoForRow(sheet, row);
             }
         }
     }
-    loadIssueInfoForRow(sheet, row) {
-        if (row < this.settings.firstDataRow
-            || sheet.isRowHiddenByUser(row)) {
+    static loadIssueInfoForRow(sheet, row) {
+        if (row < GSheetProjectSettings.firstDataRow) {
             return;
         }
-        const issueIdColumn = SheetUtils.getColumnByName(sheet, this.settings.issueIdColumnName);
+        const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName);
         const issueIdRange = sheet.getRange(row, issueIdColumn);
-        const issueIds = this.settings.issueIdsExtractor(issueIdRange.getValue());
+        const issueIds = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue());
         if (!issueIds.length) {
             return;
         }
         console.log(`"${sheet.getSheetName()}" sheet: processing row #${row}`);
         issueIdRange.setBackground('#eee');
         try {
-            const rootIssues = this.settings.issuesLoader(issueIds);
-            const childIssues = new Lazy(() => this.settings.childIssuesLoader(issueIds)
-                .filter(issue => !issueIds.includes(this.settings.issueIdGetter(issue))));
-            const blockerIssues = new Lazy(() => this.settings.blockerIssuesLoader(rootIssues.concat(childIssues.get())
-                .map(issue => this.settings.issueIdGetter(issue))));
-            const isDoneColumn = SheetUtils.findColumnByName(sheet, this.settings.isDoneColumnName);
+            const rootIssues = GSheetProjectSettings.issuesLoader(issueIds);
+            const childIssues = new Lazy(() => GSheetProjectSettings.childIssuesLoader(issueIds)
+                .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue))));
+            const blockerIssues = new Lazy(() => GSheetProjectSettings.blockerIssuesLoader(rootIssues.concat(childIssues.get())
+                .map(issue => GSheetProjectSettings.issueIdGetter(issue))));
+            const isDoneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.isDoneColumnName);
             if (isDoneColumn != null) {
-                const isDone = this.settings.idDoneCalculator(rootIssues, childIssues.get());
+                const isDone = GSheetProjectSettings.idDoneCalculator(rootIssues, childIssues.get());
                 sheet.getRange(row, isDoneColumn).setValue(isDone ? 'Yes' : '');
             }
-            for (const [columnName, getter] of Object.entries(this.settings.stringFields)) {
+            for (const [columnName, getter] of Object.entries(GSheetProjectSettings.stringFields)) {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
                 if (fieldColumn != null) {
                     sheet.getRange(row, fieldColumn).setValue(rootIssues
@@ -156,10 +208,10 @@ class IssueInfoLoader {
                         .join('\n'));
                 }
             }
-            for (const [columnName, getter] of Object.entries(this.settings.booleanFields)) {
+            for (const [columnName, getter] of Object.entries(GSheetProjectSettings.booleanFields)) {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
                 if (fieldColumn != null) {
-                    const isTrue = rootIssues.some(getter);
+                    const isTrue = rootIssues.every(getter);
                     sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '');
                 }
             }
@@ -176,8 +228,8 @@ class IssueInfoLoader {
                         metricRange.clearContent().setFontColor(null);
                         continue;
                     }
-                    const metricIssueIds = foundIssues.map(issue => this.settings.issueIdGetter(issue));
-                    const link = (_a = this.settings.issueIdsToUrl) === null || _a === void 0 ? void 0 : _a.call(null, metricIssueIds);
+                    const metricIssueIds = foundIssues.map(issue => GSheetProjectSettings.issueIdGetter(issue));
+                    const link = (_a = GSheetProjectSettings.issueIdsToUrl) === null || _a === void 0 ? void 0 : _a.call(null, metricIssueIds);
                     if (link != null) {
                         metricRange.setFormula(`=HYPERLINK("${link}", "${foundIssues.length}")`);
                     }
@@ -189,8 +241,8 @@ class IssueInfoLoader {
                     }
                 }
             };
-            calculateIssueMetrics(childIssues, this.settings.childIssueMetrics);
-            calculateIssueMetrics(blockerIssues, this.settings.blockerIssueMetrics);
+            calculateIssueMetrics(childIssues, GSheetProjectSettings.childIssueMetrics);
+            calculateIssueMetrics(blockerIssues, GSheetProjectSettings.blockerIssueMetrics);
         }
         finally {
             issueIdRange.setBackground(null);
@@ -435,11 +487,47 @@ class Utils {
             return true;
         };
     }
+    static merge(...objects) {
+        const result = {};
+        for (const object of objects) {
+            if (object == null) {
+                continue;
+            }
+            for (const key of Object.keys(object)) {
+                const value = object[key];
+                if (value === undefined) {
+                    continue;
+                }
+                const currentValue = result[key];
+                if (this.isRecord(value) && this.isRecord(currentValue)) {
+                    result[key] = this.merge(currentValue, value);
+                }
+                result[key] = value;
+            }
+        }
+        return result;
+    }
+    static arrayEquals(array1, array2) {
+        if (array1.length !== array2.length) {
+            return false;
+        }
+        for (let i = 0; i < array1.length; ++i) {
+            const element1 = array1[i];
+            const element2 = array2[i];
+            if (element1 !== element2) {
+                return false;
+            }
+        }
+        return true;
+    }
     static isString(value) {
         return typeof value === 'string';
     }
     static isFunction(value) {
         return typeof value === 'function';
+    }
+    static isRecord(value) {
+        return typeof value === 'object' && !Array.isArray(value);
     }
     static throwNotConfigured(name) {
         throw new Error(`Not configured: ${name}`);

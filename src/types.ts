@@ -8,7 +8,7 @@ type IssuesLoader = (issueIds: string[]) => Issue[]
 type IssueStringFieldGetter = (issue: Issue) => string
 type IssueBooleanFieldGetter = (issue: Issue) => boolean
 
-type IssueIsDoneCalculator = (rootIssues: Issue[], childIssues: Issue[]) => boolean
+type IssueAggregateBooleanFieldGetter = (rootIssues: Issue[], childIssues: Issue[]) => boolean
 
 
 interface Link {
@@ -37,3 +37,4 @@ type RichTextValue = GoogleAppsScript.Spreadsheet.RichTextValue
 type SheetsOnOpen = GoogleAppsScript.Events.SheetsOnOpen
 type SheetsOnChange = GoogleAppsScript.Events.SheetsOnChange
 type SheetsOnEdit = GoogleAppsScript.Events.SheetsOnEdit
+type SheetsOnFormSubmit = GoogleAppsScript.Events.SheetsOnFormSubmit
