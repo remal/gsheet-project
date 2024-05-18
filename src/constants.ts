@@ -1,1 +1,0 @@
-const DATA_FIRST_ROW = 2

@@ -1,5 +1,7 @@
 class GSheetProjectSettings {
 
+    firstDataRow: number = 2
+
     settingsSheetName: string = "Settings"
 
     issueIdColumnName: string = "Issue"
