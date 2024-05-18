@@ -49,7 +49,7 @@ class HierarchyFormatter {
                 const issueIndex = allIssueIds.findIndex(ids =>
                     ids?.some(id => parentIssueIds.includes(id)),
                 )
-                if (issueIndex == null) {
+                if (issueIndex == null || issueIndex === index) {
                     continue
                 }
 
