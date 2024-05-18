@@ -1,30 +1,39 @@
 class GSheetProject {
 
-    private settings: GSheetProjectSettings
+    private issueIdFormatter: IssueIdFormatter
+    private issueInfoLoader: IssueInfoLoader
 
     constructor(settings: GSheetProjectSettings) {
-        this.settings = settings;
+        this.issueIdFormatter = new IssueIdFormatter(settings);
+        this.issueInfoLoader = new IssueInfoLoader(settings);
     }
 
 
     onOpen(event: SheetsOnOpen) {
-        ExecutionCache.resetCache()
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache()
+        })
     }
 
     onChange(event: SheetsOnChange) {
-        ExecutionCache.resetCache()
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache()
+        })
     }
 
     osEdit(event: SheetsOnEdit) {
-        ExecutionCache.resetCache()
-        StyleIssueId.formatIssueId(
-            event.range,
-            this.settings.issueIdsExtractor,
-            this.settings.issueIdDecorator,
-            this.settings.issueIdToUrl,
-            this.settings.issueColumnName,
-            this.settings.parentIssueColumnName,
-        )
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache()
+            this.issueIdFormatter.formatIssueId(event.range)
+            this.issueInfoLoader.loadIssueInfo(event.range)
+        })
+    }
+
+    refresh() {
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache()
+            this.issueInfoLoader.loadAllIssueInfo()
+        })
     }
 
 }

@@ -44,6 +44,23 @@ class Utils {
         return match[group]
     }
 
+    static distinct<T>(): (value: T, index: number, array: T[]) => boolean {
+        return (value, index, array) => array.indexOf(value) === index
+    }
+
+    static distinctBy<T>(getter: (value: T) => any): (value: T, index: number, array: T[]) => boolean {
+        const seen = new Set<any>()
+        return (value) => {
+            const property = getter(value)
+            if (seen.has(property)) {
+                return false
+            }
+
+            seen.add(property)
+            return true
+        }
+    }
+
     static isString(value: unknown): value is string {
         return typeof value === 'string'
     }

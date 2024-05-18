@@ -1,6 +1,10 @@
 class SheetUtils {
 
-    static findSheetByName(sheetName: string): Sheet {
+    static findSheetByName(sheetName: string): Sheet | null {
+        if (!sheetName?.length) {
+            return null
+        }
+
         sheetName = Utils.normalizeName(sheetName)
         return ExecutionCache.getOrComputeCache(['findSheetByName', sheetName], () => {
             for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
@@ -19,11 +23,14 @@ class SheetUtils {
         })()
     }
 
-    static findColumnByName(sheet: Sheet | string | null, columnName: string): number | null {
+    static findColumnByName(sheet: Sheet | string | null, columnName: string | null): number | null {
+        if (!columnName?.length) {
+            return null
+        }
+
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet)
         }
-
         if (sheet == null) {
             return null
         }
@@ -41,7 +48,7 @@ class SheetUtils {
         })
     }
 
-    static getColumnByName(sheet: Sheet | string | null, columnName: string): number {
+    static getColumnByName(sheet: Sheet | string, columnName: string): number {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
         }

@@ -1,32 +1,67 @@
 class GSheetProject {
     constructor(settings) {
-        this.settings = settings;
+        this.issueIdFormatter = new IssueIdFormatter(settings);
+        this.issueInfoLoader = new IssueInfoLoader(settings);
     }
     onOpen(event) {
-        ExecutionCache.resetCache();
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache();
+        });
     }
     onChange(event) {
-        ExecutionCache.resetCache();
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache();
+        });
     }
     osEdit(event) {
-        ExecutionCache.resetCache();
-        StyleIssueId.formatIssueId(event.range, this.settings.issueIdsExtractor, this.settings.issueIdDecorator, this.settings.issueIdToUrl, this.settings.issueColumnName, this.settings.parentIssueColumnName);
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache();
+            this.issueIdFormatter.formatIssueId(event.range);
+            this.issueInfoLoader.loadIssueInfo(event.range);
+        });
+    }
+    refresh() {
+        Utils.entryPoint(() => {
+            ExecutionCache.resetCache();
+            this.issueInfoLoader.loadAllIssueInfo();
+        });
     }
 }
 class GSheetProjectSettings {
     constructor() {
         this.settingsSheetName = "Settings";
-        this.issueColumnName = "Issue";
-        this.parentIssueColumnName = "Parent Issue";
-        this.issueIdsExtractor = (_) => {
+        this.issueIdColumnName = "Issue";
+        this.parentIssueIdColumnName = "Parent Issue";
+        this.idDoneCalculator = () => {
+            throw new Error('idDoneCalculator is not set');
+        };
+        this.stringFields = {};
+        this.booleanFields = {};
+        this.childIssueMetrics = [];
+        this.blockerIssueMetrics = [];
+        this.issueIdsExtractor = () => {
             throw new Error('issueIdsExtractor is not set');
         };
         this.issueIdDecorator = (id) => id;
-        this.issueIdToUrl = (_) => {
+        this.issueIdToUrl = () => {
             throw new Error('issueIdToUrl is not set');
+        };
+        this.issueIdsToUrl = null;
+        this.issuesLoader = () => {
+            throw new Error('issuesLoader is not set');
+        };
+        this.childIssuesLoader = () => {
+            throw new Error('childIssuesLoader is not set');
+        };
+        this.blockerIssuesLoader = () => {
+            throw new Error('blockerIssuesLoader is not set');
+        };
+        this.issueIdGetter = () => {
+            throw new Error('issueIdGetter is not set');
         };
     }
 }
+const DATA_FIRST_ROW = 2;
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
         const stringKey = JSON.stringify(key, (_, value) => {
@@ -50,6 +85,146 @@ class ExecutionCache {
     }
 }
 ExecutionCache.data = new Map();
+class IssueIdFormatter {
+    constructor(settings) {
+        this.settings = settings;
+    }
+    formatIssueId(range) {
+        const columnNames = [
+            this.settings.issueIdColumnName,
+            this.settings.parentIssueIdColumnName,
+        ];
+        for (const y of Utils.range(1, range.getHeight())) {
+            for (const x of Utils.range(1, range.getWidth())) {
+                const cell = range.getCell(y, x);
+                if (!columnNames.some(name => RangeUtils.doesRangeHaveColumn(cell, name))) {
+                    continue;
+                }
+                const ids = this.settings.issueIdsExtractor(cell.getValue());
+                const links = ids.map(id => {
+                    return {
+                        url: this.settings.issueIdToUrl(id),
+                        title: this.settings.issueIdDecorator(id),
+                    };
+                });
+                cell.setValue(RichTextUtils.createLinksValue(links));
+            }
+        }
+    }
+}
+class IssueInfoLoader {
+    constructor(settings) {
+        this.settings = settings;
+    }
+    loadIssueInfo(range) {
+        if (!RangeUtils.doesRangeHaveColumn(range, this.settings.issueIdColumnName)) {
+            return;
+        }
+        const sheet = range.getSheet();
+        const rows = Array.from(Utils.range(1, range.getHeight()))
+            .map(y => range.getCell(y, 1).getRow())
+            .filter(row => row >= DATA_FIRST_ROW)
+            .filter(Utils.distinct);
+        for (const row of rows) {
+            this.loadIssueInfoForRow(sheet, row);
+        }
+    }
+    loadAllIssueInfo() {
+        for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
+            const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, this.settings.issueIdColumnName) != null;
+            if (!hasIssueIdColumn) {
+                return;
+            }
+            for (const row of Utils.range(DATA_FIRST_ROW, sheet.getLastRow())) {
+                this.loadIssueInfoForRow(sheet, row);
+            }
+        }
+    }
+    loadIssueInfoForRow(sheet, row) {
+        if (row < DATA_FIRST_ROW
+            || sheet.isRowHiddenByUser(row)) {
+            return;
+        }
+        const issueIdColumn = SheetUtils.getColumnByName(sheet, this.settings.issueIdColumnName);
+        const issueIdRange = sheet.getRange(row, issueIdColumn);
+        const issueIds = this.settings.issueIdsExtractor(issueIdRange.getValue());
+        if (!issueIds.length) {
+            return;
+        }
+        console.log(`"${sheet.getSheetName()}" sheet: processing row #${row}`);
+        issueIdRange.setBackground('#eee');
+        try {
+            const rootIssues = this.settings.issuesLoader(issueIds);
+            const childIssues = new Lazy(() => this.settings.childIssuesLoader(issueIds)
+                .filter(issue => !issueIds.includes(this.settings.issueIdGetter(issue))));
+            const blockerIssues = new Lazy(() => this.settings.blockerIssuesLoader(rootIssues.concat(childIssues.get())
+                .map(issue => this.settings.issueIdGetter(issue))));
+            const isDoneColumn = SheetUtils.findColumnByName(sheet, this.settings.isDoneColumnName);
+            if (isDoneColumn != null) {
+                const isDone = this.settings.idDoneCalculator(rootIssues, childIssues.get());
+                sheet.getRange(row, isDoneColumn).setValue(isDone ? 'Yes' : '');
+            }
+            for (const [columnName, getter] of Object.entries(this.settings.stringFields)) {
+                const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
+                if (fieldColumn != null) {
+                    sheet.getRange(row, fieldColumn).setValue(rootIssues
+                        .map(getter)
+                        .join('\n'));
+                }
+            }
+            for (const [columnName, getter] of Object.entries(this.settings.booleanFields)) {
+                const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
+                if (fieldColumn != null) {
+                    const isTrue = rootIssues.some(getter);
+                    sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '');
+                }
+            }
+            const calculateIssueMetrics = (metricsIssues, metrics) => {
+                var _a;
+                for (const metric of metrics) {
+                    const metricColumn = SheetUtils.findColumnByName(sheet, metric.columnName);
+                    if (metricColumn == null) {
+                        continue;
+                    }
+                    const metricRange = sheet.getRange(row, metricColumn);
+                    const foundIssues = metricsIssues.get().filter(metric.filter);
+                    if (!foundIssues.length) {
+                        metricRange.clearContent().setFontColor(null);
+                        continue;
+                    }
+                    const metricIssueIds = foundIssues.map(issue => this.settings.issueIdGetter(issue));
+                    const link = (_a = this.settings.issueIdsToUrl) === null || _a === void 0 ? void 0 : _a.call(null, metricIssueIds);
+                    if (link != null) {
+                        metricRange.setFormula(`=HYPERLINK("${link}", "${foundIssues.length}")`);
+                    }
+                    else {
+                        metricRange.setFormula(`="${foundIssues.length}"`);
+                    }
+                    if (metric.color != null) {
+                        metricRange.setFontColor(metric.color);
+                    }
+                }
+            };
+            calculateIssueMetrics(childIssues, this.settings.childIssueMetrics);
+            calculateIssueMetrics(blockerIssues, this.settings.blockerIssueMetrics);
+        }
+        finally {
+            issueIdRange.setBackground(null);
+        }
+    }
+}
+class Lazy {
+    constructor(supplier) {
+        this.supplier = supplier;
+    }
+    get() {
+        if (this.supplier != null) {
+            this.value = this.supplier();
+            this.supplier = null;
+        }
+        return this.value;
+    }
+}
 class RangeUtils {
     static doesRangeHaveColumn(range, columnName) {
         if (range == null) {
@@ -174,6 +349,9 @@ class Settings {
 }
 class SheetUtils {
     static findSheetByName(sheetName) {
+        if (!(sheetName === null || sheetName === void 0 ? void 0 : sheetName.length)) {
+            return null;
+        }
         sheetName = Utils.normalizeName(sheetName);
         return ExecutionCache.getOrComputeCache(['findSheetByName', sheetName], () => {
             for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
@@ -192,6 +370,9 @@ class SheetUtils {
         })();
     }
     static findColumnByName(sheet, columnName) {
+        if (!(columnName === null || columnName === void 0 ? void 0 : columnName.length)) {
+            return null;
+        }
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet);
         }
@@ -217,26 +398,6 @@ class SheetUtils {
         return (_a = this.findColumnByName(sheet, columnName)) !== null && _a !== void 0 ? _a : (() => {
             throw new Error(`"${columnName}" can't be found on "${sheet.getSheetName()}" sheet`);
         })();
-    }
-}
-class StyleIssueId {
-    static formatIssueId(range, issueIdsExtractor, issueIdDecorator, issueIdToUrl, ...columnNames) {
-        for (const y of Utils.range(1, range.getHeight())) {
-            for (const x of Utils.range(1, range.getWidth())) {
-                const cell = range.getCell(y, x);
-                if (!columnNames.some(name => RangeUtils.doesRangeHaveColumn(cell, name))) {
-                    continue;
-                }
-                const ids = issueIdsExtractor(cell.getValue());
-                const links = ids.map(id => {
-                    return {
-                        url: issueIdToUrl(id),
-                        title: issueIdDecorator(id),
-                    };
-                });
-                cell.setValue(RichTextUtils.createLinksValue(links));
-            }
-        }
     }
 }
 class Utils {
@@ -275,6 +436,20 @@ class Utils {
             }
         }
         return match[group];
+    }
+    static distinct() {
+        return (value, index, array) => array.indexOf(value) === index;
+    }
+    static distinctBy(getter) {
+        const seen = new Set();
+        return (value) => {
+            const property = getter(value);
+            if (seen.has(property)) {
+                return false;
+            }
+            seen.add(property);
+            return true;
+        };
     }
     static isString(value) {
         return typeof value === 'string';

@@ -2,15 +2,41 @@ class GSheetProjectSettings {
 
     settingsSheetName: string = "Settings"
 
-    issueColumnName: string = "Issue"
-    parentIssueColumnName: string = "Parent Issue"
+    issueIdColumnName: string = "Issue"
+    parentIssueIdColumnName: string = "Parent Issue"
 
-    issueIdsExtractor: IssueIdsExtractor = (_) => {
+    isDoneColumnName?: string
+    idDoneCalculator: IssueIsDoneCalculator = () => {
+        throw new Error('idDoneCalculator is not set')
+    }
+
+    stringFields: Record<string, IssueStringFieldGetter> = {}
+    booleanFields: Record<string, IssueBooleanFieldGetter> = {}
+
+    childIssueMetrics: IssueMetric[] = []
+    blockerIssueMetrics: IssueMetric[] = []
+
+    issueIdsExtractor: IssueIdsExtractor = () => {
         throw new Error('issueIdsExtractor is not set')
     }
     issueIdDecorator: IssueIdDecorator = (id) => id
-    issueIdToUrl: IssueIdToUrl = (_) => {
+    issueIdToUrl: IssueIdToUrl = () => {
         throw new Error('issueIdToUrl is not set')
+    }
+    issueIdsToUrl?: IssueIdsToUrl = null
+
+    issuesLoader: IssuesLoader = () => {
+        throw new Error('issuesLoader is not set')
+    }
+    childIssuesLoader: IssuesLoader = () => {
+        throw new Error('childIssuesLoader is not set')
+    }
+    blockerIssuesLoader: IssuesLoader = () => {
+        throw new Error('blockerIssuesLoader is not set')
+    }
+
+    issueIdGetter: IssueStringFieldGetter = () => {
+        throw new Error('issueIdGetter is not set')
     }
 
 }
