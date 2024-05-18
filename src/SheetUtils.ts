@@ -36,7 +36,7 @@ class SheetUtils {
         }
 
         columnName = Utils.normalizeName(columnName)
-        return ExecutionCache.getOrComputeCache([sheet, columnName], () => {
+        return ExecutionCache.getOrComputeCache(['findColumnByName', sheet, columnName], () => {
             for (const col of Utils.range(1, sheet.getLastColumn())) {
                 const name = Utils.normalizeName(sheet.getRange(1, col).getValue())
                 if (name === columnName) {

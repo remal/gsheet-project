@@ -69,4 +69,8 @@ class Utils {
         return typeof value === 'function'
     }
 
+    static throwNotConfigured<T>(name: string): T {
+        throw new Error(`Not configured: ${name}`)
+    }
+
 }

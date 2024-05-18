@@ -7,9 +7,7 @@ const DEFAULT_GSHEET_PROJECT_SETTINGS: Partial<GSheetProjectSettings> = {
     issueIdColumnName: "Issue",
     parentIssueIdColumnName: "Parent Issue",
 
-    idDoneCalculator: () => {
-        throw new Error('idDoneCalculator is not set')
-    },
+    idDoneCalculator: () => Utils.throwNotConfigured("idDoneCalculator"),
 
     stringFields: {},
     booleanFields: {},
@@ -17,27 +15,15 @@ const DEFAULT_GSHEET_PROJECT_SETTINGS: Partial<GSheetProjectSettings> = {
     childIssueMetrics: [],
     blockerIssueMetrics: [],
 
-    issueIdsExtractor: () => {
-        throw new Error('issueIdsExtractor is not set')
-    },
+    issueIdsExtractor: () => Utils.throwNotConfigured("issueIdsExtractor"),
     issueIdDecorator: (id) => id,
-    issueIdToUrl: () => {
-        throw new Error('issueIdToUrl is not set')
-    },
+    issueIdToUrl: () => Utils.throwNotConfigured("issueIdToUrl"),
 
-    issuesLoader: () => {
-        throw new Error('issuesLoader is not set')
-    },
-    childIssuesLoader: () => {
-        throw new Error('childIssuesLoader is not set')
-    },
-    blockerIssuesLoader: () => {
-        throw new Error('blockerIssuesLoader is not set')
-    },
+    issuesLoader: () => Utils.throwNotConfigured("issuesLoader"),
+    childIssuesLoader: () => Utils.throwNotConfigured("childIssuesLoader"),
+    blockerIssuesLoader: () => Utils.throwNotConfigured("blockerIssuesLoader"),
 
-    issueIdGetter: () => {
-        throw new Error('issueIdGetter is not set')
-    },
+    issueIdGetter: () => Utils.throwNotConfigured("issueIdGetter"),
 
 }
 

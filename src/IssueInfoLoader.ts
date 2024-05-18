@@ -26,7 +26,7 @@ class IssueInfoLoader {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
             const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, this.settings.issueIdColumnName) != null
             if (!hasIssueIdColumn) {
-                return
+                continue
             }
 
             for (const row of Utils.range(this.settings.firstDataRow, sheet.getLastRow())) {

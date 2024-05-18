@@ -7,7 +7,7 @@ class Settings {
 
         settingsScope = Utils.normalizeName(settingsScope)
 
-        return ExecutionCache.getOrComputeCache(['settings', 'map', settingsSheet, settingsScope], () => {
+        return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsSheet, settingsScope], () => {
             const scopeRow = this.findScopeRow(settingsSheet, settingsScope)
 
             const columns: string[] = []
