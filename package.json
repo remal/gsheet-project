@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/package",
+  "name": "gsheet-project",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "yarn@4.2.2",
+  "scripts": {
+    "compile": "rimraf build && tsc -project tsconfig.json --rootDir src --outDir build"
+  },
+  "devDependencies": {
+    "@types/google-apps-script": "1.0.83",
+    "rimraf": "5.0.7",
+    "typescript": "5.4.5"
+  }
+}

@@ -5,7 +5,13 @@
   "git-submodules": {
     enabled: false, // This is in beta for now, so let's use Dependabot to update Git submodules
   },
-  
-  // $$$sync-with-template-modifiable: local $$$
+
+  constraintsFiltering: "strict",
+  // $$$sync-with-template-modifiable: constraints $$$
+  force: {
+    constraints: {
+      node: "^20.9999.9999",
+    },
+  },
   // $$$sync-with-template-modifiable-end$$$
 }
