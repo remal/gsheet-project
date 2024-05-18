@@ -58,8 +58,9 @@ class HierarchyFormatter {
                     continue
                 }
 
+                const row = GSheetProjectSettings.firstDataRow + index
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex
-                sheet.moveRows(sheet.getRange(index, 1), newRow)
+                sheet.moveRows(sheet.getRange(row, 1), newRow)
                 isChanged = true
                 if (newIndex > index) {
                     break

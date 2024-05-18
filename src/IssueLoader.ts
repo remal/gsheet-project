@@ -1,6 +1,6 @@
-class IssueInfoLoader {
+class IssueLoader {
 
-    static loadIssueInfo(range: Range) {
+    static loadIssues(range: Range) {
         if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.issueIdColumnName)) {
             return
         }
@@ -11,24 +11,24 @@ class IssueInfoLoader {
             .filter(row => row >= GSheetProjectSettings.firstDataRow)
             .filter(Utils.distinct)
         for (const row of rows) {
-            this.loadIssueInfoForRow(sheet, row)
+            this.loadIssuesForRow(sheet, row)
         }
     }
 
-    static loadAllIssueInfo() {
+    static loadAllIssues() {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
             const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName) != null
             if (!hasIssueIdColumn) {
-                return
+                continue
             }
 
             for (const row of Utils.range(GSheetProjectSettings.firstDataRow, sheet.getLastRow())) {
-                this.loadIssueInfoForRow(sheet, row)
+                this.loadIssuesForRow(sheet, row)
             }
         }
     }
 
-    private static loadIssueInfoForRow(sheet: Sheet, row: number) {
+    private static loadIssuesForRow(sheet: Sheet, row: number) {
         if (row < GSheetProjectSettings.firstDataRow) {
             return
         }

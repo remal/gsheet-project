@@ -2,7 +2,7 @@ class GSheetProject {
     static reloadIssues() {
         Utils.entryPoint(() => {
             ExecutionCache.resetCache();
-            IssueInfoLoader.loadAllIssueInfo();
+            IssueLoader.loadAllIssues();
         });
     }
     static onOpen(event) {
@@ -28,7 +28,7 @@ class GSheetProject {
             if (range != null) {
                 IssueIdFormatter.formatIssueId(range);
                 HierarchyFormatter.formatHierarchy(range);
-                IssueInfoLoader.loadIssueInfo(range);
+                IssueLoader.loadIssues(range);
             }
         });
     }
@@ -122,8 +122,9 @@ class HierarchyFormatter {
                 if (newIndex === index) {
                     continue;
                 }
+                const row = GSheetProjectSettings.firstDataRow + index;
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex;
-                sheet.moveRows(sheet.getRange(index, 1), newRow);
+                sheet.moveRows(sheet.getRange(row, 1), newRow);
                 isChanged = true;
                 if (newIndex > index) {
                     break;
@@ -163,8 +164,8 @@ class IssueIdFormatter {
         }
     }
 }
-class IssueInfoLoader {
-    static loadIssueInfo(range) {
+class IssueLoader {
+    static loadIssues(range) {
         if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.issueIdColumnName)) {
             return;
         }
@@ -174,21 +175,21 @@ class IssueInfoLoader {
             .filter(row => row >= GSheetProjectSettings.firstDataRow)
             .filter(Utils.distinct);
         for (const row of rows) {
-            this.loadIssueInfoForRow(sheet, row);
+            this.loadIssuesForRow(sheet, row);
         }
     }
-    static loadAllIssueInfo() {
+    static loadAllIssues() {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
             const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName) != null;
             if (!hasIssueIdColumn) {
-                return;
+                continue;
             }
             for (const row of Utils.range(GSheetProjectSettings.firstDataRow, sheet.getLastRow())) {
-                this.loadIssueInfoForRow(sheet, row);
+                this.loadIssuesForRow(sheet, row);
             }
         }
     }
-    static loadIssueInfoForRow(sheet, row) {
+    static loadIssuesForRow(sheet, row) {
         if (row < GSheetProjectSettings.firstDataRow) {
             return;
         }

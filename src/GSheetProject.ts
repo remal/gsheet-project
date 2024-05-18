@@ -3,7 +3,7 @@ class GSheetProject {
     static reloadIssues() {
         Utils.entryPoint(() => {
             ExecutionCache.resetCache()
-            IssueInfoLoader.loadAllIssueInfo()
+            IssueLoader.loadAllIssues()
         })
     }
 
@@ -34,7 +34,7 @@ class GSheetProject {
             if (range != null) {
                 IssueIdFormatter.formatIssueId(range)
                 HierarchyFormatter.formatHierarchy(range)
-                IssueInfoLoader.loadIssueInfo(range)
+                IssueLoader.loadIssues(range)
             }
         })
     }
