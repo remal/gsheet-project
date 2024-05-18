@@ -132,9 +132,10 @@ class HierarchyFormatter {
             }
         }
         // move children:
-        moving: do {
+        while (true) {
             const allIssueIds = getAllIds(issueIdColumn);
             const allParentIssueIds = getAllIds(parentIssueIdColumn);
+            let isChanged = false;
             for (let index = 0; index < allParentIssueIds.length; ++index) {
                 const currentIndex = index;
                 const parentIssueIds = allParentIssueIds[currentIndex];
@@ -156,12 +157,15 @@ class HierarchyFormatter {
                     continue;
                 }
                 const newIndex = issueIndex + 1;
-                const row = GSheetProjectSettings.firstDataRow + index;
+                const row = GSheetProjectSettings.firstDataRow + currentIndex;
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex;
                 sheet.moveRows(sheet.getRange(row, 1, groupSize, 1), newRow);
-                continue moving;
+                break;
             }
-        } while (false);
+            if (!isChanged) {
+                break;
+            }
+        }
     }
 }
 class IssueIdFormatter {
