@@ -7,7 +7,8 @@
   },
   "packageManager": "yarn@4.2.2",
   "scripts": {
-    "compile": "rimraf build && tsc -project tsconfig.json --rootDir src --outDir build"
+    "compile": "rimraf build && tsc -project tsconfig.json --rootDir src --outDir build",
+    "dist": "yarn run compile && yarn node prepare-dist"
   },
   "devDependencies": {
     "@types/google-apps-script": "1.0.83",
