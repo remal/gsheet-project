@@ -37,8 +37,9 @@ class HierarchyFormatter {
         }
 
         // group children:
-        grouping: do {
+        while (true) {
             const allParentIssueIds = getAllIds(parentIssueIdColumn)
+            let isChanged = false
             for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index]
                 if (!parentIssueIds?.length) {
@@ -50,6 +51,7 @@ class HierarchyFormatter {
                     const prevParentIssueIds = allParentIssueIds[prevIndex]
                     if (Utils.arrayEquals(parentIssueIds, prevParentIssueIds)) {
                         previousIndex = prevIndex
+                        break
                     }
                 }
 
@@ -58,10 +60,14 @@ class HierarchyFormatter {
                     const row = GSheetProjectSettings.firstDataRow + index
                     const newRow = GSheetProjectSettings.firstDataRow + newIndex
                     sheet.moveRows(sheet.getRange(row, 1), newRow)
-                    continue grouping;
+                    isChanged = true
                 }
             }
-        } while (false)
+
+            if (!isChanged) {
+                break
+            }
+        }
 
         // move children:
         moving: do {
@@ -75,8 +81,8 @@ class HierarchyFormatter {
                 }
 
                 let groupSize = 1
-                for (; index < allParentIssueIds.length; ++index) {
-                    const nextParentIssueIds = allParentIssueIds[index]
+                for (index; index < allParentIssueIds.length - 1; ++index) {
+                    const nextParentIssueIds = allParentIssueIds[index + 1]
                     if (Utils.arrayEquals(parentIssueIds, nextParentIssueIds)) {
                         ++groupSize
                     } else {
@@ -95,7 +101,7 @@ class HierarchyFormatter {
                 const row = GSheetProjectSettings.firstDataRow + index
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex
                 sheet.moveRows(sheet.getRange(row, 1, groupSize, 1), newRow)
-                continue moving;
+                continue moving
             }
         } while (false)
     }

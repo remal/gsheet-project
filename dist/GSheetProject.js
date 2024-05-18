@@ -103,8 +103,9 @@ class HierarchyFormatter {
                 .map(text => GSheetProjectSettings.issueIdsExtractor(text));
         };
         // group children:
-        grouping: do {
+        while (true) {
             const allParentIssueIds = getAllIds(parentIssueIdColumn);
+            let isChanged = false;
             for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index];
                 if (!(parentIssueIds === null || parentIssueIds === void 0 ? void 0 : parentIssueIds.length)) {
@@ -115,6 +116,7 @@ class HierarchyFormatter {
                     const prevParentIssueIds = allParentIssueIds[prevIndex];
                     if (Utils.arrayEquals(parentIssueIds, prevParentIssueIds)) {
                         previousIndex = prevIndex;
+                        break;
                     }
                 }
                 if (previousIndex != null && previousIndex < index - 1) {
@@ -122,10 +124,13 @@ class HierarchyFormatter {
                     const row = GSheetProjectSettings.firstDataRow + index;
                     const newRow = GSheetProjectSettings.firstDataRow + newIndex;
                     sheet.moveRows(sheet.getRange(row, 1), newRow);
-                    continue grouping;
+                    isChanged = true;
                 }
             }
-        } while (false);
+            if (!isChanged) {
+                break;
+            }
+        }
         // move children:
         moving: do {
             const allIssueIds = getAllIds(issueIdColumn);
@@ -137,8 +142,8 @@ class HierarchyFormatter {
                     continue;
                 }
                 let groupSize = 1;
-                for (; index < allParentIssueIds.length; ++index) {
-                    const nextParentIssueIds = allParentIssueIds[index];
+                for (index; index < allParentIssueIds.length - 1; ++index) {
+                    const nextParentIssueIds = allParentIssueIds[index + 1];
                     if (Utils.arrayEquals(parentIssueIds, nextParentIssueIds)) {
                         ++groupSize;
                     }
