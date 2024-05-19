@@ -23,7 +23,7 @@ class Utils {
     }
 
     static toLowerCamelCase(value: string): string {
-        value = value.replace(/^[^a-z0-9]+/, '').replace(/[^a-z0-9]+$/, '')
+        value = value.replace(/^[^a-z0-9]+/i, '').replace(/[^a-z0-9]+$/i, '')
         if (value.length <= 1) {
             return value.toLowerCase()
         }

@@ -57,6 +57,10 @@ class Schedule {
         const allTeamDaysEstimates = new Map<string, DayEstimate[]>
         const invalidEstimateRows: number[] = []
         generalEstimates.forEach((generalEstimate, index) => {
+            if (!generalEstimate.length) {
+                return
+            }
+
             let isTeamFound = false
             for (const team of Team.getAll()) {
                 const regex = new RegExp(`^${Utils.escapeRegex(team.id)}\\s*:\\s*(d+)\\s*([dw])$`, 'i')

@@ -491,6 +491,9 @@ class Schedule {
         const invalidEstimateRows = [];
         generalEstimates.forEach((generalEstimate, index) => {
             var _a;
+            if (!generalEstimate.length) {
+                return;
+            }
             let isTeamFound = false;
             for (const team of Team.getAll()) {
                 const regex = new RegExp(`^${Utils.escapeRegex(team.id)}\\s*:\\s*(d+)\\s*([dw])$`, 'i');
@@ -803,7 +806,7 @@ class Utils {
         return name.toString().trim().replaceAll(/\s+/g, ' ').toLowerCase();
     }
     static toLowerCamelCase(value) {
-        value = value.replace(/^[^a-z0-9]+/, '').replace(/[^a-z0-9]+$/, '');
+        value = value.replace(/^[^a-z0-9]+/i, '').replace(/[^a-z0-9]+$/i, '');
         if (value.length <= 1) {
             return value.toLowerCase();
         }
