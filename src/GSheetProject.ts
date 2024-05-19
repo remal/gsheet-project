@@ -2,20 +2,18 @@ class GSheetProject {
 
     static reloadIssues() {
         Utils.entryPoint(() => {
-            ExecutionCache.resetCache()
             IssueLoader.loadAllIssues()
         })
     }
 
     static onOpen(event?: SheetsOnOpen) {
         Utils.entryPoint(() => {
-            ExecutionCache.resetCache()
         })
     }
 
     static onChange(event?: SheetsOnChange) {
         Utils.entryPoint(() => {
-            ExecutionCache.resetCache()
+            State.updateLastStructureChange()
             HierarchyFormatter.formatAllHierarchy()
         })
     }
@@ -30,7 +28,6 @@ class GSheetProject {
 
     private static onEditRange(range?: Range) {
         Utils.entryPoint(() => {
-            ExecutionCache.resetCache()
             if (range != null) {
                 IssueIdFormatter.formatIssueId(range)
                 HierarchyFormatter.formatHierarchy(range)

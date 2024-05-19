@@ -1,24 +1,17 @@
 class Settings {
 
-    static getMatrix(settingsSheet: Sheet | string, settingsScope: string): Map<string, string>[] {
-        if (Utils.isString(settingsSheet)) {
-            settingsSheet = SheetUtils.getSheetByName(settingsSheet)
-        }
-
+    static getMatrix(settingsScope: string): Map<string, string>[] {
+        const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName)
         settingsScope = Utils.normalizeName(settingsScope)
-
         return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsSheet, settingsScope], () => {
             const scopeRow = this.findScopeRow(settingsSheet, settingsScope)
 
             const columns: string[] = []
-            const columnsValues = settingsSheet.getRange(
-                scopeRow + 1,
-                1,
-                1,
-                settingsSheet.getLastColumn(),
-            ).getValues()[0]
+            const columnsValues = settingsSheet
+                .getRange(scopeRow + 1, 1, 1, settingsSheet.getLastColumn())
+                .getValues()[0]
             for (const column of columnsValues) {
-                const name = column.toString().trim()
+                const name = Utils.toLowerCamelCase(column.toString().trim())
                 if (name.length) {
                     columns.push(name)
                 } else {
@@ -35,32 +28,34 @@ class Settings {
                 const item = new Map<string, string>()
                 const values = settingsSheet.getRange(row, 1, 1, columns.length).getValues()[0]
                 for (let i = 0; i < columns.length; ++i) {
-                    item.set(columns[i], values[i].toString().trim())
+                    let value = values[i].toString().trim()
+                    item.set(columns[i], value)
+                }
+                const areAllValuesEmpty = Array.from(item.values()).every(value => !value.length)
+                if (areAllValuesEmpty) {
+                    break
                 }
                 result.push(item)
             }
+
             return result
         })
     }
 
-    static getMap(settingsSheet: Sheet | string, settingsScope: string): Map<string, string> {
-        if (Utils.isString(settingsSheet)) {
-            settingsSheet = SheetUtils.getSheetByName(settingsSheet)
-        }
-
+    static getMap(settingsScope: string): Map<string, string> {
+        const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName)
         settingsScope = Utils.normalizeName(settingsScope)
-
         return ExecutionCache.getOrComputeCache(['settings', 'map', settingsSheet, settingsScope], () => {
             const scopeRow = this.findScopeRow(settingsSheet, settingsScope)
 
             const result = new Map<string, string>()
             for (const row of Utils.range(scopeRow + 1, settingsSheet.getLastRow())) {
                 const values = settingsSheet.getRange(row, 1, 1, 2).getValues()[0]
-                const key = values[0].toString().trim()
-                const value = values[1].toString().trim()
+                const key = Utils.toLowerCamelCase(values[0].toString().trim())
                 if (!key.length) {
                     break
                 }
+                const value = values[1].toString().trim()
                 result.set(key, value)
             }
             return result

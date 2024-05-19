@@ -2,6 +2,8 @@ class Utils {
 
     static entryPoint<T>(action: () => T): T {
         try {
+            State.reset()
+            ExecutionCache.resetCache()
             return action()
 
         } catch (e) {
@@ -18,6 +20,17 @@ class Utils {
 
     static normalizeName(name: string): string {
         return name.toString().trim().replaceAll(/\s+/g, ' ').toLowerCase()
+    }
+
+    static toLowerCamelCase(value: string): string {
+        value = value.replace(/^[^a-z0-9]+/, '').replace(/[^a-z0-9]+$/, '')
+        if (value.length <= 1) {
+            return value.toLowerCase()
+        }
+
+        value = value.substring(0, 1).toLowerCase() + value.substring(1).toLowerCase()
+        value = value.replaceAll(/[^a-z0-9]+([a-z0-9])/ig, (_, letter) => letter.toUpperCase())
+        return value
     }
 
     static extractRegex(string: string, regexp: string | RegExp, group?: number | string): string | null {

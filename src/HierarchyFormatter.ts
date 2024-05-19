@@ -56,6 +56,10 @@ class HierarchyFormatter {
                 }
 
                 if (previousIndex != null && previousIndex < index - 1) {
+                    if (State.isStructureChanged()) {
+                        return
+                    }
+
                     const newIndex = previousIndex + 1
                     const row = GSheetProjectSettings.firstDataRow + index
                     const newRow = GSheetProjectSettings.firstDataRow + newIndex
@@ -96,6 +100,10 @@ class HierarchyFormatter {
                 )
                 if (issueIndex < 0 || issueIndex == currentIndex || issueIndex == currentIndex - 1) {
                     continue
+                }
+
+                if (State.isStructureChanged()) {
+                    return
                 }
 
                 const newIndex = issueIndex + 1

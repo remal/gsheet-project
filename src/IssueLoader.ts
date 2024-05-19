@@ -33,6 +33,10 @@ class IssueLoader {
             return
         }
 
+        if (State.isStructureChanged()) {
+            return
+        }
+
         const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
         const issueIdRange = sheet.getRange(row, issueIdColumn)
         const issueIds = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue())

@@ -1,18 +1,16 @@
 class GSheetProject {
     static reloadIssues() {
         Utils.entryPoint(() => {
-            ExecutionCache.resetCache();
             IssueLoader.loadAllIssues();
         });
     }
     static onOpen(event) {
         Utils.entryPoint(() => {
-            ExecutionCache.resetCache();
         });
     }
     static onChange(event) {
         Utils.entryPoint(() => {
-            ExecutionCache.resetCache();
+            State.updateLastStructureChange();
             HierarchyFormatter.formatAllHierarchy();
         });
     }
@@ -24,7 +22,6 @@ class GSheetProject {
     }
     static onEditRange(range) {
         Utils.entryPoint(() => {
-            ExecutionCache.resetCache();
             if (range != null) {
                 IssueIdFormatter.formatIssueId(range);
                 HierarchyFormatter.formatHierarchy(range);
@@ -120,6 +117,9 @@ class HierarchyFormatter {
                     }
                 }
                 if (previousIndex != null && previousIndex < index - 1) {
+                    if (State.isStructureChanged()) {
+                        return;
+                    }
                     const newIndex = previousIndex + 1;
                     const row = GSheetProjectSettings.firstDataRow + index;
                     const newRow = GSheetProjectSettings.firstDataRow + newIndex;
@@ -155,6 +155,9 @@ class HierarchyFormatter {
                 const issueIndex = allIssueIds.findIndex(ids => ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)));
                 if (issueIndex < 0 || issueIndex == currentIndex || issueIndex == currentIndex - 1) {
                     continue;
+                }
+                if (State.isStructureChanged()) {
+                    return;
                 }
                 const newIndex = issueIndex + 1;
                 const row = GSheetProjectSettings.firstDataRow + currentIndex;
@@ -220,6 +223,9 @@ class IssueLoader {
     }
     static loadIssuesForRow(sheet, row) {
         if (row < GSheetProjectSettings.firstDataRow) {
+            return;
+        }
+        if (State.isStructureChanged()) {
             return;
         }
         const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName);
@@ -359,18 +365,20 @@ class RichTextUtils {
         return builder.build();
     }
 }
+class Schedule {
+}
 class Settings {
-    static getMatrix(settingsSheet, settingsScope) {
-        if (Utils.isString(settingsSheet)) {
-            settingsSheet = SheetUtils.getSheetByName(settingsSheet);
-        }
+    static getMatrix(settingsScope) {
+        const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName);
         settingsScope = Utils.normalizeName(settingsScope);
         return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsSheet, settingsScope], () => {
             const scopeRow = this.findScopeRow(settingsSheet, settingsScope);
             const columns = [];
-            const columnsValues = settingsSheet.getRange(scopeRow + 1, 1, 1, settingsSheet.getLastColumn()).getValues()[0];
+            const columnsValues = settingsSheet
+                .getRange(scopeRow + 1, 1, 1, settingsSheet.getLastColumn())
+                .getValues()[0];
             for (const column of columnsValues) {
-                const name = column.toString().trim();
+                const name = Utils.toLowerCamelCase(column.toString().trim());
                 if (name.length) {
                     columns.push(name);
                 }
@@ -386,28 +394,31 @@ class Settings {
                 const item = new Map();
                 const values = settingsSheet.getRange(row, 1, 1, columns.length).getValues()[0];
                 for (let i = 0; i < columns.length; ++i) {
-                    item.set(columns[i], values[i].toString().trim());
+                    let value = values[i].toString().trim();
+                    item.set(columns[i], value);
+                }
+                const areAllValuesEmpty = Array.from(item.values()).every(value => !value.length);
+                if (areAllValuesEmpty) {
+                    break;
                 }
                 result.push(item);
             }
             return result;
         });
     }
-    static getMap(settingsSheet, settingsScope) {
-        if (Utils.isString(settingsSheet)) {
-            settingsSheet = SheetUtils.getSheetByName(settingsSheet);
-        }
+    static getMap(settingsScope) {
+        const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName);
         settingsScope = Utils.normalizeName(settingsScope);
         return ExecutionCache.getOrComputeCache(['settings', 'map', settingsSheet, settingsScope], () => {
             const scopeRow = this.findScopeRow(settingsSheet, settingsScope);
             const result = new Map();
             for (const row of Utils.range(scopeRow + 1, settingsSheet.getLastRow())) {
                 const values = settingsSheet.getRange(row, 1, 1, 2).getValues()[0];
-                const key = values[0].toString().trim();
-                const value = values[1].toString().trim();
+                const key = Utils.toLowerCamelCase(values[0].toString().trim());
                 if (!key.length) {
                     break;
                 }
+                const value = values[1].toString().trim();
                 result.set(key, value);
             }
             return result;
@@ -480,9 +491,53 @@ class SheetUtils {
         })();
     }
 }
+class State {
+    static isStructureChanged() {
+        const timestamp = this.loadStateTimestamp('lastStructureChange');
+        return !isNaN(timestamp) && this.now < timestamp;
+    }
+    static updateLastStructureChange() {
+        this.now = new Date().getTime();
+        this.saveStateTimestamp('lastStructureChange', this.now);
+    }
+    static reset() {
+        this.now = new Date().getTime();
+    }
+    static loadStateTimestamp(key) {
+        return parseInt(CacheService.getDocumentCache().get(`state:${key}`));
+    }
+    static saveStateTimestamp(key, timestamp) {
+        CacheService.getDocumentCache().put(`state:${key}`, timestamp.toString());
+    }
+}
+State.now = new Date().getTime();
+class Team {
+    static getAllTeams() {
+        var _a, _b;
+        const result = [];
+        for (const info of Settings.getMatrix('teams')) {
+            const id = (_b = (_a = info.get('id')) !== null && _a !== void 0 ? _a : info.get('teamId')) !== null && _b !== void 0 ? _b : info.get('team');
+            if (!id.length) {
+                continue;
+            }
+            let lanes = parseInt(info.get('lanes'));
+            if (isNaN(lanes)) {
+                lanes = 0;
+            }
+            result.push(new Team(id, lanes));
+        }
+        return result;
+    }
+    constructor(id, lanes) {
+        this.id = id;
+        this.lanes = Math.max(0, lanes);
+    }
+}
 class Utils {
     static entryPoint(action) {
         try {
+            State.reset();
+            ExecutionCache.resetCache();
             return action();
         }
         catch (e) {
@@ -497,6 +552,15 @@ class Utils {
     }
     static normalizeName(name) {
         return name.toString().trim().replaceAll(/\s+/g, ' ').toLowerCase();
+    }
+    static toLowerCamelCase(value) {
+        value = value.replace(/^[^a-z0-9]+/, '').replace(/[^a-z0-9]+$/, '');
+        if (value.length <= 1) {
+            return value.toLowerCase();
+        }
+        value = value.substring(0, 1).toLowerCase() + value.substring(1).toLowerCase();
+        value = value.replaceAll(/[^a-z0-9]+([a-z0-9])/ig, (_, letter) => letter.toUpperCase());
+        return value;
     }
     static extractRegex(string, regexp, group) {
         if (this.isString(regexp)) {
