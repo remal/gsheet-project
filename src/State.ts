@@ -1,29 +1,35 @@
 class State {
 
-    private static now: number = new Date().getTime()
+    private static _now: number = new Date().getTime()
 
     static isStructureChanged(): boolean {
-        const timestamp = this.loadStateTimestamp('lastStructureChange')
-        return !isNaN(timestamp) && this.now < timestamp
+        const timestamp = this._loadStateTimestamp('lastStructureChange')
+        return timestamp != null && this._now < timestamp
     }
 
     static updateLastStructureChange() {
-        this.now = new Date().getTime()
-        this.saveStateTimestamp('lastStructureChange', this.now)
+        this._now = new Date().getTime()
+        this._saveStateTimestamp('lastStructureChange', this._now)
     }
 
 
     static reset() {
-        this.now = new Date().getTime()
+        this._now = new Date().getTime()
     }
 
 
-    private static loadStateTimestamp(key: string): number {
-        return parseInt(CacheService.getDocumentCache().get(`state:${key}`))
+    private static _loadStateTimestamp(key: string): number | null {
+        const cache = CacheService.getDocumentCache()
+        if (cache == null) {
+            return null
+        }
+
+        const timestamp = parseInt(cache.get(`state:${key}`) ?? '')
+        return isNaN(timestamp) ? null : timestamp
     }
 
-    private static saveStateTimestamp(key: string, timestamp: number) {
-        CacheService.getDocumentCache().put(`state:${key}`, timestamp.toString())
+    private static _saveStateTimestamp(key: string, timestamp: number) {
+        CacheService.getDocumentCache()?.put(`state:${key}`, timestamp.toString())
     }
 
 }

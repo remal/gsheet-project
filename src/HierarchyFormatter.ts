@@ -7,30 +7,26 @@ class HierarchyFormatter {
             return
         }
 
-        this.formatSheetHierarchy(range.getSheet())
+        this._formatSheetHierarchy(range.getSheet())
     }
 
     static formatAllHierarchy() {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
-            this.formatSheetHierarchy(sheet)
+            this._formatSheetHierarchy(sheet)
         }
     }
 
-    private static formatSheetHierarchy(sheet: Sheet) {
+    private static _formatSheetHierarchy(sheet: Sheet) {
+        if (State.isStructureChanged()) return
+
         const issueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
         const parentIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName)
         if (issueIdColumn == null || parentIssueIdColumn == null) {
             return
         }
 
-        const lastRow = sheet.getLastRow()
         const getAllIds = (column: number): (string[] | null)[] => {
-            return sheet.getRange(
-                GSheetProjectSettings.firstDataRow,
-                column,
-                lastRow - GSheetProjectSettings.firstDataRow,
-                1,
-            )
+            return SheetUtils.getColumnRange(sheet, column, GSheetProjectSettings.firstDataRow)
                 .getValues()
                 .map(cols => cols[0].toString())
                 .map(text => GSheetProjectSettings.issueIdsExtractor(text))
@@ -46,7 +42,7 @@ class HierarchyFormatter {
                     continue
                 }
 
-                let previousIndex = null
+                let previousIndex: number | null = null
                 for (let prevIndex = index - 1; 0 <= prevIndex; --prevIndex) {
                     const prevParentIssueIds = allParentIssueIds[prevIndex]
                     if (Utils.arrayEquals(parentIssueIds, prevParentIssueIds)) {
@@ -56,10 +52,7 @@ class HierarchyFormatter {
                 }
 
                 if (previousIndex != null && previousIndex < index - 1) {
-                    if (State.isStructureChanged()) {
-                        return
-                    }
-
+                    if (State.isStructureChanged()) return
                     const newIndex = previousIndex + 1
                     const row = GSheetProjectSettings.firstDataRow + index
                     const newRow = GSheetProjectSettings.firstDataRow + newIndex
@@ -102,10 +95,7 @@ class HierarchyFormatter {
                     continue
                 }
 
-                if (State.isStructureChanged()) {
-                    return
-                }
-
+                if (State.isStructureChanged()) return
                 const newIndex = issueIndex + 1
                 const row = GSheetProjectSettings.firstDataRow + currentIndex
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex

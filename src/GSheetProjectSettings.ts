@@ -3,11 +3,18 @@ class GSheetProjectSettings {
     static firstDataRow: number = 2
 
     static settingsSheetName: string = "Settings"
+    static settingsTeamsScope: string = "Teams"
+    static settingsScheduleScope: string = "Schedule"
 
     static issueIdColumnName: string = "Issue"
     static parentIssueIdColumnName: string = "Parent Issue"
 
     static isDoneColumnName?: string = "Done"
+
+    static estimateColumnName: string = "Estimate"
+    static laneColumnName: string = "Lane"
+    static startColumnName: string = "Start"
+    static endColumnName: string = "End"
 
     static issueIdsExtractor: IssueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor')
     static issueIdDecorator: IssueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator')
@@ -24,6 +31,7 @@ class GSheetProjectSettings {
 
     static stringFields: Record<string, IssueStringFieldGetter> = {}
     static booleanFields: Record<string, IssueBooleanFieldGetter> = {}
+    static aggregatedBooleanFields: Record<string, IssueAggregateBooleanFieldGetter> = {}
 
     static childIssueMetrics: IssueMetric[] = []
     static blockerIssueMetrics: IssueMetric[] = []

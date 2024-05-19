@@ -1,19 +1,19 @@
 class Lazy<T> {
 
-    private value: T
-    private supplier: () => T
+    private _value: T
+    private _supplier?: () => T
 
     constructor(supplier: () => T) {
-        this.supplier = supplier
+        this._supplier = supplier
     }
 
     get(): T {
-        if (this.supplier != null) {
-            this.value = this.supplier()
-            this.supplier = null
+        if (this._supplier != null) {
+            this._value = this._supplier()
+            this._supplier = undefined
         }
 
-        return this.value
+        return this._value
     }
 
 }

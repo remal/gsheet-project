@@ -12,7 +12,7 @@ class Utils {
         }
     }
 
-    static* range(startIncluding: number, endIncluding: number): Generator<any, any, number> {
+    static* range(startIncluding: number, endIncluding: number): Iterable<number> {
         for (let n = startIncluding; n <= endIncluding; ++n) {
             yield n
         }

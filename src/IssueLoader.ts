@@ -11,31 +11,30 @@ class IssueLoader {
             .filter(row => row >= GSheetProjectSettings.firstDataRow)
             .filter(Utils.distinct)
         for (const row of rows) {
-            this.loadIssuesForRow(sheet, row)
+            this._loadIssuesForRow(sheet, row)
         }
     }
 
     static loadAllIssues() {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
+            if (State.isStructureChanged()) return
             const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName) != null
             if (!hasIssueIdColumn) {
                 continue
             }
 
             for (const row of Utils.range(GSheetProjectSettings.firstDataRow, sheet.getLastRow())) {
-                this.loadIssuesForRow(sheet, row)
+                this._loadIssuesForRow(sheet, row)
             }
         }
     }
 
-    private static loadIssuesForRow(sheet: Sheet, row: number) {
+    private static _loadIssuesForRow(sheet: Sheet, row: number) {
         if (row < GSheetProjectSettings.firstDataRow) {
             return
         }
 
-        if (State.isStructureChanged()) {
-            return
-        }
+        if (State.isStructureChanged()) return
 
         const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
         const issueIdRange = sheet.getRange(row, issueIdColumn)
@@ -62,12 +61,14 @@ class IssueLoader {
             const isDoneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.isDoneColumnName)
             if (isDoneColumn != null) {
                 const isDone = GSheetProjectSettings.idDoneCalculator(rootIssues, childIssues.get())
+                if (State.isStructureChanged()) return
                 sheet.getRange(row, isDoneColumn).setValue(isDone ? 'Yes' : '')
             }
 
             for (const [columnName, getter] of Object.entries(GSheetProjectSettings.stringFields)) {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName)
                 if (fieldColumn != null) {
+                    if (State.isStructureChanged()) return
                     sheet.getRange(row, fieldColumn).setValue(rootIssues
                         .map(getter)
                         .join('\n'),
@@ -79,6 +80,16 @@ class IssueLoader {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName)
                 if (fieldColumn != null) {
                     const isTrue = rootIssues.every(getter)
+                    if (State.isStructureChanged()) return
+                    sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '')
+                }
+            }
+
+            for (const [columnName, getter] of Object.entries(GSheetProjectSettings.aggregatedBooleanFields)) {
+                const fieldColumn = SheetUtils.findColumnByName(sheet, columnName)
+                if (fieldColumn != null) {
+                    const isTrue = getter(rootIssues, childIssues.get())
+                    if (State.isStructureChanged()) return
                     sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '')
                 }
             }
@@ -93,6 +104,8 @@ class IssueLoader {
                     const metricRange = sheet.getRange(row, metricColumn)
 
                     const foundIssues = metricsIssues.get().filter(metric.filter)
+                    if (State.isStructureChanged()) return
+
                     if (!foundIssues.length) {
                         metricRange.clearContent().setFontColor(null)
                         continue
@@ -106,7 +119,7 @@ class IssueLoader {
                         metricRange.setFormula(`="${foundIssues.length}"`)
                     }
 
-                    metricRange.setFontColor(metric.color)
+                    metricRange.setFontColor(metric.color ?? null)
                 }
             }
 

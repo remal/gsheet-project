@@ -1,6 +1,6 @@
 class ExecutionCache {
 
-    private static data = new Map<string, any>()
+    private static _data = new Map<string, any>()
 
     static getOrComputeCache<T>(key: any, compute: () => T): T {
         const stringKey = JSON.stringify(key, (_, value) => {
@@ -12,17 +12,17 @@ class ExecutionCache {
             return value
         })
 
-        if (this.data.has(stringKey)) {
-            return this.data.get(stringKey)
+        if (this._data.has(stringKey)) {
+            return this._data.get(stringKey)
         }
 
         const result = compute()
-        this.data.set(stringKey, result)
+        this._data.set(stringKey, result)
         return result
     }
 
     static resetCache() {
-        this.data.clear()
+        this._data.clear()
     }
 
 }

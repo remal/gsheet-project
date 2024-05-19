@@ -6,6 +6,12 @@ class GSheetProject {
         })
     }
 
+    static recalculateSchedule() {
+        Utils.entryPoint(() => {
+            Schedule.recalculateAllSchedules()
+        })
+    }
+
     static onOpen(event?: SheetsOnOpen) {
         Utils.entryPoint(() => {
         })
@@ -15,23 +21,25 @@ class GSheetProject {
         Utils.entryPoint(() => {
             State.updateLastStructureChange()
             HierarchyFormatter.formatAllHierarchy()
+            Schedule.recalculateAllSchedules()
         })
     }
 
     static onEdit(event?: SheetsOnEdit) {
-        this.onEditRange(event?.range)
+        this._onEditRange(event?.range)
     }
 
     static onFormSubmit(event: SheetsOnFormSubmit) {
-        this.onEditRange(event?.range)
+        this._onEditRange(event?.range)
     }
 
-    private static onEditRange(range?: Range) {
+    private static _onEditRange(range?: Range) {
         Utils.entryPoint(() => {
             if (range != null) {
                 IssueIdFormatter.formatIssueId(range)
                 HierarchyFormatter.formatHierarchy(range)
                 IssueLoader.loadIssues(range)
+                Schedule.recalculateSchedule(range)
             }
         })
     }

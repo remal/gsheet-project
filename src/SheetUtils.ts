@@ -1,8 +1,8 @@
 class SheetUtils {
 
-    static findSheetByName(sheetName: string): Sheet | null {
+    static findSheetByName(sheetName: string): Sheet | undefined {
         if (!sheetName?.length) {
-            return null
+            return undefined
         }
 
         sheetName = Utils.normalizeName(sheetName)
@@ -13,7 +13,7 @@ class SheetUtils {
                     return sheet
                 }
             }
-            return null
+            return undefined
         })
     }
 
@@ -23,16 +23,19 @@ class SheetUtils {
         })()
     }
 
-    static findColumnByName(sheet: Sheet | string | null, columnName: string | null): number | null {
+    static findColumnByName(
+        sheet: Sheet | string | null | undefined,
+        columnName: string | null | undefined,
+    ): number | undefined {
         if (!columnName?.length) {
-            return null
+            return undefined
         }
 
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet)
         }
         if (sheet == null) {
-            return null
+            return undefined
         }
 
         columnName = Utils.normalizeName(columnName)
@@ -44,7 +47,7 @@ class SheetUtils {
                 }
             }
 
-            return null
+            return undefined
         })
     }
 
@@ -56,6 +59,45 @@ class SheetUtils {
         return this.findColumnByName(sheet, columnName) ?? (() => {
             throw new Error(`"${sheet.getSheetName()}" sheet: "${columnName}" column can't be found`)
         })()
+    }
+
+    static getColumnRange(sheet: Sheet | string, column: string | number, fromRow?: number): Range {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+        if (Utils.isString(column)) {
+            column = this.getColumnByName(sheet, column)
+        }
+        if (fromRow == null) {
+            fromRow = 1
+        }
+
+        const lastRow = sheet.getLastRow()
+        if (fromRow > lastRow) {
+            return sheet.getRange(fromRow, column)
+        }
+
+        const rows = lastRow - fromRow + 1
+        return sheet.getRange(fromRow, 1, rows, 1)
+    }
+
+    static getRowRange(sheet: Sheet | string, row: number, fromColumn?: number | string): Range {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+        if (fromColumn == null) {
+            fromColumn = 1
+        } else if (Utils.isString(fromColumn)) {
+            fromColumn = this.getColumnByName(sheet, fromColumn)
+        }
+
+        const lastColumn = sheet.getLastColumn()
+        if (fromColumn > lastColumn) {
+            return sheet.getRange(row, fromColumn)
+        }
+
+        const columns = lastColumn - fromColumn + 1
+        return sheet.getRange(row, fromColumn, 1, columns)
     }
 
 }

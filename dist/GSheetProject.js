@@ -4,6 +4,11 @@ class GSheetProject {
             IssueLoader.loadAllIssues();
         });
     }
+    static recalculateSchedule() {
+        Utils.entryPoint(() => {
+            Schedule.recalculateAllSchedules();
+        });
+    }
     static onOpen(event) {
         Utils.entryPoint(() => {
         });
@@ -12,20 +17,22 @@ class GSheetProject {
         Utils.entryPoint(() => {
             State.updateLastStructureChange();
             HierarchyFormatter.formatAllHierarchy();
+            Schedule.recalculateAllSchedules();
         });
     }
     static onEdit(event) {
-        this.onEditRange(event === null || event === void 0 ? void 0 : event.range);
+        this._onEditRange(event === null || event === void 0 ? void 0 : event.range);
     }
     static onFormSubmit(event) {
-        this.onEditRange(event === null || event === void 0 ? void 0 : event.range);
+        this._onEditRange(event === null || event === void 0 ? void 0 : event.range);
     }
-    static onEditRange(range) {
+    static _onEditRange(range) {
         Utils.entryPoint(() => {
             if (range != null) {
                 IssueIdFormatter.formatIssueId(range);
                 HierarchyFormatter.formatHierarchy(range);
                 IssueLoader.loadIssues(range);
+                Schedule.recalculateSchedule(range);
             }
         });
     }
@@ -34,9 +41,15 @@ class GSheetProjectSettings {
 }
 GSheetProjectSettings.firstDataRow = 2;
 GSheetProjectSettings.settingsSheetName = "Settings";
+GSheetProjectSettings.settingsTeamsScope = "Teams";
+GSheetProjectSettings.settingsScheduleScope = "Schedule";
 GSheetProjectSettings.issueIdColumnName = "Issue";
 GSheetProjectSettings.parentIssueIdColumnName = "Parent Issue";
 GSheetProjectSettings.isDoneColumnName = "Done";
+GSheetProjectSettings.estimateColumnName = "Estimate";
+GSheetProjectSettings.laneColumnName = "Lane";
+GSheetProjectSettings.startColumnName = "Start";
+GSheetProjectSettings.endColumnName = "End";
 GSheetProjectSettings.issueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor');
 GSheetProjectSettings.issueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator');
 GSheetProjectSettings.issueIdToUrl = () => Utils.throwNotConfigured('issueIdToUrl');
@@ -48,6 +61,7 @@ GSheetProjectSettings.issueIdGetter = () => Utils.throwNotConfigured('issueIdGet
 GSheetProjectSettings.idDoneCalculator = () => Utils.throwNotConfigured('idDoneCalculator');
 GSheetProjectSettings.stringFields = {};
 GSheetProjectSettings.booleanFields = {};
+GSheetProjectSettings.aggregatedBooleanFields = {};
 GSheetProjectSettings.childIssueMetrics = [];
 GSheetProjectSettings.blockerIssueMetrics = [];
 class ExecutionCache {
@@ -61,40 +75,41 @@ class ExecutionCache {
             }
             return value;
         });
-        if (this.data.has(stringKey)) {
-            return this.data.get(stringKey);
+        if (this._data.has(stringKey)) {
+            return this._data.get(stringKey);
         }
         const result = compute();
-        this.data.set(stringKey, result);
+        this._data.set(stringKey, result);
         return result;
     }
     static resetCache() {
-        this.data.clear();
+        this._data.clear();
     }
 }
-ExecutionCache.data = new Map();
+ExecutionCache._data = new Map();
 class HierarchyFormatter {
     static formatHierarchy(range) {
         if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.issueIdColumnName)
             && !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.parentIssueIdColumnName)) {
             return;
         }
-        this.formatSheetHierarchy(range.getSheet());
+        this._formatSheetHierarchy(range.getSheet());
     }
     static formatAllHierarchy() {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
-            this.formatSheetHierarchy(sheet);
+            this._formatSheetHierarchy(sheet);
         }
     }
-    static formatSheetHierarchy(sheet) {
+    static _formatSheetHierarchy(sheet) {
+        if (State.isStructureChanged())
+            return;
         const issueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName);
         const parentIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName);
         if (issueIdColumn == null || parentIssueIdColumn == null) {
             return;
         }
-        const lastRow = sheet.getLastRow();
         const getAllIds = (column) => {
-            return sheet.getRange(GSheetProjectSettings.firstDataRow, column, lastRow - GSheetProjectSettings.firstDataRow, 1)
+            return SheetUtils.getColumnRange(sheet, column, GSheetProjectSettings.firstDataRow)
                 .getValues()
                 .map(cols => cols[0].toString())
                 .map(text => GSheetProjectSettings.issueIdsExtractor(text));
@@ -117,9 +132,8 @@ class HierarchyFormatter {
                     }
                 }
                 if (previousIndex != null && previousIndex < index - 1) {
-                    if (State.isStructureChanged()) {
+                    if (State.isStructureChanged())
                         return;
-                    }
                     const newIndex = previousIndex + 1;
                     const row = GSheetProjectSettings.firstDataRow + index;
                     const newRow = GSheetProjectSettings.firstDataRow + newIndex;
@@ -156,9 +170,8 @@ class HierarchyFormatter {
                 if (issueIndex < 0 || issueIndex == currentIndex || issueIndex == currentIndex - 1) {
                     continue;
                 }
-                if (State.isStructureChanged()) {
+                if (State.isStructureChanged())
                     return;
-                }
                 const newIndex = issueIndex + 1;
                 const row = GSheetProjectSettings.firstDataRow + currentIndex;
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex;
@@ -207,27 +220,28 @@ class IssueLoader {
             .filter(row => row >= GSheetProjectSettings.firstDataRow)
             .filter(Utils.distinct);
         for (const row of rows) {
-            this.loadIssuesForRow(sheet, row);
+            this._loadIssuesForRow(sheet, row);
         }
     }
     static loadAllIssues() {
         for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
+            if (State.isStructureChanged())
+                return;
             const hasIssueIdColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.issueIdColumnName) != null;
             if (!hasIssueIdColumn) {
                 continue;
             }
             for (const row of Utils.range(GSheetProjectSettings.firstDataRow, sheet.getLastRow())) {
-                this.loadIssuesForRow(sheet, row);
+                this._loadIssuesForRow(sheet, row);
             }
         }
     }
-    static loadIssuesForRow(sheet, row) {
+    static _loadIssuesForRow(sheet, row) {
         if (row < GSheetProjectSettings.firstDataRow) {
             return;
         }
-        if (State.isStructureChanged()) {
+        if (State.isStructureChanged())
             return;
-        }
         const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName);
         const issueIdRange = sheet.getRange(row, issueIdColumn);
         const issueIds = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue());
@@ -251,11 +265,15 @@ class IssueLoader {
             const isDoneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.isDoneColumnName);
             if (isDoneColumn != null) {
                 const isDone = GSheetProjectSettings.idDoneCalculator(rootIssues, childIssues.get());
+                if (State.isStructureChanged())
+                    return;
                 sheet.getRange(row, isDoneColumn).setValue(isDone ? 'Yes' : '');
             }
             for (const [columnName, getter] of Object.entries(GSheetProjectSettings.stringFields)) {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
                 if (fieldColumn != null) {
+                    if (State.isStructureChanged())
+                        return;
                     sheet.getRange(row, fieldColumn).setValue(rootIssues
                         .map(getter)
                         .join('\n'));
@@ -265,11 +283,22 @@ class IssueLoader {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
                 if (fieldColumn != null) {
                     const isTrue = rootIssues.every(getter);
+                    if (State.isStructureChanged())
+                        return;
+                    sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '');
+                }
+            }
+            for (const [columnName, getter] of Object.entries(GSheetProjectSettings.aggregatedBooleanFields)) {
+                const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
+                if (fieldColumn != null) {
+                    const isTrue = getter(rootIssues, childIssues.get());
+                    if (State.isStructureChanged())
+                        return;
                     sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '');
                 }
             }
             const calculateIssueMetrics = (metricsIssues, metrics) => {
-                var _a;
+                var _a, _b;
                 for (const metric of metrics) {
                     const metricColumn = SheetUtils.findColumnByName(sheet, metric.columnName);
                     if (metricColumn == null) {
@@ -277,6 +306,8 @@ class IssueLoader {
                     }
                     const metricRange = sheet.getRange(row, metricColumn);
                     const foundIssues = metricsIssues.get().filter(metric.filter);
+                    if (State.isStructureChanged())
+                        return;
                     if (!foundIssues.length) {
                         metricRange.clearContent().setFontColor(null);
                         continue;
@@ -289,7 +320,7 @@ class IssueLoader {
                     else {
                         metricRange.setFormula(`="${foundIssues.length}"`);
                     }
-                    metricRange.setFontColor(metric.color);
+                    metricRange.setFontColor((_b = metric.color) !== null && _b !== void 0 ? _b : null);
                 }
             };
             calculateIssueMetrics(childIssues, GSheetProjectSettings.childIssueMetrics);
@@ -300,16 +331,75 @@ class IssueLoader {
         }
     }
 }
+class Lane {
+    constructor() {
+        this._amounts = [];
+        this._objects = [];
+    }
+    add(amount, object) {
+        this._amounts.push(amount);
+        this._objects.push(object);
+        return this;
+    }
+    get sum() {
+        return this._amounts.reduce((sum, amount) => sum + amount, 0);
+    }
+    *[Symbol.iterator]() {
+        for (let i = 0; i < this._amounts.length; ++i) {
+            yield [this._amounts[i], this._objects[i]];
+        }
+    }
+    *amounts() {
+        for (const item of this._amounts) {
+            yield item;
+        }
+    }
+    *objects() {
+        for (const item of this._objects) {
+            yield item;
+        }
+    }
+}
+class Lanes {
+    constructor(lanesNumber) {
+        this.lanes = [];
+        for (let i = 0; i <= lanesNumber; ++i) {
+            this.lanes.push(new Lane());
+        }
+    }
+    add(amount, object, callback) {
+        if (!this.lanes.length) {
+            return this;
+        }
+        let laneIndex = 0;
+        let laneToAdd = this.lanes[laneIndex];
+        let currentSum = laneToAdd.sum;
+        for (let i = 1; i < this.lanes.length; ++i) {
+            const lane = this.lanes[i];
+            const sum = lane.sum;
+            if (sum < currentSum) {
+                laneIndex = i;
+                laneToAdd = lane;
+                currentSum = sum;
+            }
+        }
+        laneToAdd.add(amount, object);
+        if (callback != null) {
+            callback(laneIndex, laneToAdd, amount, object);
+        }
+        return this;
+    }
+}
 class Lazy {
     constructor(supplier) {
-        this.supplier = supplier;
+        this._supplier = supplier;
     }
     get() {
-        if (this.supplier != null) {
-            this.value = this.supplier();
-            this.supplier = null;
+        if (this._supplier != null) {
+            this._value = this._supplier();
+            this._supplier = undefined;
         }
-        return this.value;
+        return this._value;
     }
 }
 class RangeUtils {
@@ -366,13 +456,119 @@ class RichTextUtils {
     }
 }
 class Schedule {
+    static recalculateSchedule(range) {
+        if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.estimateColumnName)
+            || !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.startColumnName)
+            || !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.endColumnName)) {
+            return;
+        }
+        this._recalculateSheetSchedule(range.getSheet());
+    }
+    static recalculateAllSchedules() {
+        for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
+            this._recalculateSheetSchedule(sheet);
+        }
+    }
+    static _recalculateSheetSchedule(sheet) {
+        if (State.isStructureChanged())
+            return;
+        const estimateColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.estimateColumnName);
+        if (estimateColumn == null) {
+            return;
+        }
+        let lanesRange = null;
+        const laneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.laneColumnName);
+        if (laneColumn != null) {
+            lanesRange = SheetUtils.getColumnRange(sheet, laneColumn, GSheetProjectSettings.firstDataRow).setValue('');
+        }
+        const startsRange = SheetUtils.getColumnRange(sheet, GSheetProjectSettings.startColumnName, GSheetProjectSettings.firstDataRow).setValue('');
+        const endsRange = SheetUtils.getColumnRange(sheet, GSheetProjectSettings.endColumnName, GSheetProjectSettings.firstDataRow).setValue('');
+        const generalEstimatesRange = SheetUtils.getColumnRange(sheet, estimateColumn, GSheetProjectSettings.firstDataRow);
+        const generalEstimates = generalEstimatesRange.getValues()
+            .map(cols => cols[0].toString().trim());
+        const allDaysEstimates = [];
+        const allTeamDaysEstimates = new Map;
+        const invalidEstimateRows = [];
+        generalEstimates.forEach((generalEstimate, index) => {
+            var _a;
+            let isTeamFound = false;
+            for (const team of Team.getAll()) {
+                const regex = new RegExp(`^${Utils.escapeRegex(team.id)}\\s*:\\s*(d+)\\s*([dw])$`, 'i');
+                const match = generalEstimate.match(regex);
+                if (match == null) {
+                    continue;
+                }
+                const amount = parseInt(match[1]);
+                const unit = (_a = match[2]) !== null && _a !== void 0 ? _a : 'd';
+                let days;
+                if (unit === 'w') {
+                    days = amount * 5;
+                }
+                else {
+                    days = amount;
+                }
+                let teamDayEstimates = allTeamDaysEstimates.get(team.id);
+                if (teamDayEstimates == null) {
+                    teamDayEstimates = [];
+                    allTeamDaysEstimates.set(team.id, teamDayEstimates);
+                }
+                const dayEstimate = {
+                    index: index,
+                    row: GSheetProjectSettings.firstDataRow + index,
+                    daysEstimate: days,
+                    teamId: team.id,
+                };
+                allDaysEstimates.push(dayEstimate);
+                teamDayEstimates.push(dayEstimate);
+            }
+            if (!isTeamFound) {
+                invalidEstimateRows.push(GSheetProjectSettings.firstDataRow + index);
+            }
+        });
+        generalEstimatesRange.setBackground(null);
+        sheet.getRangeList(invalidEstimateRows
+            .map(row => sheet.getRange(row, estimateColumn).getA1Notation())).setBackground('#FFCCCB');
+        for (const [teamId, dayEstimates] of allTeamDaysEstimates.entries()) {
+            const lanes = new Lanes(Team.getById(teamId).lanes);
+            dayEstimates.forEach(dayEstimate => lanes.add(dayEstimate.daysEstimate, dayEstimate, laneIndex => dayEstimate.laneIndex = laneIndex));
+            for (const [laneIndex, lane] of lanes.lanes.entries()) {
+            }
+        }
+        if (lanesRange != null) {
+            const laneRangeValues = [];
+            for (const y of Utils.range(1, lanesRange.getHeight())) {
+                const index = y - 1;
+                const dayEstimate = allDaysEstimates.find(it => it.index === index);
+                if ((dayEstimate === null || dayEstimate === void 0 ? void 0 : dayEstimate.laneIndex) != null) {
+                    laneRangeValues.push([`${dayEstimate.teamId}-${dayEstimate.laneIndex + 1}`]);
+                }
+                else {
+                    laneRangeValues.push(['']);
+                }
+            }
+            lanesRange.setValues(laneRangeValues);
+        }
+    }
+}
+class ScheduleSettings {
+    static get start() {
+        const settings = Settings.getMap(GSheetProjectSettings.settingsScheduleScope);
+        const startString = settings.get('start');
+        if (!(startString === null || startString === void 0 ? void 0 : startString.length)) {
+            return new Date();
+        }
+        return new Date(startString);
+    }
 }
 class Settings {
     static getMatrix(settingsScope) {
         const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName);
         settingsScope = Utils.normalizeName(settingsScope);
-        return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsSheet, settingsScope], () => {
-            const scopeRow = this.findScopeRow(settingsSheet, settingsScope);
+        return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsScope], () => {
+            const scopeRow = this._findScopeRow(settingsSheet, settingsScope);
+            if (scopeRow == null) {
+                throw new Error(`Settings with "${settingsScope}" can't be found`);
+            }
             const columns = [];
             const columnsValues = settingsSheet
                 .getRange(scopeRow + 1, 1, 1, settingsSheet.getLastColumn())
@@ -409,8 +605,11 @@ class Settings {
     static getMap(settingsScope) {
         const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName);
         settingsScope = Utils.normalizeName(settingsScope);
-        return ExecutionCache.getOrComputeCache(['settings', 'map', settingsSheet, settingsScope], () => {
-            const scopeRow = this.findScopeRow(settingsSheet, settingsScope);
+        return ExecutionCache.getOrComputeCache(['settings', 'map', settingsScope], () => {
+            const scopeRow = this._findScopeRow(settingsSheet, settingsScope);
+            if (scopeRow == null) {
+                throw new Error(`Settings with "${settingsScope}" can't be found`);
+            }
             const result = new Map();
             for (const row of Utils.range(scopeRow + 1, settingsSheet.getLastRow())) {
                 const values = settingsSheet.getRange(row, 1, 1, 2).getValues()[0];
@@ -424,7 +623,7 @@ class Settings {
             return result;
         });
     }
-    static findScopeRow(sheet, scope) {
+    static _findScopeRow(sheet, scope) {
         for (const row of Utils.range(1, sheet.getLastRow())) {
             const range = sheet.getRange(row, 1);
             if (range.getFontWeight() !== 'bold'
@@ -441,7 +640,7 @@ class Settings {
 class SheetUtils {
     static findSheetByName(sheetName) {
         if (!(sheetName === null || sheetName === void 0 ? void 0 : sheetName.length)) {
-            return null;
+            return undefined;
         }
         sheetName = Utils.normalizeName(sheetName);
         return ExecutionCache.getOrComputeCache(['findSheetByName', sheetName], () => {
@@ -451,7 +650,7 @@ class SheetUtils {
                     return sheet;
                 }
             }
-            return null;
+            return undefined;
         });
     }
     static getSheetByName(sheetName) {
@@ -462,13 +661,13 @@ class SheetUtils {
     }
     static findColumnByName(sheet, columnName) {
         if (!(columnName === null || columnName === void 0 ? void 0 : columnName.length)) {
-            return null;
+            return undefined;
         }
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet);
         }
         if (sheet == null) {
-            return null;
+            return undefined;
         }
         columnName = Utils.normalizeName(columnName);
         return ExecutionCache.getOrComputeCache(['findColumnByName', sheet, columnName], () => {
@@ -478,7 +677,7 @@ class SheetUtils {
                     return col;
                 }
             }
-            return null;
+            return undefined;
         });
     }
     static getColumnByName(sheet, columnName) {
@@ -490,43 +689,93 @@ class SheetUtils {
             throw new Error(`"${sheet.getSheetName()}" sheet: "${columnName}" column can't be found`);
         })();
     }
+    static getColumnRange(sheet, column, fromRow) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        if (Utils.isString(column)) {
+            column = this.getColumnByName(sheet, column);
+        }
+        if (fromRow == null) {
+            fromRow = 1;
+        }
+        const lastRow = sheet.getLastRow();
+        if (fromRow > lastRow) {
+            return sheet.getRange(fromRow, column);
+        }
+        const rows = lastRow - fromRow + 1;
+        return sheet.getRange(fromRow, 1, rows, 1);
+    }
+    static getRowRange(sheet, row, fromColumn) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        if (fromColumn == null) {
+            fromColumn = 1;
+        }
+        else if (Utils.isString(fromColumn)) {
+            fromColumn = this.getColumnByName(sheet, fromColumn);
+        }
+        const lastColumn = sheet.getLastColumn();
+        if (fromColumn > lastColumn) {
+            return sheet.getRange(row, fromColumn);
+        }
+        const columns = lastColumn - fromColumn + 1;
+        return sheet.getRange(row, fromColumn, 1, columns);
+    }
 }
 class State {
     static isStructureChanged() {
-        const timestamp = this.loadStateTimestamp('lastStructureChange');
-        return !isNaN(timestamp) && this.now < timestamp;
+        const timestamp = this._loadStateTimestamp('lastStructureChange');
+        return timestamp != null && this._now < timestamp;
     }
     static updateLastStructureChange() {
-        this.now = new Date().getTime();
-        this.saveStateTimestamp('lastStructureChange', this.now);
+        this._now = new Date().getTime();
+        this._saveStateTimestamp('lastStructureChange', this._now);
     }
     static reset() {
-        this.now = new Date().getTime();
+        this._now = new Date().getTime();
     }
-    static loadStateTimestamp(key) {
-        return parseInt(CacheService.getDocumentCache().get(`state:${key}`));
+    static _loadStateTimestamp(key) {
+        var _a;
+        const cache = CacheService.getDocumentCache();
+        if (cache == null) {
+            return null;
+        }
+        const timestamp = parseInt((_a = cache.get(`state:${key}`)) !== null && _a !== void 0 ? _a : '');
+        return isNaN(timestamp) ? null : timestamp;
     }
-    static saveStateTimestamp(key, timestamp) {
-        CacheService.getDocumentCache().put(`state:${key}`, timestamp.toString());
+    static _saveStateTimestamp(key, timestamp) {
+        var _a;
+        (_a = CacheService.getDocumentCache()) === null || _a === void 0 ? void 0 : _a.put(`state:${key}`, timestamp.toString());
     }
 }
-State.now = new Date().getTime();
+State._now = new Date().getTime();
 class Team {
-    static getAllTeams() {
-        var _a, _b;
+    static getAll() {
+        var _a, _b, _c;
         const result = [];
-        for (const info of Settings.getMatrix('teams')) {
+        for (const info of Settings.getMatrix(GSheetProjectSettings.settingsTeamsScope)) {
             const id = (_b = (_a = info.get('id')) !== null && _a !== void 0 ? _a : info.get('teamId')) !== null && _b !== void 0 ? _b : info.get('team');
-            if (!id.length) {
+            if (!(id === null || id === void 0 ? void 0 : id.length)) {
                 continue;
             }
-            let lanes = parseInt(info.get('lanes'));
+            let lanes = parseInt((_c = info.get('lanes')) !== null && _c !== void 0 ? _c : '0');
             if (isNaN(lanes)) {
                 lanes = 0;
             }
             result.push(new Team(id, lanes));
         }
         return result;
+    }
+    static findById(id) {
+        return this.getAll().find(team => team.id === id);
+    }
+    static getById(id) {
+        var _a;
+        return (_a = this.findById(id)) !== null && _a !== void 0 ? _a : (() => {
+            throw new Error(`"${id}" team can't be found`);
+        })();
     }
     constructor(id, lanes) {
         this.id = id;

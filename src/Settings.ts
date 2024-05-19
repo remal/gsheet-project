@@ -3,8 +3,11 @@ class Settings {
     static getMatrix(settingsScope: string): Map<string, string>[] {
         const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName)
         settingsScope = Utils.normalizeName(settingsScope)
-        return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsSheet, settingsScope], () => {
-            const scopeRow = this.findScopeRow(settingsSheet, settingsScope)
+        return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsScope], () => {
+            const scopeRow = this._findScopeRow(settingsSheet, settingsScope)
+            if (scopeRow == null) {
+                throw new Error(`Settings with "${settingsScope}" can't be found`)
+            }
 
             const columns: string[] = []
             const columnsValues = settingsSheet
@@ -45,8 +48,11 @@ class Settings {
     static getMap(settingsScope: string): Map<string, string> {
         const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName)
         settingsScope = Utils.normalizeName(settingsScope)
-        return ExecutionCache.getOrComputeCache(['settings', 'map', settingsSheet, settingsScope], () => {
-            const scopeRow = this.findScopeRow(settingsSheet, settingsScope)
+        return ExecutionCache.getOrComputeCache(['settings', 'map', settingsScope], () => {
+            const scopeRow = this._findScopeRow(settingsSheet, settingsScope)
+            if (scopeRow == null) {
+                throw new Error(`Settings with "${settingsScope}" can't be found`)
+            }
 
             const result = new Map<string, string>()
             for (const row of Utils.range(scopeRow + 1, settingsSheet.getLastRow())) {
@@ -62,7 +68,7 @@ class Settings {
         })
     }
 
-    private static findScopeRow(sheet: Sheet, scope: string): number | null {
+    private static _findScopeRow(sheet: Sheet, scope: string): number | null {
         for (const row of Utils.range(1, sheet.getLastRow())) {
             const range = sheet.getRange(row, 1)
             if (range.getFontWeight() !== 'bold'
