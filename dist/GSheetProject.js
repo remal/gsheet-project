@@ -502,13 +502,20 @@ class Schedule {
                     continue;
                 }
                 const amount = parseInt(match[1]);
-                const unit = (_b = (_a = match[2]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : 'd';
+                const unit = (_b = (_a = match[2]) === null || _a === void 0 ? void 0 : _a.toUpperCase()) !== null && _b !== void 0 ? _b : 'D';
                 let days;
-                if (unit === 'w') {
+                if (unit === 'W') {
                     days = amount * 5;
                 }
                 else {
                     days = amount;
+                }
+                const row = GSheetProjectSettings.firstDataRow + index;
+                const canonicalGeneralEstimate = `${team.id}: ${amount}${unit}`;
+                if (canonicalGeneralEstimate !== generalEstimate) {
+                    if (State.isStructureChanged())
+                        return;
+                    sheet.getRange(row, estimateColumn).setValue(canonicalGeneralEstimate);
                 }
                 let teamDayEstimates = allTeamDaysEstimates.get(team.id);
                 if (teamDayEstimates == null) {
@@ -517,7 +524,7 @@ class Schedule {
                 }
                 const dayEstimate = {
                     index: index,
-                    row: GSheetProjectSettings.firstDataRow + index,
+                    row: row,
                     daysEstimate: days,
                     teamId: team.id,
                 };
@@ -530,6 +537,8 @@ class Schedule {
                 invalidEstimateRows.push(GSheetProjectSettings.firstDataRow + index);
             }
         });
+        if (State.isStructureChanged())
+            return;
         generalEstimatesRange.setBackground(null);
         const invalidEstimateNotations = invalidEstimateRows
             .map(row => sheet.getRange(row, estimateColumn).getA1Notation());

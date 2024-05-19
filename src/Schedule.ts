@@ -70,13 +70,21 @@ class Schedule {
                 }
 
                 const amount = parseInt(match[1])
-                const unit = match[2]?.toLowerCase() ?? 'd'
+                const unit = match[2]?.toUpperCase() ?? 'D'
 
                 let days: number
-                if (unit === 'w') {
+                if (unit === 'W') {
                     days = amount * 5
                 } else {
                     days = amount
+                }
+
+                const row = GSheetProjectSettings.firstDataRow + index
+
+                const canonicalGeneralEstimate = `${team.id}: ${amount}${unit}`
+                if (canonicalGeneralEstimate !== generalEstimate) {
+                    if (State.isStructureChanged()) return
+                    sheet.getRange(row, estimateColumn).setValue(canonicalGeneralEstimate)
                 }
 
                 let teamDayEstimates = allTeamDaysEstimates.get(team.id)
@@ -87,7 +95,7 @@ class Schedule {
 
                 const dayEstimate: DayEstimate = {
                     index: index,
-                    row: GSheetProjectSettings.firstDataRow + index,
+                    row: row,
                     daysEstimate: days,
                     teamId: team.id,
                 }
@@ -102,6 +110,7 @@ class Schedule {
             }
         })
 
+        if (State.isStructureChanged()) return
         generalEstimatesRange.setBackground(null)
         const invalidEstimateNotations = invalidEstimateRows
             .map(row => sheet.getRange(row, estimateColumn).getA1Notation())
