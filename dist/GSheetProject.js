@@ -545,7 +545,13 @@ class Schedule {
         if (invalidEstimateNotations.length) {
             sheet.getRangeList(invalidEstimateNotations).setBackground('#FFCCCB');
         }
-        const scheduleStart = ScheduleSettings.start;
+        const skipWeekends = (date) => {
+            while (date.getDay() === 0 || date.getDay() === 6) {
+                date = new Date(date.getTime() + 24 * 3600 * 1000);
+            }
+            return date;
+        };
+        const scheduleStart = skipWeekends(ScheduleSettings.start);
         const startsRangeValues = Utils.arrayOf(startsRange.getHeight(), ['']);
         const endsRangeValues = Utils.arrayOf(endsRange.getHeight(), ['']);
         for (const [teamId, teamDayEstimates] of allTeamDaysEstimates.entries()) {
@@ -556,11 +562,11 @@ class Schedule {
                 for (const dayEstimate of lane.objects()) {
                     let start = scheduleStart;
                     if (lastEnd != null) {
-                        start = new Date(lastEnd.getTime() + 24 * 3600 * 1000);
+                        start = skipWeekends(new Date(lastEnd.getTime() + 24 * 3600 * 1000));
                     }
                     startsRangeValues[dayEstimate.index] = [start];
-                    const daysEstimate = Math.ceil(dayEstimate.daysEstimate * ScheduleSettings.bufferCoefficient);
-                    const end = lastEnd = new Date(start.getTime() + daysEstimate * 24 * 3600 * 1000);
+                    const daysEstimate = Math.ceil(dayEstimate.daysEstimate * (1 + ScheduleSettings.bufferCoefficient));
+                    const end = lastEnd = skipWeekends(new Date(start.getTime() + daysEstimate * 24 * 3600 * 1000));
                     endsRangeValues[dayEstimate.index] = [end];
                 }
             }
@@ -573,7 +579,7 @@ class Schedule {
                 const index = y - 1;
                 const dayEstimate = allDaysEstimates.find(it => it.index === index);
                 if ((dayEstimate === null || dayEstimate === void 0 ? void 0 : dayEstimate.laneIndex) != null) {
-                    laneRangeValues.push([`${dayEstimate.teamId}-${dayEstimate.laneIndex + 1}`]);
+                    laneRangeValues[index] = [`${dayEstimate.teamId}-${dayEstimate.laneIndex + 1}`];
                 }
             }
             lanesRange.setValues(laneRangeValues);
