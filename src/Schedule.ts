@@ -103,9 +103,11 @@ class Schedule {
         })
 
         generalEstimatesRange.setBackground(null)
-        sheet.getRangeList(invalidEstimateRows
-            .map(row => sheet.getRange(row, estimateColumn).getA1Notation()),
-        ).setBackground('#FFCCCB')
+        const invalidEstimateNotations = invalidEstimateRows
+            .map(row => sheet.getRange(row, estimateColumn).getA1Notation())
+        if (invalidEstimateNotations.length) {
+            sheet.getRangeList(invalidEstimateNotations).setBackground('#FFCCCB')
+        }
 
         for (const [teamId, dayEstimates] of allTeamDaysEstimates.entries()) {
             const lanes = new Lanes<DayEstimate>(Team.getById(teamId).lanes)
