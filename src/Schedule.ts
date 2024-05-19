@@ -118,7 +118,6 @@ class Schedule {
             ))
 
             for (const [laneIndex, lane] of lanes.lanes.entries()) {
-
             }
         }
 
