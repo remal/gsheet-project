@@ -145,12 +145,18 @@ class Schedule {
                     }
                     startsRangeValues[dayEstimate.index] = [start]
 
+                    let end = start
                     const daysEstimate = Math.ceil(dayEstimate.daysEstimate * (1 + ScheduleSettings.bufferCoefficient))
-                    const end = lastEnd = skipWeekends(new Date(start.getTime() + daysEstimate * 24 * 3600 * 1000))
+                    for (let day = 1; day <= daysEstimate; ++day) {
+                        end = skipWeekends(new Date(end.getTime() + 24 * 3600 * 1000))
+                    }
                     endsRangeValues[dayEstimate.index] = [end]
+
+                    lastEnd = end
                 }
             }
         }
+        if (State.isStructureChanged()) return
         startsRange.setValues(startsRangeValues)
         endsRange.setValues(endsRangeValues)
 
