@@ -511,7 +511,7 @@ class Schedule {
                     days = amount;
                 }
                 const row = GSheetProjectSettings.firstDataRow + index;
-                const canonicalGeneralEstimate = `${team.id}: ${amount}${unit}`;
+                const canonicalGeneralEstimate = `${team.id}: ${amount}${unit !== 'D' ? unit : ''}`;
                 if (canonicalGeneralEstimate !== generalEstimate) {
                     if (State.isStructureChanged())
                         return;
