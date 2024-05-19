@@ -545,22 +545,35 @@ class Schedule {
         if (invalidEstimateNotations.length) {
             sheet.getRangeList(invalidEstimateNotations).setBackground('#FFCCCB');
         }
-        for (const [teamId, dayEstimates] of allTeamDaysEstimates.entries()) {
+        const scheduleStart = ScheduleSettings.start;
+        const startsRangeValues = Utils.arrayOf(startsRange.getHeight(), ['']);
+        const endsRangeValues = Utils.arrayOf(endsRange.getHeight(), ['']);
+        for (const [teamId, teamDayEstimates] of allTeamDaysEstimates.entries()) {
             const lanes = new Lanes(Team.getById(teamId).lanes);
-            dayEstimates.forEach(dayEstimate => lanes.add(dayEstimate.daysEstimate, dayEstimate, laneIndex => dayEstimate.laneIndex = laneIndex));
-            for (const [laneIndex, lane] of lanes.lanes.entries()) {
+            teamDayEstimates.forEach(dayEstimate => lanes.add(dayEstimate.daysEstimate, dayEstimate, laneIndex => dayEstimate.laneIndex = laneIndex));
+            for (const lane of lanes.lanes) {
+                let lastEnd = undefined;
+                for (const dayEstimate of lane.objects()) {
+                    let start = scheduleStart;
+                    if (lastEnd != null) {
+                        start = new Date(lastEnd.getTime() + 24 * 3600 * 1000);
+                    }
+                    startsRangeValues[dayEstimate.index] = [start];
+                    const daysEstimate = Math.ceil(dayEstimate.daysEstimate * ScheduleSettings.bufferCoefficient);
+                    const end = lastEnd = new Date(start.getTime() + daysEstimate * 24 * 3600 * 1000);
+                    endsRangeValues[dayEstimate.index] = [end];
+                }
             }
         }
+        startsRange.setValues(startsRangeValues);
+        endsRange.setValues(endsRangeValues);
         if (lanesRange != null) {
-            const laneRangeValues = [];
+            const laneRangeValues = Utils.arrayOf(lanesRange.getHeight(), ['']);
             for (const y of Utils.range(1, lanesRange.getHeight())) {
                 const index = y - 1;
                 const dayEstimate = allDaysEstimates.find(it => it.index === index);
                 if ((dayEstimate === null || dayEstimate === void 0 ? void 0 : dayEstimate.laneIndex) != null) {
                     laneRangeValues.push([`${dayEstimate.teamId}-${dayEstimate.laneIndex + 1}`]);
-                }
-                else {
-                    laneRangeValues.push(['']);
                 }
             }
             lanesRange.setValues(laneRangeValues);
@@ -570,11 +583,17 @@ class Schedule {
 class ScheduleSettings {
     static get start() {
         const settings = Settings.getMap(GSheetProjectSettings.settingsScheduleScope);
-        const startString = settings.get('start');
-        if (!(startString === null || startString === void 0 ? void 0 : startString.length)) {
+        const stringValue = settings.get('start');
+        if (!(stringValue === null || stringValue === void 0 ? void 0 : stringValue.length)) {
             return new Date();
         }
-        return new Date(startString);
+        return new Date(stringValue);
+    }
+    static get bufferCoefficient() {
+        const settings = Settings.getMap(GSheetProjectSettings.settingsScheduleScope);
+        const stringValue = settings.get('bufferCoefficient');
+        const value = parseFloat(stringValue !== null && stringValue !== void 0 ? stringValue : '');
+        return isNaN(value) ? 0 : value;
     }
 }
 class Settings {
@@ -899,6 +918,13 @@ class Utils {
             }
         }
         return true;
+    }
+    static arrayOf(length, initValue) {
+        const array = new Array(length);
+        if (initValue !== undefined) {
+            array.fill(initValue);
+        }
+        return array;
     }
     static escapeRegex(string) {
         return string.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');

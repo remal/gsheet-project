@@ -120,6 +120,14 @@ class Utils {
         return true
     }
 
+    static arrayOf<T>(length: number, initValue?: T): T[] {
+        const array = new Array<T>(length)
+        if (initValue !== undefined) {
+            array.fill(initValue)
+        }
+        return array
+    }
+
     static escapeRegex(string: string): string {
         return string.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
     }

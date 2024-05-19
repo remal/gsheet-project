@@ -118,27 +118,42 @@ class Schedule {
             sheet.getRangeList(invalidEstimateNotations).setBackground('#FFCCCB')
         }
 
-        for (const [teamId, dayEstimates] of allTeamDaysEstimates.entries()) {
+        const scheduleStart = ScheduleSettings.start
+        const startsRangeValues = Utils.arrayOf<(Date | string)[]>(startsRange.getHeight(), [''])
+        const endsRangeValues = Utils.arrayOf<(Date | string)[]>(endsRange.getHeight(), [''])
+        for (const [teamId, teamDayEstimates] of allTeamDaysEstimates.entries()) {
             const lanes = new Lanes<DayEstimate>(Team.getById(teamId).lanes)
-            dayEstimates.forEach(dayEstimate => lanes.add(
+            teamDayEstimates.forEach(dayEstimate => lanes.add(
                 dayEstimate.daysEstimate,
                 dayEstimate,
                 laneIndex => dayEstimate.laneIndex = laneIndex,
             ))
 
-            for (const [laneIndex, lane] of lanes.lanes.entries()) {
+            for (const lane of lanes.lanes) {
+                let lastEnd: Date | undefined = undefined
+                for (const dayEstimate of lane.objects()) {
+                    let start = scheduleStart
+                    if (lastEnd != null) {
+                        start = new Date(lastEnd.getTime() + 24 * 3600 * 1000)
+                    }
+                    startsRangeValues[dayEstimate.index] = [start]
+
+                    const daysEstimate = Math.ceil(dayEstimate.daysEstimate * ScheduleSettings.bufferCoefficient)
+                    const end = lastEnd = new Date(start.getTime() + daysEstimate * 24 * 3600 * 1000)
+                    endsRangeValues[dayEstimate.index] = [end]
+                }
             }
         }
+        startsRange.setValues(startsRangeValues)
+        endsRange.setValues(endsRangeValues)
 
         if (lanesRange != null) {
-            const laneRangeValues: string[][] = []
+            const laneRangeValues = Utils.arrayOf<string[]>(lanesRange.getHeight(), [''])
             for (const y of Utils.range(1, lanesRange.getHeight())) {
                 const index = y - 1
                 const dayEstimate = allDaysEstimates.find(it => it.index === index)
                 if (dayEstimate?.laneIndex != null) {
                     laneRangeValues.push([`${dayEstimate.teamId}-${dayEstimate.laneIndex + 1}`])
-                } else {
-                    laneRangeValues.push([''])
                 }
             }
             lanesRange.setValues(laneRangeValues)
