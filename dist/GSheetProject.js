@@ -634,6 +634,9 @@ class Utils {
         }
         return true;
     }
+    static escapeRegex(string) {
+        return string.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
     static isString(value) {
         return typeof value === 'string';
     }

@@ -120,6 +120,10 @@ class Utils {
         return true
     }
 
+    static escapeRegex(string: string): string {
+        return string.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    }
+
     static isString(value: unknown): value is string {
         return typeof value === 'string'
     }
