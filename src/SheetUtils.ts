@@ -78,7 +78,7 @@ class SheetUtils {
         }
 
         const rows = lastRow - fromRow + 1
-        return sheet.getRange(fromRow, 1, rows, 1)
+        return sheet.getRange(fromRow, column, rows, 1)
     }
 
     static getRowRange(sheet: Sheet | string, row: number, fromColumn?: number | string): Range {

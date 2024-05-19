@@ -63,14 +63,14 @@ class Schedule {
 
             let isTeamFound = false
             for (const team of Team.getAll()) {
-                const regex = new RegExp(`^${Utils.escapeRegex(team.id)}\\s*:\\s*(d+)\\s*([dw])$`, 'i')
+                const regex = new RegExp(`^${Utils.escapeRegex(team.id)}\\s*:\\s*(\\d+)\\s*([dw])?$`, 'i')
                 const match = generalEstimate.match(regex)
                 if (match == null) {
                     continue
                 }
 
                 const amount = parseInt(match[1])
-                const unit = match[2] ?? 'd'
+                const unit = match[2]?.toLowerCase() ?? 'd'
 
                 let days: number
                 if (unit === 'w') {
@@ -93,6 +93,8 @@ class Schedule {
                 }
                 allDaysEstimates.push(dayEstimate)
                 teamDayEstimates.push(dayEstimate)
+                isTeamFound = true
+                break
             }
 
             if (!isTeamFound) {

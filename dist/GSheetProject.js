@@ -363,7 +363,7 @@ class Lane {
 class Lanes {
     constructor(lanesNumber) {
         this.lanes = [];
-        for (let i = 0; i <= lanesNumber; ++i) {
+        for (let i = 0; i < lanesNumber; ++i) {
             this.lanes.push(new Lane());
         }
     }
@@ -490,19 +490,19 @@ class Schedule {
         const allTeamDaysEstimates = new Map;
         const invalidEstimateRows = [];
         generalEstimates.forEach((generalEstimate, index) => {
-            var _a;
+            var _a, _b;
             if (!generalEstimate.length) {
                 return;
             }
             let isTeamFound = false;
             for (const team of Team.getAll()) {
-                const regex = new RegExp(`^${Utils.escapeRegex(team.id)}\\s*:\\s*(d+)\\s*([dw])$`, 'i');
+                const regex = new RegExp(`^${Utils.escapeRegex(team.id)}\\s*:\\s*(\\d+)\\s*([dw])?$`, 'i');
                 const match = generalEstimate.match(regex);
                 if (match == null) {
                     continue;
                 }
                 const amount = parseInt(match[1]);
-                const unit = (_a = match[2]) !== null && _a !== void 0 ? _a : 'd';
+                const unit = (_b = (_a = match[2]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : 'd';
                 let days;
                 if (unit === 'w') {
                     days = amount * 5;
@@ -523,6 +523,8 @@ class Schedule {
                 };
                 allDaysEstimates.push(dayEstimate);
                 teamDayEstimates.push(dayEstimate);
+                isTeamFound = true;
+                break;
             }
             if (!isTeamFound) {
                 invalidEstimateRows.push(GSheetProjectSettings.firstDataRow + index);
@@ -707,7 +709,7 @@ class SheetUtils {
             return sheet.getRange(fromRow, column);
         }
         const rows = lastRow - fromRow + 1;
-        return sheet.getRange(fromRow, 1, rows, 1);
+        return sheet.getRange(fromRow, column, rows, 1);
     }
     static getRowRange(sheet, row, fromColumn) {
         if (Utils.isString(sheet)) {

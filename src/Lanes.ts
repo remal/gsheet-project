@@ -5,7 +5,7 @@ class Lanes<T> {
     readonly lanes: Lane<T>[] = []
 
     constructor(lanesNumber: number) {
-        for (let i = 0; i <= lanesNumber; ++i) {
+        for (let i = 0; i < lanesNumber; ++i) {
             this.lanes.push(new Lane<T>())
         }
     }
