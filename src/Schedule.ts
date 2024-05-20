@@ -2,8 +2,8 @@ class Schedule {
 
     static recalculateSchedule(range: Range) {
         if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.estimateColumnName)
-            || !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.startColumnName)
-            || !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.endColumnName)
+            && !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.startColumnName)
+            && !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.endColumnName)
         ) {
             return
         }

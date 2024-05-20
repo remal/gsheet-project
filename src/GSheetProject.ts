@@ -18,6 +18,10 @@ class GSheetProject {
     }
 
     static onChange(event?: SheetsOnChange) {
+        if (['EDIT', 'FORMAT'].includes(event?.changeType?.toString() ?? '')) {
+            return
+        }
+
         Utils.entryPoint(() => {
             State.updateLastStructureChange()
             HierarchyFormatter.formatAllHierarchy()

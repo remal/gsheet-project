@@ -14,6 +14,10 @@ class GSheetProject {
         });
     }
     static onChange(event) {
+        var _a, _b;
+        if (['EDIT', 'FORMAT'].includes((_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '')) {
+            return;
+        }
         Utils.entryPoint(() => {
             State.updateLastStructureChange();
             HierarchyFormatter.formatAllHierarchy();
@@ -458,8 +462,8 @@ class RichTextUtils {
 class Schedule {
     static recalculateSchedule(range) {
         if (!RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.estimateColumnName)
-            || !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.startColumnName)
-            || !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.endColumnName)) {
+            && !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.startColumnName)
+            && !RangeUtils.doesRangeHaveColumn(range, GSheetProjectSettings.endColumnName)) {
             return;
         }
         this._recalculateSheetSchedule(range.getSheet());
