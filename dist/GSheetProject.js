@@ -717,7 +717,7 @@ class SheetUtils {
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet);
         }
-        if (sheet == null) {
+        if (sheet == null || sheet.getType() !== GoogleAppsScript.Spreadsheet.SheetType.GRID) {
             return undefined;
         }
         columnName = Utils.normalizeName(columnName);
