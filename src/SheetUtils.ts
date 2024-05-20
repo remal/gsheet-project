@@ -34,7 +34,7 @@ class SheetUtils {
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet)
         }
-        if (sheet == null || sheet.getType()?.toString() !== 'GRID') {
+        if (sheet == null || !this.isGridSheet(sheet)) {
             return undefined
         }
 
@@ -98,6 +98,17 @@ class SheetUtils {
 
         const columns = lastColumn - fromColumn + 1
         return sheet.getRange(row, fromColumn, 1, columns)
+    }
+
+    static isGridSheet(sheet: Sheet | string | null | undefined): boolean {
+        if (Utils.isString(sheet)) {
+            sheet = this.findSheetByName(sheet)
+        }
+        if (sheet == null) {
+            return false
+        }
+
+        return sheet.getType()?.toString() === 'GRID'
     }
 
 }

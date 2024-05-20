@@ -809,14 +809,13 @@ class SheetUtils {
         })();
     }
     static findColumnByName(sheet, columnName) {
-        var _a;
         if (!(columnName === null || columnName === void 0 ? void 0 : columnName.length)) {
             return undefined;
         }
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet);
         }
-        if (sheet == null || ((_a = sheet.getType()) === null || _a === void 0 ? void 0 : _a.toString()) !== 'GRID') {
+        if (sheet == null || !this.isGridSheet(sheet)) {
             return undefined;
         }
         columnName = Utils.normalizeName(columnName);
@@ -872,6 +871,16 @@ class SheetUtils {
         }
         const columns = lastColumn - fromColumn + 1;
         return sheet.getRange(row, fromColumn, 1, columns);
+    }
+    static isGridSheet(sheet) {
+        var _a;
+        if (Utils.isString(sheet)) {
+            sheet = this.findSheetByName(sheet);
+        }
+        if (sheet == null) {
+            return false;
+        }
+        return ((_a = sheet.getType()) === null || _a === void 0 ? void 0 : _a.toString()) === 'GRID';
     }
 }
 class State {
