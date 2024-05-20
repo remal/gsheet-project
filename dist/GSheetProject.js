@@ -255,13 +255,14 @@ class HierarchyFormatter {
         const parentIssueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName);
         const allIssueIds = this._getAllIds(sheet, issueIdColumn);
         const allParentIssueIds = this._getAllIds(sheet, parentIssueIdColumn);
-        const deadlineRange = SheetUtils.getColumnRange(sheet, GSheetProjectSettings.deadlineColumnName, GSheetProjectSettings.firstDataRow);
+        const deadlineRange = SheetUtils.getColumnRange(sheet, deadlineColumn, GSheetProjectSettings.firstDataRow);
         const deadlineFormulas = deadlineRange.getFormulas();
         let isChanged = false;
         for (let index = 0; index < allParentIssueIds.length; ++index) {
-            let formula = ``;
+            const row = GSheetProjectSettings.firstDataRow + index;
             const parentIssueIds = allParentIssueIds[index];
             if (parentIssueIds === null || parentIssueIds === void 0 ? void 0 : parentIssueIds.length) {
+                let formula = ``;
                 const issueIndex = allIssueIds.findIndex((ids, issueIndex) => (ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)))
                     && issueIndex !== index);
                 if (issueIndex >= 0) {
@@ -269,15 +270,11 @@ class HierarchyFormatter {
                     formula = `=${sheet.getRange(issueRow, deadlineColumn).getA1Notation()}`;
                 }
                 if (!Utils.arrayEquals(deadlineFormulas[index], [formula])) {
-                    deadlineFormulas[index] = [formula];
-                    isChanged = true;
+                    if (State.isStructureChanged())
+                        return;
+                    sheet.getRange(row, deadlineColumn).setFormula(formula);
                 }
             }
-        }
-        if (isChanged) {
-            if (State.isStructureChanged())
-                return;
-            deadlineRange.setFormulas(deadlineFormulas);
         }
     }
     static _getAllIds(sheet, column) {

@@ -193,17 +193,18 @@ class HierarchyFormatter {
 
         const deadlineRange = SheetUtils.getColumnRange(
             sheet,
-            GSheetProjectSettings.deadlineColumnName!,
+            deadlineColumn,
             GSheetProjectSettings.firstDataRow,
         )
         const deadlineFormulas = deadlineRange.getFormulas()
 
         let isChanged = false
         for (let index = 0; index < allParentIssueIds.length; ++index) {
-            let formula = ``
-
+            const row = GSheetProjectSettings.firstDataRow + index
             const parentIssueIds = allParentIssueIds[index]
             if (parentIssueIds?.length) {
+                let formula = ``
+
                 const issueIndex = allIssueIds.findIndex((ids, issueIndex) =>
                     ids?.some(id => parentIssueIds.includes(id))
                     && issueIndex !== index,
@@ -214,15 +215,10 @@ class HierarchyFormatter {
                 }
 
                 if (!Utils.arrayEquals(deadlineFormulas[index], [formula])) {
-                    deadlineFormulas[index] = [formula]
-                    isChanged = true
+                    if (State.isStructureChanged()) return
+                    sheet.getRange(row, deadlineColumn).setFormula(formula)
                 }
             }
-        }
-
-        if (isChanged) {
-            if (State.isStructureChanged()) return
-            deadlineRange.setFormulas(deadlineFormulas)
         }
     }
 
