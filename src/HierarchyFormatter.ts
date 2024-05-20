@@ -212,11 +212,11 @@ class HierarchyFormatter {
                     const issueRow = GSheetProjectSettings.firstDataRow + issueIndex
                     formula = `=${sheet.getRange(issueRow, deadlineColumn).getA1Notation()}`
                 }
-            }
 
-            if (!Utils.arrayEquals(deadlineFormulas[index], [formula])) {
-                deadlineFormulas[index] = [formula]
-                isChanged = true
+                if (!Utils.arrayEquals(deadlineFormulas[index], [formula])) {
+                    deadlineFormulas[index] = [formula]
+                    isChanged = true
+                }
             }
         }
 
