@@ -912,8 +912,8 @@ class Team {
             const color = (_e = (_d = info.get('color')) !== null && _d !== void 0 ? _d : info.get('colour')) !== null && _e !== void 0 ? _e : Utils.hslToRgb(360 * index / allInfos.length, 50, 80);
             const team = new Team(id, lanes, color);
             result.push(team);
-            const settingsRange = info['settingsRange'];
-            if (settingsRange != null) {
+            if (info.hasOwnProperty('settingsRange')) {
+                const settingsRange = info['settingsRange'];
                 Settings.settingsSheet.getRange(settingsRange.row, settingsRange.column, settingsRange.rows, settingsRange.columns).setBackground(team.color);
             }
         });

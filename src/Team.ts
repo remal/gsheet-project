@@ -22,8 +22,8 @@ class Team {
             const team = new Team(id, lanes, color)
             result.push(team)
 
-            const settingsRange = info['settingsRange'] as (SettingsRange | undefined)
-            if (settingsRange != null) {
+            if ((info as any).hasOwnProperty('settingsRange')) {
+                const settingsRange = info['settingsRange'] as SettingsRange
                 Settings.settingsSheet.getRange(
                     settingsRange.row,
                     settingsRange.column,
