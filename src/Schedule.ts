@@ -118,14 +118,17 @@ class Schedule {
             sheet.getRangeList(invalidEstimateNotations).setBackground('#FFCCCB')
         }
 
-        const skipWeekends = (date: Date): Date => {
-            while (date.getDay() === 0 || date.getDay() === 6) {
-                date = new Date(date.getTime() + 24 * 3600 * 1000)
+        const nextDayOf = (date: Date): Date => {
+            return new Date(date.getTime() + 24 * 3600 * 1000)
+        }
+        const skipWeekendsOf = (date: Date): Date => {
+            while (date.getDay() < 1 || date.getDay() > 5) {
+                date = nextDayOf(date)
             }
             return date
         }
 
-        const scheduleStart = skipWeekends(ScheduleSettings.start)
+        const scheduleStart = skipWeekendsOf(ScheduleSettings.start)
         const startsRangeValues = Utils.arrayOf<(Date | string)[]>(startsRange.getHeight(), [''])
         const endsRangeValues = Utils.arrayOf<(Date | string)[]>(endsRange.getHeight(), [''])
         for (const [teamId, teamDayEstimates] of allTeamDaysEstimates.entries()) {
@@ -141,14 +144,14 @@ class Schedule {
                 for (const dayEstimate of lane.objects()) {
                     let start = scheduleStart
                     if (lastEnd != null) {
-                        start = skipWeekends(new Date(lastEnd.getTime() + 24 * 3600 * 1000))
+                        start = skipWeekendsOf(nextDayOf(lastEnd))
                     }
                     startsRangeValues[dayEstimate.index] = [start]
 
                     let end = start
                     const daysEstimate = Math.ceil(dayEstimate.daysEstimate * (1 + ScheduleSettings.bufferCoefficient))
                     for (let day = 1; day <= daysEstimate; ++day) {
-                        end = skipWeekends(new Date(end.getTime() + 24 * 3600 * 1000))
+                        end = skipWeekendsOf(nextDayOf(end))
                     }
                     endsRangeValues[dayEstimate.index] = [end]
 
@@ -182,4 +185,3 @@ interface DayEstimate {
     teamId: string
     laneIndex?: number
 }
-
