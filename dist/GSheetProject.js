@@ -711,13 +711,14 @@ class SheetUtils {
         })();
     }
     static findColumnByName(sheet, columnName) {
+        var _a;
         if (!(columnName === null || columnName === void 0 ? void 0 : columnName.length)) {
             return undefined;
         }
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet);
         }
-        if (sheet == null || sheet.getType() !== GoogleAppsScript.Spreadsheet.SheetType.GRID) {
+        if (sheet == null || ((_a = sheet.getType()) === null || _a === void 0 ? void 0 : _a.toString()) !== 'GRID') {
             return undefined;
         }
         columnName = Utils.normalizeName(columnName);

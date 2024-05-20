@@ -34,7 +34,7 @@ class SheetUtils {
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet)
         }
-        if (sheet == null || sheet.getType() !== GoogleAppsScript.Spreadsheet.SheetType.GRID) {
+        if (sheet == null || sheet.getType()?.toString() !== 'GRID') {
             return undefined
         }
 
