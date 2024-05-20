@@ -423,6 +423,7 @@ class IssueLoader {
                     if (State.isStructureChanged())
                         return;
                     if (!foundIssues.length) {
+                        metricRange.setValue('');
                         continue;
                     }
                     const metricIssueIds = foundIssues.map(issue => GSheetProjectSettings.issueIdGetter(issue));

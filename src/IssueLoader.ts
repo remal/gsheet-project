@@ -112,6 +112,7 @@ class IssueLoader {
                     if (State.isStructureChanged()) return
 
                     if (!foundIssues.length) {
+                        metricRange.setValue('')
                         continue
                     }
 
