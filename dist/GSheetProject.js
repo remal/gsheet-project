@@ -223,7 +223,7 @@ class HierarchyFormatter {
                 const issueIndex = allIssueIds.findIndex((ids, issueIndex) => (ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)))
                     && issueIndex !== index);
                 if (issueIndex >= 0) {
-                    const issueRow = GSheetProjectSettings.firstDataRow + index;
+                    const issueRow = GSheetProjectSettings.firstDataRow + issueIndex;
                     const formulaCondition = `ISBLANK(${sheet.getRange(row, titleColumn).getA1Notation()})`;
                     const formulaTrue = `${sheet.getRange(issueRow, titleColumn).getA1Notation()}`;
                     const formulaFalse = `${sheet.getRange(row, titleColumn).getA1Notation()}`;
