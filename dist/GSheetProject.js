@@ -151,7 +151,9 @@ class HierarchyFormatter {
                     const newIndex = previousIndex + 1;
                     const row = GSheetProjectSettings.firstDataRow + index;
                     const newRow = GSheetProjectSettings.firstDataRow + newIndex;
-                    sheet.moveRows(sheet.getRange(row, 1), newRow);
+                    const rangeToMove = sheet.getRange(row, 1);
+                    rangeToMove.shiftRowGroupDepth(-100);
+                    sheet.moveRows(rangeToMove, newRow);
                     isChanged = true;
                 }
             }
@@ -195,7 +197,9 @@ class HierarchyFormatter {
                 const newIndex = issueIndex + 1;
                 const row = GSheetProjectSettings.firstDataRow + currentIndex;
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex;
-                sheet.moveRows(sheet.getRange(row, 1, groupSize, 1), newRow);
+                const rangeToMove = sheet.getRange(row, 1, groupSize, 1);
+                sheet.moveRows(rangeToMove, newRow);
+                rangeToMove.shiftRowGroupDepth(-100).shiftRowGroupDepth(1);
                 break;
             }
             if (!isChanged) {
