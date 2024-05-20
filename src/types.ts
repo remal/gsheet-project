@@ -37,3 +37,4 @@ type SheetsOnOpen = GoogleAppsScript.Events.SheetsOnOpen
 type SheetsOnChange = GoogleAppsScript.Events.SheetsOnChange
 type SheetsOnEdit = GoogleAppsScript.Events.SheetsOnEdit
 type SheetsOnFormSubmit = GoogleAppsScript.Events.SheetsOnFormSubmit
+
