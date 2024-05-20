@@ -147,22 +147,21 @@ class HierarchyFormatter {
         let isChanged = false
         for (let index = 0; index < allParentIssueIds.length; ++index) {
             const row = GSheetProjectSettings.firstDataRow + index
-            const parentIssueIds = allParentIssueIds[index]
-            if (!parentIssueIds?.length) {
-                continue
-            }
-
-            const issueIndex = allIssueIds.findIndex((ids, issueIndex) =>
-                ids?.some(id => parentIssueIds.includes(id))
-                && issueIndex !== index,
-            )
             let formula = `=${sheet.getRange(row, titleColumn).getA1Notation()}`
-            if (issueIndex >= 0) {
-                const issueRow = GSheetProjectSettings.firstDataRow + index
-                const formulaCondition = `ISBLANK(${sheet.getRange(row, titleColumn).getA1Notation()})`
-                const formulaTrue = `${sheet.getRange(issueRow, titleColumn).getA1Notation()}`
-                const formulaFalse = `${sheet.getRange(row, titleColumn).getA1Notation()}`
-                formula = `=IF(${formulaCondition}, ${formulaTrue}, ${formulaFalse})`
+
+            const parentIssueIds = allParentIssueIds[index]
+            if (parentIssueIds?.length) {
+                const issueIndex = allIssueIds.findIndex((ids, issueIndex) =>
+                    ids?.some(id => parentIssueIds.includes(id))
+                    && issueIndex !== index,
+                )
+                if (issueIndex >= 0) {
+                    const issueRow = GSheetProjectSettings.firstDataRow + index
+                    const formulaCondition = `ISBLANK(${sheet.getRange(row, titleColumn).getA1Notation()})`
+                    const formulaTrue = `${sheet.getRange(issueRow, titleColumn).getA1Notation()}`
+                    const formulaFalse = `${sheet.getRange(row, titleColumn).getA1Notation()}`
+                    formula = `=IF(${formulaCondition}, ${formulaTrue}, ${formulaFalse})`
+                }
             }
 
             if (!Utils.arrayEquals(timelineTitleFormulas[index], [formula])) {
