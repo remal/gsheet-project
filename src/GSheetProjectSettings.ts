@@ -15,6 +15,9 @@ class GSheetProjectSettings {
     static startColumnName: string = "Start"
     static endColumnName: string = "End"
 
+    static startAfterColumnName: string = "Start after"
+    static deadlineColumnName: string = "Deadline"
+
     static isDoneColumnName?: string = "Done"
     static timelineTitleColumnName?: string = "Timeline Title"
 

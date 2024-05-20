@@ -25,7 +25,6 @@ interface UrlWithTextOffset {
 interface IssueMetric {
     columnName: string
     filter: IssueBooleanFieldGetter
-    color?: string
 }
 
 interface SettingsRange {

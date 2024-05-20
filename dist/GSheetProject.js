@@ -20,6 +20,7 @@ class GSheetProject {
         }
         Utils.entryPoint(() => {
             State.updateLastStructureChange();
+            ConstraintsFormatter.formatConstraints();
             HierarchyFormatter.formatAllHierarchy();
             Schedule.recalculateAllSchedules();
         });
@@ -54,6 +55,8 @@ GSheetProjectSettings.estimateColumnName = "Estimate";
 GSheetProjectSettings.laneColumnName = "Lane";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
+GSheetProjectSettings.startAfterColumnName = "Start after";
+GSheetProjectSettings.deadlineColumnName = "Deadline";
 GSheetProjectSettings.isDoneColumnName = "Done";
 GSheetProjectSettings.timelineTitleColumnName = "Timeline Title";
 GSheetProjectSettings.issueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor');
@@ -71,6 +74,10 @@ GSheetProjectSettings.booleanFields = {};
 GSheetProjectSettings.aggregatedBooleanFields = {};
 GSheetProjectSettings.childIssueMetrics = [];
 GSheetProjectSettings.blockerIssueMetrics = [];
+class ConstraintsFormatter {
+    static formatConstraints() {
+    }
+}
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
         const stringKey = JSON.stringify(key, (_, value) => {
@@ -362,7 +369,7 @@ class IssueLoader {
                 }
             }
             const calculateIssueMetrics = (metricsIssues, metrics) => {
-                var _a, _b;
+                var _a;
                 for (const metric of metrics) {
                     const metricColumn = SheetUtils.findColumnByName(sheet, metric.columnName);
                     if (metricColumn == null) {
@@ -373,7 +380,6 @@ class IssueLoader {
                     if (State.isStructureChanged())
                         return;
                     if (!foundIssues.length) {
-                        metricRange.clearContent().setFontColor(null);
                         continue;
                     }
                     const metricIssueIds = foundIssues.map(issue => GSheetProjectSettings.issueIdGetter(issue));
@@ -384,7 +390,6 @@ class IssueLoader {
                     else {
                         metricRange.setFormula(`="${foundIssues.length}"`);
                     }
-                    metricRange.setFontColor((_b = metric.color) !== null && _b !== void 0 ? _b : null);
                 }
             };
             calculateIssueMetrics(childIssues, GSheetProjectSettings.childIssueMetrics);

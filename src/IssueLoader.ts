@@ -112,7 +112,6 @@ class IssueLoader {
                     if (State.isStructureChanged()) return
 
                     if (!foundIssues.length) {
-                        metricRange.clearContent().setFontColor(null)
                         continue
                     }
 
@@ -123,8 +122,6 @@ class IssueLoader {
                     } else {
                         metricRange.setFormula(`="${foundIssues.length}"`)
                     }
-
-                    metricRange.setFontColor(metric.color ?? null)
                 }
             }
 

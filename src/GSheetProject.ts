@@ -24,6 +24,7 @@ class GSheetProject {
 
         Utils.entryPoint(() => {
             State.updateLastStructureChange()
+            ConstraintsFormatter.formatConstraints()
             HierarchyFormatter.formatAllHierarchy()
             Schedule.recalculateAllSchedules()
         })
