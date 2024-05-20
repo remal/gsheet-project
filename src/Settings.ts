@@ -1,7 +1,11 @@
 class Settings {
 
+    static get settingsSheet(): Sheet {
+        return SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName)
+    }
+
     static getMatrix(settingsScope: string): Map<string, string>[] {
-        const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName)
+        const settingsSheet = this.settingsSheet
         settingsScope = Utils.normalizeName(settingsScope)
         return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsScope], () => {
             const scopeRow = this._findScopeRow(settingsSheet, settingsScope)
@@ -27,8 +31,22 @@ class Settings {
             }
 
             const result: Map<string, string>[] = []
+            const allSettingsRange = result['settingsRange'] = {
+                row: scopeRow + 2,
+                column: 1,
+                rows: 0,
+                columns: columns.length,
+            } as SettingsRange
+
             for (const row of Utils.range(scopeRow + 2, settingsSheet.getLastRow())) {
                 const item = new Map<string, string>()
+                result['settingsRange'] = {
+                    row: row,
+                    column: 1,
+                    rows: 1,
+                    columns: columns.length,
+                } as SettingsRange
+
                 const values = settingsSheet.getRange(row, 1, 1, columns.length).getValues()[0]
                 for (let i = 0; i < columns.length; ++i) {
                     let value = values[i].toString().trim()
@@ -39,6 +57,7 @@ class Settings {
                     break
                 }
                 result.push(item)
+                ++allSettingsRange.rows
             }
 
             return result
@@ -46,7 +65,7 @@ class Settings {
     }
 
     static getMap(settingsScope: string): Map<string, string> {
-        const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName)
+        const settingsSheet = this.settingsSheet
         settingsScope = Utils.normalizeName(settingsScope)
         return ExecutionCache.getOrComputeCache(['settings', 'map', settingsScope], () => {
             const scopeRow = this._findScopeRow(settingsSheet, settingsScope)
@@ -55,6 +74,12 @@ class Settings {
             }
 
             const result = new Map<string, string>()
+            const allSettingsRange = result['settingsRange'] = {
+                row: scopeRow + 1,
+                column: 1,
+                rows: 0,
+                columns: 2,
+            } as SettingsRange
             for (const row of Utils.range(scopeRow + 1, settingsSheet.getLastRow())) {
                 const values = settingsSheet.getRange(row, 1, 1, 2).getValues()[0]
                 const key = Utils.toLowerCamelCase(values[0].toString().trim())
@@ -63,6 +88,7 @@ class Settings {
                 }
                 const value = values[1].toString().trim()
                 result.set(key, value)
+                ++allSettingsRange.rows
             }
             return result
         })

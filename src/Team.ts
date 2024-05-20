@@ -17,9 +17,20 @@ class Team {
 
             const color = info.get('color')
                 ?? info.get('colour')
-                ?? Utils.hslToRgb(36 * index / allInfos.length, 50, 80)
+                ?? Utils.hslToRgb(360 * index / allInfos.length, 50, 80)
 
-            result.push(new Team(id, lanes, color))
+            const team = new Team(id, lanes, color)
+            result.push(team)
+
+            const settingsRange = info['settingsRange'] as (SettingsRange | undefined)
+            if (settingsRange != null) {
+                Settings.settingsSheet.getRange(
+                    settingsRange.row,
+                    settingsRange.column,
+                    settingsRange.rows,
+                    settingsRange.columns,
+                ).setBackground(team.color)
+            }
         })
         return result
     }

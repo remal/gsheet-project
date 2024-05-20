@@ -28,6 +28,13 @@ interface IssueMetric {
     color?: string
 }
 
+interface SettingsRange {
+    row: number
+    column: number
+    rows: number
+    columns: number
+}
+
 
 type Range = GoogleAppsScript.Spreadsheet.Range
 type Sheet = GoogleAppsScript.Spreadsheet.Sheet

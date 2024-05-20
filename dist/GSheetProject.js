@@ -682,8 +682,11 @@ class ScheduleSettings {
     }
 }
 class Settings {
+    static get settingsSheet() {
+        return SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName);
+    }
     static getMatrix(settingsScope) {
-        const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName);
+        const settingsSheet = this.settingsSheet;
         settingsScope = Utils.normalizeName(settingsScope);
         return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsScope], () => {
             const scopeRow = this._findScopeRow(settingsSheet, settingsScope);
@@ -707,8 +710,20 @@ class Settings {
                 return [];
             }
             const result = [];
+            const allSettingsRange = result['settingsRange'] = {
+                row: scopeRow + 2,
+                column: 1,
+                rows: 0,
+                columns: columns.length,
+            };
             for (const row of Utils.range(scopeRow + 2, settingsSheet.getLastRow())) {
                 const item = new Map();
+                result['settingsRange'] = {
+                    row: row,
+                    column: 1,
+                    rows: 1,
+                    columns: columns.length,
+                };
                 const values = settingsSheet.getRange(row, 1, 1, columns.length).getValues()[0];
                 for (let i = 0; i < columns.length; ++i) {
                     let value = values[i].toString().trim();
@@ -719,12 +734,13 @@ class Settings {
                     break;
                 }
                 result.push(item);
+                ++allSettingsRange.rows;
             }
             return result;
         });
     }
     static getMap(settingsScope) {
-        const settingsSheet = SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName);
+        const settingsSheet = this.settingsSheet;
         settingsScope = Utils.normalizeName(settingsScope);
         return ExecutionCache.getOrComputeCache(['settings', 'map', settingsScope], () => {
             const scopeRow = this._findScopeRow(settingsSheet, settingsScope);
@@ -732,6 +748,12 @@ class Settings {
                 throw new Error(`Settings with "${settingsScope}" can't be found`);
             }
             const result = new Map();
+            const allSettingsRange = result['settingsRange'] = {
+                row: scopeRow + 1,
+                column: 1,
+                rows: 0,
+                columns: 2,
+            };
             for (const row of Utils.range(scopeRow + 1, settingsSheet.getLastRow())) {
                 const values = settingsSheet.getRange(row, 1, 1, 2).getValues()[0];
                 const key = Utils.toLowerCamelCase(values[0].toString().trim());
@@ -740,6 +762,7 @@ class Settings {
                 }
                 const value = values[1].toString().trim();
                 result.set(key, value);
+                ++allSettingsRange.rows;
             }
             return result;
         });
@@ -886,8 +909,13 @@ class Team {
             if (isNaN(lanes)) {
                 lanes = 0;
             }
-            const color = (_e = (_d = info.get('color')) !== null && _d !== void 0 ? _d : info.get('colour')) !== null && _e !== void 0 ? _e : Utils.hslToRgb(36 * index / allInfos.length, 50, 80);
-            result.push(new Team(id, lanes, color));
+            const color = (_e = (_d = info.get('color')) !== null && _d !== void 0 ? _d : info.get('colour')) !== null && _e !== void 0 ? _e : Utils.hslToRgb(360 * index / allInfos.length, 50, 80);
+            const team = new Team(id, lanes, color);
+            result.push(team);
+            const settingsRange = info['settingsRange'];
+            if (settingsRange != null) {
+                Settings.settingsSheet.getRange(settingsRange.row, settingsRange.column, settingsRange.rows, settingsRange.columns).setBackground(team.color);
+            }
         });
         return result;
     }
