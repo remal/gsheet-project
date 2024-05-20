@@ -31,7 +31,7 @@ class Settings {
             }
 
             const result: Map<string, string>[] = []
-            const allSettingsRange = result['settingsRange'] = {
+            const allSettingsRange = (result as any)['$settingsRange'] = {
                 row: scopeRow + 2,
                 column: 1,
                 rows: 0,
@@ -40,7 +40,7 @@ class Settings {
 
             for (const row of Utils.range(scopeRow + 2, settingsSheet.getLastRow())) {
                 const item = new Map<string, string>()
-                result['settingsRange'] = {
+                item['$settingsRange'] = {
                     row: row,
                     column: 1,
                     rows: 1,
@@ -74,7 +74,7 @@ class Settings {
             }
 
             const result = new Map<string, string>()
-            const allSettingsRange = result['settingsRange'] = {
+            const allSettingsRange = result['$settingsRange'] = {
                 row: scopeRow + 1,
                 column: 1,
                 rows: 0,

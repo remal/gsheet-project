@@ -22,9 +22,9 @@ class Team {
             const team = new Team(id, lanes, color)
             result.push(team)
 
-            if ((info as any).hasOwnProperty('settingsRange')) {
+            if ((info as any).hasOwnProperty('$settingsRange')) {
                 if (State.isStructureChanged()) return
-                const settingsRange = info['settingsRange'] as SettingsRange
+                const settingsRange = info['$settingsRange'] as SettingsRange
                 Settings.settingsSheet.getRange(
                     settingsRange.row,
                     settingsRange.column,
