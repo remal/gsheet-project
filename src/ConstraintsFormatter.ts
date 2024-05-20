@@ -1,7 +1,0 @@
-class ConstraintsFormatter {
-
-    static formatConstraints() {
-
-    }
-
-}

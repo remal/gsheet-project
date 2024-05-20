@@ -111,7 +111,7 @@ class Schedule {
         })
 
         if (State.isStructureChanged()) return
-        generalEstimatesRange.setBackground(null)
+        generalEstimatesRange.setBackground(null).setFontColor(null)
         for (const [teamId, teamDayEstimates] of allTeamDaysEstimates.entries()) {
             const team = Team.getById(teamId)
             const notations = teamDayEstimates
@@ -121,7 +121,7 @@ class Schedule {
         const invalidEstimateNotations = invalidEstimateRows
             .map(row => sheet.getRange(row, estimateColumn).getA1Notation())
         if (invalidEstimateNotations.length) {
-            sheet.getRangeList(invalidEstimateNotations).setBackground('#FFCCCB')
+            sheet.getRangeList(invalidEstimateNotations).setFontColor('#FF0000')
         }
 
         const nextDayOf = (date: Date): Date => {
