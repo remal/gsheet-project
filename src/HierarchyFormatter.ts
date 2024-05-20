@@ -28,6 +28,7 @@ class HierarchyFormatter {
         this._groupChildren(sheet)
         this._moveChildren(sheet)
         this._updateTimelineTitleFormula(sheet)
+        this._updateDeadlineFormula(sheet)
     }
 
     private static _groupChildren(sheet: Sheet) {
@@ -173,6 +174,55 @@ class HierarchyFormatter {
         if (isChanged) {
             if (State.isStructureChanged()) return
             timelineTitleRange.setFormulas(timelineTitleFormulas)
+        }
+    }
+
+    private static _updateDeadlineFormula(sheet: Sheet) {
+        if (State.isStructureChanged()) return
+
+        const deadlineColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.deadlineColumnName)
+        if (deadlineColumn == null) {
+            return
+        }
+
+        const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
+        const parentIssueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName)
+
+        const allIssueIds = this._getAllIds(sheet, issueIdColumn)
+        const allParentIssueIds = this._getAllIds(sheet, parentIssueIdColumn)
+
+        const deadlineRange = SheetUtils.getColumnRange(
+            sheet,
+            GSheetProjectSettings.deadlineColumnName!,
+            GSheetProjectSettings.firstDataRow,
+        )
+        const deadlineFormulas = deadlineRange.getFormulas()
+
+        let isChanged = false
+        for (let index = 0; index < allParentIssueIds.length; ++index) {
+            let formula = ``
+
+            const parentIssueIds = allParentIssueIds[index]
+            if (parentIssueIds?.length) {
+                const issueIndex = allIssueIds.findIndex((ids, issueIndex) =>
+                    ids?.some(id => parentIssueIds.includes(id))
+                    && issueIndex !== index,
+                )
+                if (issueIndex >= 0) {
+                    const issueRow = GSheetProjectSettings.firstDataRow + issueIndex
+                    formula = `=${sheet.getRange(issueRow, deadlineColumn).getA1Notation()}`
+                }
+            }
+
+            if (!Utils.arrayEquals(deadlineFormulas[index], [formula])) {
+                deadlineFormulas[index] = [formula]
+                isChanged = true
+            }
+        }
+
+        if (isChanged) {
+            if (State.isStructureChanged()) return
+            deadlineRange.setFormulas(deadlineFormulas)
         }
     }
 
