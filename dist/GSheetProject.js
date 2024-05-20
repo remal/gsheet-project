@@ -20,7 +20,6 @@ class GSheetProject {
         }
         Utils.entryPoint(() => {
             State.updateLastStructureChange();
-            ConstraintsFormatter.formatConstraints();
             HierarchyFormatter.formatAllHierarchy();
             Schedule.recalculateAllSchedules();
         });
@@ -74,10 +73,6 @@ GSheetProjectSettings.booleanFields = {};
 GSheetProjectSettings.aggregatedBooleanFields = {};
 GSheetProjectSettings.childIssueMetrics = [];
 GSheetProjectSettings.blockerIssueMetrics = [];
-class ConstraintsFormatter {
-    static formatConstraints() {
-    }
-}
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
         const stringKey = JSON.stringify(key, (_, value) => {
@@ -608,7 +603,7 @@ class Schedule {
         });
         if (State.isStructureChanged())
             return;
-        generalEstimatesRange.setBackground(null);
+        generalEstimatesRange.setBackground(null).setFontColor(null);
         for (const [teamId, teamDayEstimates] of allTeamDaysEstimates.entries()) {
             const team = Team.getById(teamId);
             const notations = teamDayEstimates
@@ -618,7 +613,7 @@ class Schedule {
         const invalidEstimateNotations = invalidEstimateRows
             .map(row => sheet.getRange(row, estimateColumn).getA1Notation());
         if (invalidEstimateNotations.length) {
-            sheet.getRangeList(invalidEstimateNotations).setBackground('#FFCCCB');
+            sheet.getRangeList(invalidEstimateNotations).setFontColor('#FF0000');
         }
         const nextDayOf = (date) => {
             return new Date(date.getTime() + 24 * 3600 * 1000);
