@@ -913,6 +913,8 @@ class Team {
             const team = new Team(id, lanes, color);
             result.push(team);
             if (info.hasOwnProperty('settingsRange')) {
+                if (State.isStructureChanged())
+                    return;
                 const settingsRange = info['settingsRange'];
                 Settings.settingsSheet.getRange(settingsRange.row, settingsRange.column, settingsRange.rows, settingsRange.columns).setBackground(team.color);
             }
