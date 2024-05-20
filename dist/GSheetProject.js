@@ -710,7 +710,7 @@ class Settings {
                 return [];
             }
             const result = [];
-            const allSettingsRange = result['$settingsRange'] = {
+            const allSettingsRange = result[':settingsRange'] = {
                 row: scopeRow + 2,
                 column: 1,
                 rows: 0,
@@ -718,7 +718,7 @@ class Settings {
             };
             for (const row of Utils.range(scopeRow + 2, settingsSheet.getLastRow())) {
                 const item = new Map();
-                item['$settingsRange'] = {
+                item[':settingsRange'] = {
                     row: row,
                     column: 1,
                     rows: 1,
@@ -748,7 +748,7 @@ class Settings {
                 throw new Error(`Settings with "${settingsScope}" can't be found`);
             }
             const result = new Map();
-            const allSettingsRange = result['$settingsRange'] = {
+            const allSettingsRange = result[':settingsRange'] = {
                 row: scopeRow + 1,
                 column: 1,
                 rows: 0,
@@ -912,10 +912,10 @@ class Team {
             const color = (_e = (_d = info.get('color')) !== null && _d !== void 0 ? _d : info.get('colour')) !== null && _e !== void 0 ? _e : Utils.hslToRgb(360 * index / allInfos.length, 50, 80);
             const team = new Team(id, lanes, color);
             result.push(team);
-            if (info.hasOwnProperty('$settingsRange')) {
+            if (info.hasOwnProperty(':settingsRange')) {
                 if (State.isStructureChanged())
                     return;
-                const settingsRange = info['$settingsRange'];
+                const settingsRange = info[':settingsRange'];
                 Settings.settingsSheet.getRange(settingsRange.row, settingsRange.column, settingsRange.rows, settingsRange.columns).setBackground(team.color);
             }
         });
