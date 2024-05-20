@@ -121,6 +121,7 @@ class HierarchyFormatter {
         this._moveChildren(sheet);
         this._updateTimelineTitleFormula(sheet);
         this._updateDeadlineFormula(sheet);
+        this._groupRows(sheet);
     }
     static _groupChildren(sheet) {
         if (State.isStructureChanged())
@@ -152,7 +153,6 @@ class HierarchyFormatter {
                     const row = GSheetProjectSettings.firstDataRow + index;
                     const newRow = GSheetProjectSettings.firstDataRow + newIndex;
                     const rangeToMove = sheet.getRange(row, 1);
-                    rangeToMove.shiftRowGroupDepth(-100);
                     sheet.moveRows(rangeToMove, newRow);
                     isChanged = true;
                 }
@@ -199,7 +199,6 @@ class HierarchyFormatter {
                 const newRow = GSheetProjectSettings.firstDataRow + newIndex;
                 const rangeToMove = sheet.getRange(row, 1, groupSize, 1);
                 sheet.moveRows(rangeToMove, newRow);
-                rangeToMove.shiftRowGroupDepth(-100).shiftRowGroupDepth(1);
                 break;
             }
             if (!isChanged) {
@@ -261,7 +260,6 @@ class HierarchyFormatter {
         const allParentIssueIds = this._getAllIds(sheet, parentIssueIdColumn);
         const deadlineRange = SheetUtils.getColumnRange(sheet, deadlineColumn, GSheetProjectSettings.firstDataRow);
         const deadlineFormulas = deadlineRange.getFormulas();
-        let isChanged = false;
         for (let index = 0; index < allParentIssueIds.length; ++index) {
             const row = GSheetProjectSettings.firstDataRow + index;
             const parentIssueIds = allParentIssueIds[index];
@@ -278,6 +276,18 @@ class HierarchyFormatter {
                         return;
                     sheet.getRange(row, deadlineColumn).setFormula(formula);
                 }
+            }
+        }
+    }
+    static _groupRows(sheet) {
+        SheetUtils.getColumnRange(sheet, 1, GSheetProjectSettings.firstDataRow).shiftRowGroupDepth(-100);
+        const parentIssueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName);
+        const allParentIssueIds = this._getAllIds(sheet, parentIssueIdColumn);
+        for (let index = 0; index < allParentIssueIds.length; ++index) {
+            const row = GSheetProjectSettings.firstDataRow + index;
+            const parentIssueIds = allParentIssueIds[index];
+            if (parentIssueIds === null || parentIssueIds === void 0 ? void 0 : parentIssueIds.length) {
+                sheet.getRange(row, 1).shiftRowGroupDepth(1);
             }
         }
     }
