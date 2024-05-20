@@ -49,11 +49,12 @@ GSheetProjectSettings.settingsTeamsScope = "Teams";
 GSheetProjectSettings.settingsScheduleScope = "Schedule";
 GSheetProjectSettings.issueIdColumnName = "Issue";
 GSheetProjectSettings.parentIssueIdColumnName = "Parent Issue";
-GSheetProjectSettings.isDoneColumnName = "Done";
+GSheetProjectSettings.titleColumnName = "Title";
 GSheetProjectSettings.estimateColumnName = "Estimate";
 GSheetProjectSettings.laneColumnName = "Lane";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
+GSheetProjectSettings.isDoneColumnName = "Done";
 GSheetProjectSettings.issueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor');
 GSheetProjectSettings.issueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator');
 GSheetProjectSettings.issueIdToUrl = () => Utils.throwNotConfigured('issueIdToUrl');
@@ -62,6 +63,7 @@ GSheetProjectSettings.issuesLoader = () => Utils.throwNotConfigured('issuesLoade
 GSheetProjectSettings.childIssuesLoader = () => Utils.throwNotConfigured('childIssuesLoader');
 GSheetProjectSettings.blockerIssuesLoader = () => Utils.throwNotConfigured('blockerIssuesLoader');
 GSheetProjectSettings.issueIdGetter = () => Utils.throwNotConfigured('issueIdGetter');
+GSheetProjectSettings.titleGetter = () => Utils.throwNotConfigured('titleGetter');
 GSheetProjectSettings.idDoneCalculator = () => Utils.throwNotConfigured('idDoneCalculator');
 GSheetProjectSettings.stringFields = {};
 GSheetProjectSettings.booleanFields = {};
@@ -266,6 +268,12 @@ class IssueLoader {
                 return GSheetProjectSettings.blockerIssuesLoader(ids)
                     .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue)));
             });
+            const titleColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.titleColumnName);
+            if (titleColumn != null) {
+                sheet.getRange(row, titleColumn).setValue(rootIssues
+                    .map(GSheetProjectSettings.titleGetter)
+                    .join('\n'));
+            }
             const isDoneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.isDoneColumnName);
             if (isDoneColumn != null) {
                 const isDone = GSheetProjectSettings.idDoneCalculator(rootIssues, childIssues.get());
@@ -276,8 +284,6 @@ class IssueLoader {
             for (const [columnName, getter] of Object.entries(GSheetProjectSettings.stringFields)) {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
                 if (fieldColumn != null) {
-                    if (State.isStructureChanged())
-                        return;
                     sheet.getRange(row, fieldColumn).setValue(rootIssues
                         .map(getter)
                         .join('\n'));
@@ -287,8 +293,6 @@ class IssueLoader {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
                 if (fieldColumn != null) {
                     const isTrue = rootIssues.every(getter);
-                    if (State.isStructureChanged())
-                        return;
                     sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '');
                 }
             }
@@ -296,8 +300,6 @@ class IssueLoader {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName);
                 if (fieldColumn != null) {
                     const isTrue = getter(rootIssues, childIssues.get());
-                    if (State.isStructureChanged())
-                        return;
                     sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '');
                 }
             }
@@ -544,6 +546,12 @@ class Schedule {
         if (State.isStructureChanged())
             return;
         generalEstimatesRange.setBackground(null);
+        for (const [teamId, teamDayEstimates] of allTeamDaysEstimates.entries()) {
+            const team = Team.getById(teamId);
+            const notations = teamDayEstimates
+                .map(it => sheet.getRange(it.row, estimateColumn).getA1Notation());
+            sheet.getRangeList(notations).setBackground(team.color);
+        }
         const invalidEstimateNotations = invalidEstimateRows
             .map(row => sheet.getRange(row, estimateColumn).getA1Notation());
         if (invalidEstimateNotations.length) {
@@ -809,19 +817,20 @@ class State {
 State._now = new Date().getTime();
 class Team {
     static getAll() {
-        var _a, _b, _c;
         const result = [];
-        for (const info of Settings.getMatrix(GSheetProjectSettings.settingsTeamsScope)) {
+        Settings.getMatrix(GSheetProjectSettings.settingsTeamsScope).forEach((info, index, allInfos) => {
+            var _a, _b, _c, _d, _e;
             const id = (_b = (_a = info.get('id')) !== null && _a !== void 0 ? _a : info.get('teamId')) !== null && _b !== void 0 ? _b : info.get('team');
             if (!(id === null || id === void 0 ? void 0 : id.length)) {
-                continue;
+                return;
             }
             let lanes = parseInt((_c = info.get('lanes')) !== null && _c !== void 0 ? _c : '0');
             if (isNaN(lanes)) {
                 lanes = 0;
             }
-            result.push(new Team(id, lanes));
-        }
+            const color = (_e = (_d = info.get('color')) !== null && _d !== void 0 ? _d : info.get('colour')) !== null && _e !== void 0 ? _e : Utils.hslToRgb(index / allInfos.length, 50, 80);
+            result.push(new Team(id, lanes, color));
+        });
         return result;
     }
     static findById(id) {
@@ -833,9 +842,10 @@ class Team {
             throw new Error(`"${id}" team can't be found`);
         })();
     }
-    constructor(id, lanes) {
+    constructor(id, lanes, color) {
         this.id = id;
         this.lanes = Math.max(0, lanes);
+        this.color = color;
     }
 }
 class Utils {
@@ -866,6 +876,19 @@ class Utils {
         value = value.substring(0, 1).toLowerCase() + value.substring(1).toLowerCase();
         value = value.replaceAll(/[^a-z0-9]+([a-z0-9])/ig, (_, letter) => letter.toUpperCase());
         return value;
+    }
+    /**
+     * See https://stackoverflow.com/a/44134328/3740528
+     */
+    static hslToRgb(h, s, l) {
+        l /= 100;
+        const a = s * Math.min(l, 1 - l) / 100;
+        const f = (n) => {
+            const k = (n + h / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * color).toString(16).padStart(2, '0');
+        };
+        return `#${f(0)}${f(8)}${f(4)}`;
     }
     static extractRegex(string, regexp, group) {
         if (this.isString(regexp)) {

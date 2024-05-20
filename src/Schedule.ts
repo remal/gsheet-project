@@ -112,6 +112,12 @@ class Schedule {
 
         if (State.isStructureChanged()) return
         generalEstimatesRange.setBackground(null)
+        for (const [teamId, teamDayEstimates] of allTeamDaysEstimates.entries()) {
+            const team = Team.getById(teamId)
+            const notations = teamDayEstimates
+                .map(it => sheet.getRange(it.row, estimateColumn).getA1Notation())
+            sheet.getRangeList(notations).setBackground(team.color)
+        }
         const invalidEstimateNotations = invalidEstimateRows
             .map(row => sheet.getRange(row, estimateColumn).getA1Notation())
         if (invalidEstimateNotations.length) {

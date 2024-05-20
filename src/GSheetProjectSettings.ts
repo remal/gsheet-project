@@ -8,13 +8,14 @@ class GSheetProjectSettings {
 
     static issueIdColumnName: string = "Issue"
     static parentIssueIdColumnName: string = "Parent Issue"
-
-    static isDoneColumnName?: string = "Done"
+    static titleColumnName: string = "Title"
 
     static estimateColumnName: string = "Estimate"
     static laneColumnName: string = "Lane"
     static startColumnName: string = "Start"
     static endColumnName: string = "End"
+
+    static isDoneColumnName?: string = "Done"
 
     static issueIdsExtractor: IssueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor')
     static issueIdDecorator: IssueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator')
@@ -26,6 +27,7 @@ class GSheetProjectSettings {
     static blockerIssuesLoader: IssuesLoader = () => Utils.throwNotConfigured('blockerIssuesLoader')
 
     static issueIdGetter: IssueStringFieldGetter = () => Utils.throwNotConfigured('issueIdGetter')
+    static titleGetter: IssueStringFieldGetter = () => Utils.throwNotConfigured('titleGetter')
 
     static idDoneCalculator: IssueAggregateBooleanFieldGetter = () => Utils.throwNotConfigured('idDoneCalculator')
 

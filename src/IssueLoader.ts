@@ -58,6 +58,14 @@ class IssueLoader {
                     .filter(issue => !issueIds.includes(GSheetProjectSettings.issueIdGetter(issue)))
             })
 
+            const titleColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.titleColumnName)
+            if (titleColumn != null) {
+                sheet.getRange(row, titleColumn).setValue(rootIssues
+                    .map(GSheetProjectSettings.titleGetter)
+                    .join('\n'),
+                )
+            }
+
             const isDoneColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.isDoneColumnName)
             if (isDoneColumn != null) {
                 const isDone = GSheetProjectSettings.idDoneCalculator(rootIssues, childIssues.get())
@@ -68,7 +76,6 @@ class IssueLoader {
             for (const [columnName, getter] of Object.entries(GSheetProjectSettings.stringFields)) {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName)
                 if (fieldColumn != null) {
-                    if (State.isStructureChanged()) return
                     sheet.getRange(row, fieldColumn).setValue(rootIssues
                         .map(getter)
                         .join('\n'),
@@ -80,7 +87,6 @@ class IssueLoader {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName)
                 if (fieldColumn != null) {
                     const isTrue = rootIssues.every(getter)
-                    if (State.isStructureChanged()) return
                     sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '')
                 }
             }
@@ -89,7 +95,6 @@ class IssueLoader {
                 const fieldColumn = SheetUtils.findColumnByName(sheet, columnName)
                 if (fieldColumn != null) {
                     const isTrue = getter(rootIssues, childIssues.get())
-                    if (State.isStructureChanged()) return
                     sheet.getRange(row, fieldColumn).setValue(isTrue ? 'Yes' : '')
                 }
             }
