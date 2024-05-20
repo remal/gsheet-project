@@ -16,6 +16,7 @@ class GSheetProjectSettings {
     static endColumnName: string = "End"
 
     static isDoneColumnName?: string = "Done"
+    static timelineTitleColumnName?: string = "Timeline Title"
 
     static issueIdsExtractor: IssueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor')
     static issueIdDecorator: IssueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator')

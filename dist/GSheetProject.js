@@ -55,6 +55,7 @@ GSheetProjectSettings.laneColumnName = "Lane";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
 GSheetProjectSettings.isDoneColumnName = "Done";
+GSheetProjectSettings.timelineTitleColumnName = "Timeline Title";
 GSheetProjectSettings.issueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor');
 GSheetProjectSettings.issueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator');
 GSheetProjectSettings.issueIdToUrl = () => Utils.throwNotConfigured('issueIdToUrl');
@@ -123,6 +124,9 @@ class HierarchyFormatter {
         // group children:
         while (true) {
             const allParentIssueIds = getAllIds(parentIssueIdColumn);
+            if (allParentIssueIds.every(ids => !(ids === null || ids === void 0 ? void 0 : ids.length))) {
+                return;
+            }
             let isChanged = false;
             for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index];
@@ -172,8 +176,9 @@ class HierarchyFormatter {
                         break;
                     }
                 }
-                const issueIndex = allIssueIds.findIndex(ids => ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)));
-                if (issueIndex < 0 || issueIndex == currentIndex || issueIndex == currentIndex - 1) {
+                const issueIndex = allIssueIds.findIndex((ids, issueIndex) => (ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)))
+                    && issueIndex !== currentIndex);
+                if (issueIndex < 0 || issueIndex == currentIndex - 1) {
                     continue;
                 }
                 if (State.isStructureChanged())
@@ -186,6 +191,42 @@ class HierarchyFormatter {
             }
             if (!isChanged) {
                 break;
+            }
+        }
+        // timeline title:
+        const timelineTitleColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.timelineTitleColumnName);
+        const titleColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.titleColumnName);
+        if (timelineTitleColumn != null && titleColumn != null) {
+            const allIssueIds = getAllIds(issueIdColumn);
+            const allParentIssueIds = getAllIds(parentIssueIdColumn);
+            const timelineTitleRange = SheetUtils.getColumnRange(sheet, GSheetProjectSettings.timelineTitleColumnName, GSheetProjectSettings.firstDataRow);
+            const timelineTitleFormulas = timelineTitleRange.getFormulas();
+            let isChanged = false;
+            for (let index = 0; index < allParentIssueIds.length; ++index) {
+                const row = GSheetProjectSettings.firstDataRow + index;
+                const parentIssueIds = allParentIssueIds[index];
+                if (!(parentIssueIds === null || parentIssueIds === void 0 ? void 0 : parentIssueIds.length)) {
+                    continue;
+                }
+                const issueIndex = allIssueIds.findIndex((ids, issueIndex) => (ids === null || ids === void 0 ? void 0 : ids.some(id => parentIssueIds.includes(id)))
+                    && issueIndex !== index);
+                let formula = `=${sheet.getRange(row, titleColumn).getA1Notation()}`;
+                if (issueIndex >= 0) {
+                    const issueRow = GSheetProjectSettings.firstDataRow + index;
+                    const formulaCondition = `ISBLANK(${sheet.getRange(row, titleColumn).getA1Notation()})`;
+                    const formulaTrue = `${sheet.getRange(issueRow, titleColumn).getA1Notation()}`;
+                    const formulaFalse = `${sheet.getRange(row, titleColumn).getA1Notation()}`;
+                    formula = `=IF(ISBLANK(${formulaCondition}), ${formulaTrue}, ${formulaFalse})`;
+                }
+                if (!Utils.arrayEquals(timelineTitleFormulas[index], [formula])) {
+                    timelineTitleFormulas[index] = [formula];
+                    isChanged = true;
+                }
+            }
+            if (isChanged) {
+                if (State.isStructureChanged())
+                    return;
+                timelineTitleRange.setFormulas(timelineTitleFormulas);
             }
         }
     }
@@ -828,7 +869,7 @@ class Team {
             if (isNaN(lanes)) {
                 lanes = 0;
             }
-            const color = (_e = (_d = info.get('color')) !== null && _d !== void 0 ? _d : info.get('colour')) !== null && _e !== void 0 ? _e : Utils.hslToRgb(index / allInfos.length, 50, 80);
+            const color = (_e = (_d = info.get('color')) !== null && _d !== void 0 ? _d : info.get('colour')) !== null && _e !== void 0 ? _e : Utils.hslToRgb(36 * index / allInfos.length, 50, 80);
             result.push(new Team(id, lanes, color));
         });
         return result;

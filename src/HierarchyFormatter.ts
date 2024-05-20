@@ -35,6 +35,10 @@ class HierarchyFormatter {
         // group children:
         while (true) {
             const allParentIssueIds = getAllIds(parentIssueIdColumn)
+            if (allParentIssueIds.every(ids => !ids?.length)) {
+                return
+            }
+
             let isChanged = false
             for (let index = allParentIssueIds.length - 1; 0 <= index; --index) {
                 const parentIssueIds = allParentIssueIds[index]
@@ -88,10 +92,11 @@ class HierarchyFormatter {
                     }
                 }
 
-                const issueIndex = allIssueIds.findIndex(ids =>
-                    ids?.some(id => parentIssueIds.includes(id)),
+                const issueIndex = allIssueIds.findIndex((ids, issueIndex) =>
+                    ids?.some(id => parentIssueIds.includes(id))
+                    && issueIndex !== currentIndex,
                 )
-                if (issueIndex < 0 || issueIndex == currentIndex || issueIndex == currentIndex - 1) {
+                if (issueIndex < 0 || issueIndex == currentIndex - 1) {
                     continue
                 }
 
@@ -107,6 +112,54 @@ class HierarchyFormatter {
                 break
             }
         }
+
+        // timeline title:
+        const timelineTitleColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.timelineTitleColumnName)
+        const titleColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.titleColumnName)
+        if (timelineTitleColumn != null && titleColumn != null) {
+            const allIssueIds = getAllIds(issueIdColumn)
+            const allParentIssueIds = getAllIds(parentIssueIdColumn)
+            const timelineTitleRange = SheetUtils.getColumnRange(
+                sheet,
+                GSheetProjectSettings.timelineTitleColumnName!,
+                GSheetProjectSettings.firstDataRow,
+            )
+            const timelineTitleFormulas = timelineTitleRange.getFormulas()
+
+            let isChanged = false
+            for (let index = 0; index < allParentIssueIds.length; ++index) {
+                const row = GSheetProjectSettings.firstDataRow + index
+                const parentIssueIds = allParentIssueIds[index]
+                if (!parentIssueIds?.length) {
+                    continue
+                }
+
+                const issueIndex = allIssueIds.findIndex((ids, issueIndex) =>
+                    ids?.some(id => parentIssueIds.includes(id))
+                    && issueIndex !== index,
+                )
+                let formula = `=${sheet.getRange(row, titleColumn).getA1Notation()}`
+                if (issueIndex >= 0) {
+                    const issueRow = GSheetProjectSettings.firstDataRow + index
+                    const formulaCondition = `ISBLANK(${sheet.getRange(row, titleColumn).getA1Notation()})`
+                    const formulaTrue = `${sheet.getRange(issueRow, titleColumn).getA1Notation()}`
+                    const formulaFalse = `${sheet.getRange(row, titleColumn).getA1Notation()}`
+                    formula = `=IF(ISBLANK(${formulaCondition}), ${formulaTrue}, ${formulaFalse})`
+                }
+
+                if (!Utils.arrayEquals(timelineTitleFormulas[index], [formula])) {
+                    timelineTitleFormulas[index] = [formula]
+                    isChanged = true
+                }
+            }
+
+            if (isChanged) {
+                if (State.isStructureChanged()) return
+                timelineTitleRange.setFormulas(timelineTitleFormulas)
+            }
+        }
     }
 
 }
+
+type TimelineTitleFormulaSetter = (childIndex: number, childRow: number, parentRow: number | null) => unknown

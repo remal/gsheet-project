@@ -3,7 +3,9 @@ class Team {
     static getAll(): Team[] {
         const result: Team[] = []
         Settings.getMatrix(GSheetProjectSettings.settingsTeamsScope).forEach((info, index, allInfos) => {
-            const id = info.get('id') ?? info.get('teamId') ?? info.get('team')
+            const id = info.get('id')
+                ?? info.get('teamId')
+                ?? info.get('team')
             if (!id?.length) {
                 return
             }
@@ -13,7 +15,9 @@ class Team {
                 lanes = 0
             }
 
-            const color = info.get('color') ?? info.get('colour') ?? Utils.hslToRgb(index / allInfos.length, 50, 80)
+            const color = info.get('color')
+                ?? info.get('colour')
+                ?? Utils.hslToRgb(36 * index / allInfos.length, 50, 80)
 
             result.push(new Team(id, lanes, color))
         })
