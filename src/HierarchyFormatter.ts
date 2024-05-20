@@ -25,16 +25,18 @@ class HierarchyFormatter {
             return
         }
 
-        const getAllIds = (column: number): (string[] | null)[] => {
-            return SheetUtils.getColumnRange(sheet, column, GSheetProjectSettings.firstDataRow)
-                .getValues()
-                .map(cols => cols[0].toString())
-                .map(text => GSheetProjectSettings.issueIdsExtractor(text))
-        }
+        this._groupChildren(sheet)
+        this._moveChildren(sheet)
+        this._updateTimelineTitleFormula(sheet)
+    }
 
-        // group children:
+    private static _groupChildren(sheet: Sheet) {
+        if (State.isStructureChanged()) return
+
+        const parentIssueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName)
+
         while (true) {
-            const allParentIssueIds = getAllIds(parentIssueIdColumn)
+            const allParentIssueIds = this._getAllIds(sheet, parentIssueIdColumn)
             if (allParentIssueIds.every(ids => !ids?.length)) {
                 return
             }
@@ -69,11 +71,17 @@ class HierarchyFormatter {
                 break
             }
         }
+    }
 
-        // move children:
+    private static _moveChildren(sheet: Sheet) {
+        if (State.isStructureChanged()) return
+
+        const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
+        const parentIssueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName)
+
         while (true) {
-            const allIssueIds = getAllIds(issueIdColumn)
-            const allParentIssueIds = getAllIds(parentIssueIdColumn)
+            const allIssueIds = this._getAllIds(sheet, issueIdColumn)
+            const allParentIssueIds = this._getAllIds(sheet, parentIssueIdColumn)
             let isChanged = false
             for (let index = 0; index < allParentIssueIds.length; ++index) {
                 const currentIndex = index
@@ -112,54 +120,68 @@ class HierarchyFormatter {
                 break
             }
         }
+    }
 
-        // timeline title:
+    private static _updateTimelineTitleFormula(sheet: Sheet) {
+        if (State.isStructureChanged()) return
+
         const timelineTitleColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.timelineTitleColumnName)
         const titleColumn = SheetUtils.findColumnByName(sheet, GSheetProjectSettings.titleColumnName)
-        if (timelineTitleColumn != null && titleColumn != null) {
-            const allIssueIds = getAllIds(issueIdColumn)
-            const allParentIssueIds = getAllIds(parentIssueIdColumn)
-            const timelineTitleRange = SheetUtils.getColumnRange(
-                sheet,
-                GSheetProjectSettings.timelineTitleColumnName!,
-                GSheetProjectSettings.firstDataRow,
+        if (timelineTitleColumn == null || titleColumn == null) {
+            return
+        }
+
+        const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
+        const parentIssueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.parentIssueIdColumnName)
+
+        const allIssueIds = this._getAllIds(sheet, issueIdColumn)
+        const allParentIssueIds = this._getAllIds(sheet, parentIssueIdColumn)
+
+        const timelineTitleRange = SheetUtils.getColumnRange(
+            sheet,
+            GSheetProjectSettings.timelineTitleColumnName!,
+            GSheetProjectSettings.firstDataRow,
+        )
+        const timelineTitleFormulas = timelineTitleRange.getFormulas()
+
+        let isChanged = false
+        for (let index = 0; index < allParentIssueIds.length; ++index) {
+            const row = GSheetProjectSettings.firstDataRow + index
+            const parentIssueIds = allParentIssueIds[index]
+            if (!parentIssueIds?.length) {
+                continue
+            }
+
+            const issueIndex = allIssueIds.findIndex((ids, issueIndex) =>
+                ids?.some(id => parentIssueIds.includes(id))
+                && issueIndex !== index,
             )
-            const timelineTitleFormulas = timelineTitleRange.getFormulas()
-
-            let isChanged = false
-            for (let index = 0; index < allParentIssueIds.length; ++index) {
-                const row = GSheetProjectSettings.firstDataRow + index
-                const parentIssueIds = allParentIssueIds[index]
-                if (!parentIssueIds?.length) {
-                    continue
-                }
-
-                const issueIndex = allIssueIds.findIndex((ids, issueIndex) =>
-                    ids?.some(id => parentIssueIds.includes(id))
-                    && issueIndex !== index,
-                )
-                let formula = `=${sheet.getRange(row, titleColumn).getA1Notation()}`
-                if (issueIndex >= 0) {
-                    const issueRow = GSheetProjectSettings.firstDataRow + index
-                    const formulaCondition = `ISBLANK(${sheet.getRange(row, titleColumn).getA1Notation()})`
-                    const formulaTrue = `${sheet.getRange(issueRow, titleColumn).getA1Notation()}`
-                    const formulaFalse = `${sheet.getRange(row, titleColumn).getA1Notation()}`
-                    formula = `=IF(ISBLANK(${formulaCondition}), ${formulaTrue}, ${formulaFalse})`
-                }
-
-                if (!Utils.arrayEquals(timelineTitleFormulas[index], [formula])) {
-                    timelineTitleFormulas[index] = [formula]
-                    isChanged = true
-                }
+            let formula = `=${sheet.getRange(row, titleColumn).getA1Notation()}`
+            if (issueIndex >= 0) {
+                const issueRow = GSheetProjectSettings.firstDataRow + index
+                const formulaCondition = `ISBLANK(${sheet.getRange(row, titleColumn).getA1Notation()})`
+                const formulaTrue = `${sheet.getRange(issueRow, titleColumn).getA1Notation()}`
+                const formulaFalse = `${sheet.getRange(row, titleColumn).getA1Notation()}`
+                formula = `=IF(${formulaCondition}, ${formulaTrue}, ${formulaFalse})`
             }
 
-            if (isChanged) {
-                if (State.isStructureChanged()) return
-                timelineTitleRange.setFormulas(timelineTitleFormulas)
+            if (!Utils.arrayEquals(timelineTitleFormulas[index], [formula])) {
+                timelineTitleFormulas[index] = [formula]
+                isChanged = true
             }
+        }
+
+        if (isChanged) {
+            if (State.isStructureChanged()) return
+            timelineTitleRange.setFormulas(timelineTitleFormulas)
         }
     }
 
-}
+    private static _getAllIds(sheet: Sheet, column: number | string): (string[] | null)[] {
+        return SheetUtils.getColumnRange(sheet, column, GSheetProjectSettings.firstDataRow)
+            .getValues()
+            .map(cols => cols[0].toString())
+            .map(text => GSheetProjectSettings.issueIdsExtractor(text))
+    }
 
-type TimelineTitleFormulaSetter = (childIndex: number, childRow: number, parentRow: number | null) => unknown
+}
