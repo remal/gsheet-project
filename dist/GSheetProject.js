@@ -351,6 +351,7 @@ class IssueLoader {
         }
     }
     static _loadIssuesForRow(sheet, row) {
+        var _a, _b, _c;
         if (row < GSheetProjectSettings.firstDataRow) {
             return;
         }
@@ -358,13 +359,14 @@ class IssueLoader {
             return;
         const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName);
         const issueIdRange = sheet.getRange(row, issueIdColumn);
-        const issueIds = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue());
+        const issueIds = (_c = (_b = (_a = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue())) === null || _a === void 0 ? void 0 : _a.map(id => id === null || id === void 0 ? void 0 : id.toString())) === null || _b === void 0 ? void 0 : _b.filter(id => id === null || id === void 0 ? void 0 : id.length)) === null || _c === void 0 ? void 0 : _c.filter(id => !id.startsWith('0'));
         if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
             return;
         }
         console.log(`"${sheet.getSheetName()}" sheet: processing row #${row}`);
         issueIdRange.setBackground('#eee');
         try {
+            Utilities.sleep(500);
             const rootIssues = GSheetProjectSettings.issuesLoader(issueIds);
             const childIssues = new Lazy(() => {
                 return GSheetProjectSettings.childIssuesLoader(issueIds)

@@ -39,6 +39,9 @@ class IssueLoader {
         const issueIdColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueIdColumnName)
         const issueIdRange = sheet.getRange(row, issueIdColumn)
         const issueIds = GSheetProjectSettings.issueIdsExtractor(issueIdRange.getValue())
+            ?.map(id => id?.toString())
+            ?.filter(id => id?.length)
+            ?.filter(id => !id.startsWith('0'))
         if (!issueIds?.length) {
             return
         }
@@ -46,6 +49,7 @@ class IssueLoader {
         console.log(`"${sheet.getSheetName()}" sheet: processing row #${row}`)
         issueIdRange.setBackground('#eee')
         try {
+            Utilities.sleep(500)
             const rootIssues = GSheetProjectSettings.issuesLoader(issueIds)
             const childIssues = new Lazy(() => {
                 return GSheetProjectSettings.childIssuesLoader(issueIds)
