@@ -56,9 +56,9 @@ GSheetProjectSettings.firstDataRow = 2;
 GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.projectsSheetName = "Projects";
 GSheetProjectSettings.projectsIssueColumnName = "Issue";
-GSheetProjectSettings.projectsIssueColumnRangeName = "Issues";
+GSheetProjectSettings.projectsIssuesRangeName = "Issues";
 GSheetProjectSettings.projectsIssueHashColumnName = "Issue Hash";
-GSheetProjectSettings.projectsIssueHashColumnRangeName = "IssueHashes";
+GSheetProjectSettings.projectsIssueHashesRangeName = "IssueHashes";
 
 class AbstractSheetLayout {
     get sheet() {
@@ -70,7 +70,7 @@ class AbstractSheetLayout {
         if (!columns.size) {
             return;
         }
-        const cacheKey = `SheetLayout:migrateColumns:13493b7f00f568618f90e337a782edd518ca53ea5abf7facb6f59755a6e1b06b:${GSheetProjectSettings.computeSettingsHash()}:${this.sheetName}`;
+        const cacheKey = `SheetLayout:migrateColumns:623d94135be268da67f97ac069294dcb5378a9662df54b72b0f560063dbe4b22:${GSheetProjectSettings.computeSettingsHash()}:${this.sheetName}`;
         const cache = CacheService.getDocumentCache();
         if (cache != null) {
             if (cache.get(cacheKey) === 'true') {
@@ -101,8 +101,13 @@ class AbstractSheetLayout {
             }
             const column = index + 1;
             if ((_a = info.arrayFormula) === null || _a === void 0 ? void 0 : _a.length) {
+                const arrayFormulaNormalized = info.arrayFormula.split(/[\r\n]+/)
+                    .map(line => line.trim())
+                    .filter(line => line.length)
+                    .join('')
+                    .trim();
+                const formulaToExpect = `={"${Utils.escapeFormulaString(info.name)}", ${arrayFormulaNormalized}`;
                 const formula = existingFormulas.get()[index];
-                const formulaToExpect = `={"${Utils.escapeFormulaString(info.name)}", ${info.arrayFormula}`;
                 if (formula !== formulaToExpect) {
                     sheet.getRange(GSheetProjectSettings.titleRow, column)
                         .setFormula(formulaToExpect);
@@ -195,12 +200,17 @@ class ProjectSheetLayout extends AbstractSheetLayout {
         return [
             {
                 name: GSheetProjectSettings.projectsIssueColumnName,
-                rangeName: GSheetProjectSettings.projectsIssueColumnRangeName,
+                rangeName: GSheetProjectSettings.projectsIssuesRangeName,
             },
             {
                 name: GSheetProjectSettings.projectsIssueHashColumnName,
-                arrayFormula: '',
-                rangeName: GSheetProjectSettings.projectsIssueHashColumnRangeName,
+                arrayFormula: `
+                    MAP(
+                        ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
+                        LAMBDA(issue, IF(ISBLANK(issue), "", SHA256(issue)))
+                    )
+                `,
+                rangeName: GSheetProjectSettings.projectsIssueHashesRangeName,
             },
         ];
     }

@@ -1,6 +1,6 @@
 class ProjectSheetLayout extends AbstractSheetLayout {
 
-    static instance = new ProjectSheetLayout()
+    static readonly instance = new ProjectSheetLayout()
 
     protected get sheetName(): string {
         return GSheetProjectSettings.projectsSheetName
@@ -10,12 +10,17 @@ class ProjectSheetLayout extends AbstractSheetLayout {
         return [
             {
                 name: GSheetProjectSettings.projectsIssueColumnName,
-                rangeName: GSheetProjectSettings.projectsIssueColumnRangeName,
+                rangeName: GSheetProjectSettings.projectsIssuesRangeName,
             },
             {
                 name: GSheetProjectSettings.projectsIssueHashColumnName,
-                arrayFormula: '',
-                rangeName: GSheetProjectSettings.projectsIssueHashColumnRangeName,
+                arrayFormula: `
+                    MAP(
+                        ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
+                        LAMBDA(issue, IF(ISBLANK(issue), "", SHA256(issue)))
+                    )
+                `,
+                rangeName: GSheetProjectSettings.projectsIssueHashesRangeName,
             },
         ]
     }
