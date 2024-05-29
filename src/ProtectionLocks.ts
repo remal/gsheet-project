@@ -1,0 +1,50 @@
+class ProtectionLocks {
+
+    private static _columnsProtections = new Map<number, Protection>()
+    private static _rowsProtections = new Map<number, Protection>()
+
+    static lockColumnsWithProtection(sheet: Sheet) {
+        const sheetId = sheet.getSheetId()
+        if (this._columnsProtections.has(sheetId)) {
+            return
+        }
+
+        const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns())
+        const protection = range.protect()
+            .setDescription(`Columns lock: ${new Date()}`)
+            .setWarningOnly(true)
+            .setDomainEdit(false)
+        const editors = protection.getEditors()
+        if (editors.length) {
+            protection.removeEditors(editors)
+        }
+        this._columnsProtections.set(sheetId, protection)
+    }
+
+    static lockRowsWithProtection(sheet: Sheet) {
+        const sheetId = sheet.getSheetId()
+        if (this._rowsProtections.has(sheetId)) {
+            return
+        }
+
+        const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1)
+        const protection = range.protect()
+            .setDescription(`Rows lock: ${new Date()}`)
+            .setWarningOnly(true)
+            .setDomainEdit(false)
+        const editors = protection.getEditors()
+        if (editors.length) {
+            protection.removeEditors(editors)
+        }
+        this._rowsProtections.set(sheetId, protection)
+    }
+
+    static release() {
+        this._columnsProtections.forEach(protection => protection.remove())
+        this._columnsProtections.clear()
+
+        this._rowsProtections.forEach(protection => protection.remove())
+        this._rowsProtections.clear()
+    }
+
+}

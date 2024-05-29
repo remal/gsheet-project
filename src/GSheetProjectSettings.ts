@@ -1,45 +1,30 @@
 class GSheetProjectSettings {
 
+    static titleRow: number = 1
     static firstDataRow: number = 2
 
     static settingsSheetName: string = "Settings"
-    static settingsTeamsScope: string = "Teams"
-    static settingsScheduleScope: string = "Schedule"
 
-    static issueIdColumnName: string = "Issue"
-    static parentIssueIdColumnName: string = "Parent Issue"
-    static titleColumnName: string = "Title"
+    static projectsSheetName: string = "Projects"
+    static projectsIssueColumnName: string = "Issue"
+    static projectsIssueColumnRangeName: string = "Issues"
 
-    static estimateColumnName: string = "Estimate"
-    static laneColumnName: string = "Lane"
-    static startColumnName: string = "Start"
-    static endColumnName: string = "End"
 
-    static startAfterColumnName: string = "Start after"
-    static deadlineColumnName: string = "Deadline"
+    static computeSettingsHash() {
+        const hashableValues: Record<string, any> = {}
+        for (const [key, value] of Object.entries(GSheetProjectSettings)) {
+            if (value == null
+                || typeof value === 'function'
+                || typeof value === 'object'
+            ) {
+                continue
+            }
 
-    static isDoneColumnName?: string = "Done"
-    static timelineTitleColumnName?: string = "Timeline Title"
+            hashableValues[key] = value
+        }
 
-    static issueIdsExtractor: IssueIdsExtractor = () => Utils.throwNotConfigured('issueIdsExtractor')
-    static issueIdDecorator: IssueIdDecorator = () => Utils.throwNotConfigured('issueIdDecorator')
-    static issueIdToUrl: IssueIdToUrl = () => Utils.throwNotConfigured('issueIdToUrl')
-    static issueIdsToUrl?: IssueIdsToUrl = () => Utils.throwNotConfigured('issueIdsToUrl')
-
-    static issuesLoader: IssuesLoader = () => Utils.throwNotConfigured('issuesLoader')
-    static childIssuesLoader: IssuesLoader = () => Utils.throwNotConfigured('childIssuesLoader')
-    static blockerIssuesLoader: IssuesLoader = () => Utils.throwNotConfigured('blockerIssuesLoader')
-
-    static issueIdGetter: IssueStringFieldGetter = () => Utils.throwNotConfigured('issueIdGetter')
-    static titleGetter: IssueStringFieldGetter = () => Utils.throwNotConfigured('titleGetter')
-
-    static idDoneCalculator: IssueAggregateBooleanFieldGetter = () => Utils.throwNotConfigured('idDoneCalculator')
-
-    static stringFields: Record<string, IssueStringFieldGetter> = {}
-    static booleanFields: Record<string, IssueBooleanFieldGetter> = {}
-    static aggregatedBooleanFields: Record<string, IssueAggregateBooleanFieldGetter> = {}
-
-    static childIssueMetrics: IssueMetric[] = []
-    static blockerIssueMetrics: IssueMetric[] = []
+        const json = JSON.stringify(hashableValues)
+        return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, json)
+    }
 
 }

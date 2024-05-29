@@ -1,31 +1,26 @@
 class GSheetProject {
 
     static reloadIssues() {
-        Utils.entryPoint(() => {
-            IssueLoader.loadAllIssues()
+        EntryPoint.entryPoint(() => {
         })
     }
 
     static recalculateSchedule() {
-        Utils.entryPoint(() => {
-            Schedule.recalculateAllSchedules()
+        EntryPoint.entryPoint(() => {
         })
     }
 
     static onOpen(event?: SheetsOnOpen) {
-        Utils.entryPoint(() => {
+        EntryPoint.entryPoint(() => {
         })
     }
 
     static onChange(event?: SheetsOnChange) {
-        if (['EDIT', 'FORMAT'].includes(event?.changeType?.toString() ?? '')) {
+        if (!['INSERT_ROW', 'REMOVE_ROW'].includes(event?.changeType?.toString() ?? '')) {
             return
         }
 
-        Utils.entryPoint(() => {
-            State.updateLastStructureChange()
-            HierarchyFormatter.formatAllHierarchy()
-            Schedule.recalculateAllSchedules()
+        EntryPoint.entryPoint(() => {
         })
     }
 
@@ -38,13 +33,11 @@ class GSheetProject {
     }
 
     private static _onEditRange(range?: Range) {
-        Utils.entryPoint(() => {
-            if (range != null) {
-                IssueIdFormatter.formatIssueId(range)
-                HierarchyFormatter.formatHierarchy(range)
-                IssueLoader.loadIssues(range)
-                Schedule.recalculateSchedule(range)
-            }
+        if (range == null) {
+            return
+        }
+
+        EntryPoint.entryPoint(() => {
         })
     }
 

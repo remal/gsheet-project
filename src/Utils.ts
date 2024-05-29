@@ -1,17 +1,5 @@
 class Utils {
 
-    static entryPoint<T>(action: () => T): T {
-        try {
-            State.reset()
-            ExecutionCache.resetCache()
-            return action()
-
-        } catch (e) {
-            console.error(e)
-            throw e
-        }
-    }
-
     static* range(startIncluding: number, endIncluding: number): Iterable<number> {
         for (let n = startIncluding; n <= endIncluding; ++n) {
             yield n
@@ -144,6 +132,10 @@ class Utils {
 
     static escapeRegex(string: string): string {
         return string.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    }
+
+    static escapeFormulaString(string: string): string {
+        return string.replaceAll(/"/g, '""')
     }
 
     static isString(value: unknown): value is string {

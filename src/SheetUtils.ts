@@ -38,9 +38,11 @@ class SheetUtils {
             return undefined
         }
 
+        ProtectionLocks.lockColumnsWithProtection(sheet)
+
         columnName = Utils.normalizeName(columnName)
         return ExecutionCache.getOrComputeCache(['findColumnByName', sheet, columnName], () => {
-            for (const col of Utils.range(1, sheet.getLastColumn())) {
+            for (const col of Utils.range(GSheetProjectSettings.titleRow, sheet.getLastColumn())) {
                 const name = Utils.normalizeName(sheet.getRange(1, col).getValue())
                 if (name === columnName) {
                     return col
@@ -108,7 +110,7 @@ class SheetUtils {
             return false
         }
 
-        return sheet.getType()?.toString() === 'GRID'
+        return sheet.getType() === SpreadsheetApp.SheetType.GRID
     }
 
 }

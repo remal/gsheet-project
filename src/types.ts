@@ -1,14 +1,4 @@
-type IssueIdsExtractor = (text: string) => string[] | null
-type IssueIdDecorator = (issueId: string) => string
-type IssueIdToUrl = (issueId: string) => string
-type IssueIdsToUrl = (issueIds: string[]) => string
-
 type Issue = Record<string, any>
-type IssuesLoader = (issueIds: string[]) => Issue[]
-type IssueStringFieldGetter = (issue: Issue) => string
-type IssueBooleanFieldGetter = (issue: Issue) => boolean
-
-type IssueAggregateBooleanFieldGetter = (rootIssues: Issue[], childIssues: Issue[]) => boolean
 
 
 interface Link {
@@ -22,11 +12,6 @@ interface UrlWithTextOffset {
     end: number
 }
 
-interface IssueMetric {
-    columnName: string
-    filter: IssueBooleanFieldGetter
-}
-
 interface SettingsRange {
     row: number
     column: number
@@ -34,9 +19,12 @@ interface SettingsRange {
     columns: number
 }
 
+type StringKeys<T> = { [k in keyof T]: T[k] extends string ? k : never }[keyof T]
+
 
 type Range = GoogleAppsScript.Spreadsheet.Range
 type Sheet = GoogleAppsScript.Spreadsheet.Sheet
+type Protection = GoogleAppsScript.Spreadsheet.Protection
 type RichTextValue = GoogleAppsScript.Spreadsheet.RichTextValue
 
 type SheetsOnOpen = GoogleAppsScript.Events.SheetsOnOpen

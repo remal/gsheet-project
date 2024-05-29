@@ -8,8 +8,10 @@
     "isolatedModules": true,
     "target": "ES2019",
     "module": "None",
+    "strictNullChecks": true,
+    "removeComments": false,
     "experimentalDecorators": true,
-    "strictNullChecks": true
+    "emitDecoratorMetadata": true
   },
   "include": [
     "src/**/*.ts",
