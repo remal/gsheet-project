@@ -1,18 +1,14 @@
 abstract class AbstractSheetLayout {
 
-    protected static get sheetName(): string {
-        throw new Error("Should be overridden")
-    }
+    protected abstract get sheetName(): string
 
-    protected static get columns(): ColumnInfo[] {
-        throw new Error("Should be overridden")
-    }
+    protected abstract get columns(): ColumnInfo[]
 
-    protected static get sheet(): Sheet {
+    protected get sheet(): Sheet {
         return SheetUtils.getSheetByName(this.sheetName)
     }
 
-    protected static migrateColumns() {
+    migrateColumns() {
         const columns = this.columns.reduce(
             (map, info) => map.set(Utils.normalizeName(info.name), info),
             new Map<string, ColumnInfo>(),

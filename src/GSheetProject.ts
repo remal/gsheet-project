@@ -5,8 +5,9 @@ class GSheetProject {
         })
     }
 
-    static recalculateSchedule() {
+    static migrateColumns() {
         EntryPoint.entryPoint(() => {
+            ProjectSheetLayout.instance.migrateColumns()
         })
     }
 
@@ -16,7 +17,7 @@ class GSheetProject {
     }
 
     static onChange(event?: SheetsOnChange) {
-        if (!['INSERT_ROW', 'REMOVE_ROW'].includes(event?.changeType?.toString() ?? '')) {
+        if (!['INSERT_ROW'].includes(event?.changeType?.toString() ?? '')) {
             return
         }
 

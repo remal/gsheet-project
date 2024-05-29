@@ -8,6 +8,8 @@ class GSheetProjectSettings {
     static projectsSheetName: string = "Projects"
     static projectsIssueColumnName: string = "Issue"
     static projectsIssueColumnRangeName: string = "Issues"
+    static projectsIssueHashColumnName: string = "Issue Hash"
+    static projectsIssueHashColumnRangeName: string = "IssueHashes"
 
 
     static computeSettingsHash() {

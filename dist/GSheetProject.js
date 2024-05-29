@@ -3,8 +3,9 @@ class GSheetProject {
         EntryPoint.entryPoint(() => {
         });
     }
-    static recalculateSchedule() {
+    static migrateColumns() {
         EntryPoint.entryPoint(() => {
+            ProjectSheetLayout.instance.migrateColumns();
         });
     }
     static onOpen(event) {
@@ -13,7 +14,7 @@ class GSheetProject {
     }
     static onChange(event) {
         var _a, _b;
-        if (!['INSERT_ROW', 'REMOVE_ROW'].includes((_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '')) {
+        if (!['INSERT_ROW'].includes((_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '')) {
             return;
         }
         EntryPoint.entryPoint(() => {
@@ -55,24 +56,20 @@ GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.projectsSheetName = "Projects";
 GSheetProjectSettings.projectsIssueColumnName = "Issue";
 GSheetProjectSettings.projectsIssueColumnRangeName = "Issues";
+GSheetProjectSettings.projectsIssueHashColumnName = "Issue Hash";
+GSheetProjectSettings.projectsIssueHashColumnRangeName = "IssueHashes";
 
 class AbstractSheetLayout {
-    static get sheetName() {
-        throw new Error("Should be overridden");
-    }
-    static get columns() {
-        throw new Error("Should be overridden");
-    }
-    static get sheet() {
+    get sheet() {
         return SheetUtils.getSheetByName(this.sheetName);
     }
-    static migrateColumns() {
+    migrateColumns() {
         var _a, _b;
         const columns = this.columns.reduce((map, info) => map.set(Utils.normalizeName(info.name), info), new Map());
         if (!columns.size) {
             return;
         }
-        const cacheKey = `SheetLayout:migrateColumns:f4655e12c89501f6d65bd724306a7b528f8d8f3dc55efc40af003d67b09883c3:${GSheetProjectSettings.computeSettingsHash()}:${this.sheetName}`;
+        const cacheKey = `SheetLayout:migrateColumns:2fb6a6ff3250ca907820f3c03198d6b54714468a21826e6a6d68905b9c759b25:${GSheetProjectSettings.computeSettingsHash()}:${this.sheetName}`;
         const cache = CacheService.getDocumentCache();
         if (cache != null) {
             if (cache.get(cacheKey) === 'true') {
@@ -190,18 +187,24 @@ class Lazy {
 }
 
 class ProjectSheetLayout extends AbstractSheetLayout {
-    static get sheetName() {
+    get sheetName() {
         return GSheetProjectSettings.projectsSheetName;
     }
-    static get columns() {
+    get columns() {
         return [
             {
                 name: GSheetProjectSettings.projectsIssueColumnName,
                 rangeName: GSheetProjectSettings.projectsIssueColumnRangeName,
             },
+            {
+                name: GSheetProjectSettings.projectsIssueHashColumnName,
+                arrayFormula: '',
+                rangeName: GSheetProjectSettings.projectsIssueHashColumnRangeName,
+            },
         ];
     }
 }
+ProjectSheetLayout.instance = new ProjectSheetLayout();
 
 class ProtectionLocks {
     static lockColumnsWithProtection(sheet) {

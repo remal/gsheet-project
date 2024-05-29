@@ -1,14 +1,21 @@
 class ProjectSheetLayout extends AbstractSheetLayout {
 
-    protected static get sheetName(): string {
+    static instance = new ProjectSheetLayout()
+
+    protected get sheetName(): string {
         return GSheetProjectSettings.projectsSheetName
     }
 
-    protected static get columns(): ColumnInfo[] {
+    protected get columns(): ColumnInfo[] {
         return [
             {
                 name: GSheetProjectSettings.projectsIssueColumnName,
                 rangeName: GSheetProjectSettings.projectsIssueColumnRangeName,
+            },
+            {
+                name: GSheetProjectSettings.projectsIssueHashColumnName,
+                arrayFormula: '',
+                rangeName: GSheetProjectSettings.projectsIssueHashColumnRangeName,
             },
         ]
     }
