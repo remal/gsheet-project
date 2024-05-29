@@ -13,11 +13,12 @@ class GSheetProject {
 
     static onOpen(event?: SheetsOnOpen) {
         EntryPoint.entryPoint(() => {
+            ProjectSheetLayout.instance.migrateColumns()
         })
     }
 
     static onChange(event?: SheetsOnChange) {
-        if (!['INSERT_ROW'].includes(event?.changeType?.toString() ?? '')) {
+        if (!['INSERT_ROW', 'OTHER'].includes(event?.changeType?.toString() ?? '')) {
             return
         }
 

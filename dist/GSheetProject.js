@@ -10,11 +10,12 @@ class GSheetProject {
     }
     static onOpen(event) {
         EntryPoint.entryPoint(() => {
+            ProjectSheetLayout.instance.migrateColumns();
         });
     }
     static onChange(event) {
         var _a, _b;
-        if (!['INSERT_ROW'].includes((_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '')) {
+        if (!['INSERT_ROW', 'OTHER'].includes((_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '')) {
             return;
         }
         EntryPoint.entryPoint(() => {
@@ -69,7 +70,7 @@ class AbstractSheetLayout {
         if (!columns.size) {
             return;
         }
-        const cacheKey = `SheetLayout:migrateColumns:2fb6a6ff3250ca907820f3c03198d6b54714468a21826e6a6d68905b9c759b25:${GSheetProjectSettings.computeSettingsHash()}:${this.sheetName}`;
+        const cacheKey = `SheetLayout:migrateColumns:13493b7f00f568618f90e337a782edd518ca53ea5abf7facb6f59755a6e1b06b:${GSheetProjectSettings.computeSettingsHash()}:${this.sheetName}`;
         const cache = CacheService.getDocumentCache();
         if (cache != null) {
             if (cache.get(cacheKey) === 'true') {
