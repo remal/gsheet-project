@@ -18,7 +18,7 @@ abstract class AbstractSheetLayout {
         }
 
         const cacheKey = [
-            `${this.constructor.name || Utils.normalizeName(this.sheetName)}`,
+            this.constructor?.name || Utils.normalizeName(this.sheetName),
             'migrateColumns',
             '$$$HASH$$$',
             GSheetProjectSettings.computeSettingsHash(),

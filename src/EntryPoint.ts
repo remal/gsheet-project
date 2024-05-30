@@ -11,6 +11,7 @@ class EntryPoint {
 
         } finally {
             ProtectionLocks.release()
+            ProtectionLocks.releaseExpiredLocks()
         }
     }
 

@@ -11,7 +11,7 @@ class ProtectionLocks {
 
         const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns())
         const protection = range.protect()
-            .setDescription(`Columns lock: ${new Date()}`)
+            .setDescription(`lock|columns|${new Date()}`)
             .setWarningOnly(true)
             .setDomainEdit(false)
         const editors = protection.getEditors()
@@ -29,7 +29,7 @@ class ProtectionLocks {
 
         const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1)
         const protection = range.protect()
-            .setDescription(`Rows lock: ${new Date()}`)
+            .setDescription(`lock|rows|${new Date()}`)
             .setWarningOnly(true)
             .setDomainEdit(false)
         const editors = protection.getEditors()
@@ -45,6 +45,29 @@ class ProtectionLocks {
 
         this._rowsProtections.forEach(protection => protection.remove())
         this._rowsProtections.clear()
+    }
+
+    static releaseExpiredLocks() {
+        SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(sheet => {
+            const maxLockDurationMillis = 10 * 60 * 1000
+            const minTimestamp = new Date().getTime() - maxLockDurationMillis
+            for (const protection of sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE)) {
+                const description = protection.getDescription()
+                if (!description.startsWith('lock|')) {
+                    continue
+                }
+
+                const dateString = description.split('|').slice(-1)[0]
+                try {
+                    const date = new Date(dateString)
+                    if (date.getTime() < minTimestamp) {
+                        protection.remove()
+                    }
+                } catch (_) {
+                    // do nothing
+                }
+            }
+        })
     }
 
 }

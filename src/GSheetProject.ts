@@ -7,13 +7,13 @@ class GSheetProject {
 
     static migrateColumns() {
         EntryPoint.entryPoint(() => {
-            ProjectSheetLayout.instance.migrateColumns()
+            ProjectsSheetLayout.instance.migrateColumns()
         })
     }
 
     static onOpen(event?: SheetsOnOpen) {
         EntryPoint.entryPoint(() => {
-            ProjectSheetLayout.instance.migrateColumns()
+            ProjectsSheetLayout.instance.migrateColumns()
         })
     }
 

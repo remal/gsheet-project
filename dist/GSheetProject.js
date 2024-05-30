@@ -5,12 +5,12 @@ class GSheetProject {
     }
     static migrateColumns() {
         EntryPoint.entryPoint(() => {
-            ProjectSheetLayout.instance.migrateColumns();
+            ProjectsSheetLayout.instance.migrateColumns();
         });
     }
     static onOpen(event) {
         EntryPoint.entryPoint(() => {
-            ProjectSheetLayout.instance.migrateColumns();
+            ProjectsSheetLayout.instance.migrateColumns();
         });
     }
     static onChange(event) {
@@ -65,15 +65,15 @@ class AbstractSheetLayout {
         return SheetUtils.getSheetByName(this.sheetName);
     }
     migrateColumns() {
-        var _a, _b;
+        var _a, _b, _c;
         const columns = this.columns.reduce((map, info) => map.set(Utils.normalizeName(info.name), info), new Map());
         if (!columns.size) {
             return;
         }
         const cacheKey = [
-            `${this.constructor.name || Utils.normalizeName(this.sheetName)}`,
+            ((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName),
             'migrateColumns',
-            'b8383a6421b4621cd98a3a923a70f3c7421eed0b8dba8c1161528dcb29d1cd8b',
+            '323851af681799952ba44eb37265b1842a773c4299964cb7ca8940cffaae865d',
             GSheetProjectSettings.computeSettingsHash(),
         ].join(':').replace(/^(.{1,250}).*$/, '$1');
         const cache = PropertiesService.getDocumentProperties();
@@ -105,7 +105,7 @@ class AbstractSheetLayout {
                 continue;
             }
             const column = index + 1;
-            if ((_a = info.arrayFormula) === null || _a === void 0 ? void 0 : _a.length) {
+            if ((_b = info.arrayFormula) === null || _b === void 0 ? void 0 : _b.length) {
                 const arrayFormulaNormalized = info.arrayFormula.split(/[\r\n]+/)
                     .map(line => line.trim())
                     .filter(line => line.length)
@@ -118,7 +118,7 @@ class AbstractSheetLayout {
                         .setFormula(formulaToExpect);
                 }
             }
-            if ((_b = info.rangeName) === null || _b === void 0 ? void 0 : _b.length) {
+            if ((_c = info.rangeName) === null || _c === void 0 ? void 0 : _c.length) {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows - GSheetProjectSettings.firstDataRow, 1));
             }
         }
@@ -153,6 +153,7 @@ class EntryPoint {
         }
         finally {
             ProtectionLocks.release();
+            ProtectionLocks.releaseExpiredLocks();
         }
     }
 }
@@ -197,7 +198,7 @@ class Lazy {
     }
 }
 
-class ProjectSheetLayout extends AbstractSheetLayout {
+class ProjectsSheetLayout extends AbstractSheetLayout {
     get sheetName() {
         return GSheetProjectSettings.projectsSheetName;
     }
@@ -212,7 +213,7 @@ class ProjectSheetLayout extends AbstractSheetLayout {
                 arrayFormula: `
                     MAP(
                         ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
-                        LAMBDA(issue, IF(ISBLANK(issue), "", SHA256(issue)))
+                        LAMBDA(issue, IF(ISBLANK(issue), "", ${SHA256.name}(issue)))
                     )
                 `,
                 rangeName: GSheetProjectSettings.projectsIssueHashesRangeName,
@@ -220,7 +221,7 @@ class ProjectSheetLayout extends AbstractSheetLayout {
         ];
     }
 }
-ProjectSheetLayout.instance = new ProjectSheetLayout();
+ProjectsSheetLayout.instance = new ProjectsSheetLayout();
 
 class ProtectionLocks {
     static lockColumnsWithProtection(sheet) {
@@ -230,7 +231,7 @@ class ProtectionLocks {
         }
         const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
         const protection = range.protect()
-            .setDescription(`Columns lock: ${new Date()}`)
+            .setDescription(`lock|columns|${new Date()}`)
             .setWarningOnly(true)
             .setDomainEdit(false);
         const editors = protection.getEditors();
@@ -246,7 +247,7 @@ class ProtectionLocks {
         }
         const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1);
         const protection = range.protect()
-            .setDescription(`Rows lock: ${new Date()}`)
+            .setDescription(`lock|rows|${new Date()}`)
             .setWarningOnly(true)
             .setDomainEdit(false);
         const editors = protection.getEditors();
@@ -260,6 +261,28 @@ class ProtectionLocks {
         this._columnsProtections.clear();
         this._rowsProtections.forEach(protection => protection.remove());
         this._rowsProtections.clear();
+    }
+    static releaseExpiredLocks() {
+        SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(sheet => {
+            const maxLockDurationMillis = 10 * 60 * 1000;
+            const minTimestamp = new Date().getTime() - maxLockDurationMillis;
+            for (const protection of sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE)) {
+                const description = protection.getDescription();
+                if (!description.startsWith('lock|')) {
+                    continue;
+                }
+                const dateString = description.split('|').slice(-1)[0];
+                try {
+                    const date = new Date(dateString);
+                    if (date.getTime() < minTimestamp) {
+                        protection.remove();
+                    }
+                }
+                catch (_) {
+                    // do nothing
+                }
+            }
+        });
     }
 }
 ProtectionLocks._columnsProtections = new Map();

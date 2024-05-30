@@ -1,6 +1,6 @@
-class ProjectSheetLayout extends AbstractSheetLayout {
+class ProjectsSheetLayout extends AbstractSheetLayout {
 
-    static readonly instance = new ProjectSheetLayout()
+    static readonly instance = new ProjectsSheetLayout()
 
     protected get sheetName(): string {
         return GSheetProjectSettings.projectsSheetName
@@ -17,7 +17,7 @@ class ProjectSheetLayout extends AbstractSheetLayout {
                 arrayFormula: `
                     MAP(
                         ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
-                        LAMBDA(issue, IF(ISBLANK(issue), "", SHA256(issue)))
+                        LAMBDA(issue, IF(ISBLANK(issue), "", ${SHA256.name}(issue)))
                     )
                 `,
                 rangeName: GSheetProjectSettings.projectsIssueHashesRangeName,
