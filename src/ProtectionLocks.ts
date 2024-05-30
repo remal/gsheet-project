@@ -53,6 +53,7 @@ class ProtectionLocks {
                         ? new Date(dateString)
                         : new Date(parseFloat(dateString))
                     if (date.getTime() < minTimestamp) {
+                        console.log(`Removing expired protection lock: ${description}`)
                         protection.remove()
                     }
                 } catch (_) {

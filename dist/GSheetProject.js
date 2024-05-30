@@ -76,7 +76,7 @@ class AbstractSheetLayout {
         const cacheKey = [
             ((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName),
             'migrateColumns',
-            'ae27689a90b3b6c7ceab1f3a807dbe43f4ebf5cbe1c968c476d212d243382660',
+            'b5ca979beb421dd05a146ec3f501fcbf332a20e221b1f15477cfa48d3125b051',
             GSheetProjectSettings.computeSettingsHash(),
         ].join(':').replace(/^(.{1,250}).*$/, '$1');
         const cache = PropertiesService.getDocumentProperties();
@@ -112,9 +112,9 @@ class AbstractSheetLayout {
                 const arrayFormulaNormalized = info.arrayFormula.split(/[\r\n]+/)
                     .map(line => line.trim())
                     .filter(line => line.length)
-                    .join('')
-                    .trim();
-                const formulaToExpect = `={"${Utils.escapeFormulaString(info.name)}", ${arrayFormulaNormalized}`;
+                    .map(line => line + (line.endsWith(',') ? ' ' : ''))
+                    .join('');
+                const formulaToExpect = `={"${Utils.escapeFormulaString(info.name)}", ${arrayFormulaNormalized}}`;
                 const formula = existingFormulas.get()[index];
                 if (formula !== formulaToExpect) {
                     sheet.getRange(GSheetProjectSettings.titleRow, column)
@@ -270,6 +270,7 @@ class ProtectionLocks {
                         ? new Date(dateString)
                         : new Date(parseFloat(dateString));
                     if (date.getTime() < minTimestamp) {
+                        console.log(`Removing expired protection lock: ${description}`);
                         protection.remove();
                     }
                 }
