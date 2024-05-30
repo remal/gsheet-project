@@ -76,7 +76,7 @@ class AbstractSheetLayout {
         const cacheKey = [
             ((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName),
             'migrateColumns',
-            '4a43e8fa850a702ae165b7f83fce8a6bcfa71c562d39d284559c5d0fe9caec1d',
+            'ae27689a90b3b6c7ceab1f3a807dbe43f4ebf5cbe1c968c476d212d243382660',
             GSheetProjectSettings.computeSettingsHash(),
         ].join(':').replace(/^(.{1,250}).*$/, '$1');
         const cache = PropertiesService.getDocumentProperties();
@@ -235,12 +235,7 @@ class ProtectionLocks {
         const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
         const protection = range.protect()
             .setDescription(`lock|columns|${new Date().getTime()}`)
-            .setWarningOnly(true)
-            .setDomainEdit(false);
-        const editors = protection.getEditors();
-        if (editors.length) {
-            protection.removeEditors(editors);
-        }
+            .setWarningOnly(true);
         this._columnsProtections.set(sheetId, protection);
     }
     static lockRowsWithProtection(sheet) {
@@ -251,12 +246,7 @@ class ProtectionLocks {
         const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1);
         const protection = range.protect()
             .setDescription(`lock|rows|${new Date().getTime()}`)
-            .setWarningOnly(true)
-            .setDomainEdit(false);
-        const editors = protection.getEditors();
-        if (editors.length) {
-            protection.removeEditors(editors);
-        }
+            .setWarningOnly(true);
         this._rowsProtections.set(sheetId, protection);
     }
     static release() {

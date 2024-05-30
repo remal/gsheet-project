@@ -13,11 +13,6 @@ class ProtectionLocks {
         const protection = range.protect()
             .setDescription(`lock|columns|${new Date().getTime()}`)
             .setWarningOnly(true)
-            .setDomainEdit(false)
-        const editors = protection.getEditors()
-        if (editors.length) {
-            protection.removeEditors(editors)
-        }
         this._columnsProtections.set(sheetId, protection)
     }
 
@@ -31,11 +26,6 @@ class ProtectionLocks {
         const protection = range.protect()
             .setDescription(`lock|rows|${new Date().getTime()}`)
             .setWarningOnly(true)
-            .setDomainEdit(false)
-        const editors = protection.getEditors()
-        if (editors.length) {
-            protection.removeEditors(editors)
-        }
         this._rowsProtections.set(sheetId, protection)
     }
 
