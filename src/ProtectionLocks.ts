@@ -11,7 +11,7 @@ class ProtectionLocks {
 
         const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns())
         const protection = range.protect()
-            .setDescription(`lock|columns|${new Date()}`)
+            .setDescription(`lock|columns|${new Date().getTime()}`)
             .setWarningOnly(true)
             .setDomainEdit(false)
         const editors = protection.getEditors()
@@ -29,7 +29,7 @@ class ProtectionLocks {
 
         const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1)
         const protection = range.protect()
-            .setDescription(`lock|rows|${new Date()}`)
+            .setDescription(`lock|rows|${new Date().getTime()}`)
             .setWarningOnly(true)
             .setDomainEdit(false)
         const editors = protection.getEditors()
@@ -48,9 +48,9 @@ class ProtectionLocks {
     }
 
     static releaseExpiredLocks() {
+        const maxLockDurationMillis = 10 * 60 * 1000
+        const minTimestamp = new Date().getTime() - maxLockDurationMillis
         SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(sheet => {
-            const maxLockDurationMillis = 10 * 60 * 1000
-            const minTimestamp = new Date().getTime() - maxLockDurationMillis
             for (const protection of sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE)) {
                 const description = protection.getDescription()
                 if (!description.startsWith('lock|')) {
@@ -59,7 +59,9 @@ class ProtectionLocks {
 
                 const dateString = description.split('|').slice(-1)[0]
                 try {
-                    const date = new Date(dateString)
+                    const date = Number.isNaN(dateString)
+                        ? new Date(dateString)
+                        : new Date(parseFloat(dateString))
                     if (date.getTime() < minTimestamp) {
                         protection.remove()
                     }

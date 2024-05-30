@@ -10,7 +10,10 @@ abstract class AbstractSheetLayout {
 
     migrateColumns() {
         const columns = this.columns.reduce(
-            (map, info) => map.set(Utils.normalizeName(info.name), info),
+            (map, info) => {
+                map.set(Utils.normalizeName(info.name), info)
+                return map
+            },
             new Map<string, ColumnInfo>(),
         )
         if (!columns.size) {

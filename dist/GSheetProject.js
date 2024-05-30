@@ -66,14 +66,17 @@ class AbstractSheetLayout {
     }
     migrateColumns() {
         var _a, _b, _c;
-        const columns = this.columns.reduce((map, info) => map.set(Utils.normalizeName(info.name), info), new Map());
+        const columns = this.columns.reduce((map, info) => {
+            map.set(Utils.normalizeName(info.name), info);
+            return map;
+        }, new Map());
         if (!columns.size) {
             return;
         }
         const cacheKey = [
             ((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName),
             'migrateColumns',
-            '323851af681799952ba44eb37265b1842a773c4299964cb7ca8940cffaae865d',
+            '4a43e8fa850a702ae165b7f83fce8a6bcfa71c562d39d284559c5d0fe9caec1d',
             GSheetProjectSettings.computeSettingsHash(),
         ].join(':').replace(/^(.{1,250}).*$/, '$1');
         const cache = PropertiesService.getDocumentProperties();
@@ -231,7 +234,7 @@ class ProtectionLocks {
         }
         const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
         const protection = range.protect()
-            .setDescription(`lock|columns|${new Date()}`)
+            .setDescription(`lock|columns|${new Date().getTime()}`)
             .setWarningOnly(true)
             .setDomainEdit(false);
         const editors = protection.getEditors();
@@ -247,7 +250,7 @@ class ProtectionLocks {
         }
         const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1);
         const protection = range.protect()
-            .setDescription(`lock|rows|${new Date()}`)
+            .setDescription(`lock|rows|${new Date().getTime()}`)
             .setWarningOnly(true)
             .setDomainEdit(false);
         const editors = protection.getEditors();
@@ -263,9 +266,9 @@ class ProtectionLocks {
         this._rowsProtections.clear();
     }
     static releaseExpiredLocks() {
+        const maxLockDurationMillis = 10 * 60 * 1000;
+        const minTimestamp = new Date().getTime() - maxLockDurationMillis;
         SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(sheet => {
-            const maxLockDurationMillis = 10 * 60 * 1000;
-            const minTimestamp = new Date().getTime() - maxLockDurationMillis;
             for (const protection of sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE)) {
                 const description = protection.getDescription();
                 if (!description.startsWith('lock|')) {
@@ -273,7 +276,9 @@ class ProtectionLocks {
                 }
                 const dateString = description.split('|').slice(-1)[0];
                 try {
-                    const date = new Date(dateString);
+                    const date = Number.isNaN(dateString)
+                        ? new Date(dateString)
+                        : new Date(parseFloat(dateString));
                     if (date.getTime() < minTimestamp) {
                         protection.remove();
                     }
