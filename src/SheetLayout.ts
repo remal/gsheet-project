@@ -1,8 +1,8 @@
-abstract class AbstractSheetLayout {
+abstract class SheetLayout {
 
     protected abstract get sheetName(): string
 
-    protected abstract get columns(): ColumnInfo[]
+    protected abstract get columns(): ReadonlyArray<ColumnInfo>
 
     protected get sheet(): Sheet {
         return SheetUtils.getSheetByName(this.sheetName)
@@ -94,7 +94,7 @@ abstract class AbstractSheetLayout {
 
         const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion']
         if (Utils.isFunction(waitForAllDataExecutionsCompletion)) {
-            waitForAllDataExecutionsCompletion(10000)
+            waitForAllDataExecutionsCompletion(10)
         }
     }
 

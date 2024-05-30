@@ -1,4 +1,4 @@
-class ProjectsSheetLayout extends AbstractSheetLayout {
+class ProjectsSheetLayout extends SheetLayout {
 
     static readonly instance = new ProjectsSheetLayout()
 
@@ -6,7 +6,7 @@ class ProjectsSheetLayout extends AbstractSheetLayout {
         return GSheetProjectSettings.projectsSheetName
     }
 
-    protected get columns(): ColumnInfo[] {
+    protected get columns(): ReadonlyArray<ColumnInfo> {
         return [
             {
                 name: GSheetProjectSettings.projectsIssueColumnName,

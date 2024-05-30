@@ -112,3 +112,10 @@ class Settings {
     }
 
 }
+
+interface SettingsRange {
+    row: number
+    column: number
+    rows: number
+    columns: number
+}

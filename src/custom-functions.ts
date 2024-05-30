@@ -10,6 +10,6 @@ function SHA256(value: unknown): string {
     return digest
         .map(num => num < 0 ? num + 256 : num)
         .map(num => num.toString(16))
-        .map(num => (num.length == 1 ? '0' : '') + num)
+        .map(num => (num.length === 1 ? '0' : '') + num)
         .join('')
 }

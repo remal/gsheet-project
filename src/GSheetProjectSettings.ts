@@ -11,6 +11,8 @@ class GSheetProjectSettings {
     static projectsIssueHashColumnName: string = "Issue Hash"
     static projectsIssueHashesRangeName: string = "IssueHashes"
 
+    static issueLoaderFactories: IssueLoaderFactory[] = []
+
 
     static computeSettingsHash() {
         const hashableValues: Record<string, any> = {}

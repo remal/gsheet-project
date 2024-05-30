@@ -1,7 +1,7 @@
 class ProtectionLocks {
 
-    private static _columnsProtections = new Map<number, Protection>()
-    private static _rowsProtections = new Map<number, Protection>()
+    private static readonly _columnsProtections = new Map<number, Protection>()
+    private static readonly _rowsProtections = new Map<number, Protection>()
 
     static lockColumnsWithProtection(sheet: Sheet) {
         const sheetId = sheet.getSheetId()

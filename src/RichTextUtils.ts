@@ -1,6 +1,17 @@
+interface Link {
+    url: string
+    title?: string
+}
+
 class RichTextUtils {
 
     static createLinksValue(links: Link[]): RichTextValue {
+        interface UrlWithTextOffset {
+            url: string
+            start: number
+            end: number
+        }
+
         let text = ''
         const linksWithOffsets: UrlWithTextOffset[] = []
         links.forEach(link => {
