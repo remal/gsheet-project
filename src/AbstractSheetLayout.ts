@@ -17,10 +17,15 @@ abstract class AbstractSheetLayout {
             return
         }
 
-        const cacheKey = `SheetLayout:migrateColumns:$$$HASH$$$:${GSheetProjectSettings.computeSettingsHash()}:${this.sheetName}`
-        const cache = CacheService.getDocumentCache()
+        const cacheKey = [
+            `${this.constructor.name || Utils.normalizeName(this.sheetName)}`,
+            'migrateColumns',
+            '$$$HASH$$$',
+            GSheetProjectSettings.computeSettingsHash(),
+        ].join(':').replace(/^(.{1,250}).*$/, '$1')
+        const cache = PropertiesService.getDocumentProperties()
         if (cache != null) {
-            if (cache.get(cacheKey) === 'true') {
+            if (cache.getProperty(cacheKey) === 'true') {
                 return
             }
         }
@@ -81,7 +86,7 @@ abstract class AbstractSheetLayout {
         }
 
         if (cache != null) {
-            cache.put(cacheKey, 'true')
+            cache.setProperty(cacheKey, 'true')
         }
     }
 

@@ -70,10 +70,15 @@ class AbstractSheetLayout {
         if (!columns.size) {
             return;
         }
-        const cacheKey = `SheetLayout:migrateColumns:623d94135be268da67f97ac069294dcb5378a9662df54b72b0f560063dbe4b22:${GSheetProjectSettings.computeSettingsHash()}:${this.sheetName}`;
-        const cache = CacheService.getDocumentCache();
+        const cacheKey = [
+            `${this.constructor.name || Utils.normalizeName(this.sheetName)}`,
+            'migrateColumns',
+            'b8383a6421b4621cd98a3a923a70f3c7421eed0b8dba8c1161528dcb29d1cd8b',
+            GSheetProjectSettings.computeSettingsHash(),
+        ].join(':').replace(/^(.{1,250}).*$/, '$1');
+        const cache = PropertiesService.getDocumentProperties();
         if (cache != null) {
-            if (cache.get(cacheKey) === 'true') {
+            if (cache.getProperty(cacheKey) === 'true') {
                 return;
             }
         }
@@ -118,7 +123,7 @@ class AbstractSheetLayout {
             }
         }
         if (cache != null) {
-            cache.put(cacheKey, 'true');
+            cache.setProperty(cacheKey, 'true');
         }
     }
 }
