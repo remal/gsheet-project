@@ -48,7 +48,7 @@ class GSheetProjectSettings {
             hashableValues[key] = value;
         }
         const json = JSON.stringify(hashableValues);
-        return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, json);
+        return SHA256(json);
     }
 }
 GSheetProjectSettings.titleRow = 1;
@@ -76,7 +76,7 @@ class AbstractSheetLayout {
         const cacheKey = [
             ((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName),
             'migrateColumns',
-            '827742b218c02fab0166281b09f57ce30084edf6e34d04a24b84630ac6aa02bf',
+            'b9a0d8c60822f4080afc6dffff9131ee1d9ca9fff37b168cc159312198c3507c',
             GSheetProjectSettings.computeSettingsHash(),
         ].join(':').replace(/^(.{1,250}).*$/, '$1');
         const cache = PropertiesService.getDocumentProperties();
@@ -122,11 +122,15 @@ class AbstractSheetLayout {
                 }
             }
             if ((_c = info.rangeName) === null || _c === void 0 ? void 0 : _c.length) {
-                SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows - GSheetProjectSettings.firstDataRow, 1));
+                SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows, 1));
             }
         }
         if (cache != null) {
             cache.setProperty(cacheKey, 'true');
+        }
+        const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion'];
+        if (Utils.isFunction(waitForAllDataExecutionsCompletion)) {
+            waitForAllDataExecutionsCompletion(10000);
         }
     }
 }
@@ -141,7 +145,11 @@ function SHA256(value) {
     var _a;
     const string = (_a = value === null || value === void 0 ? void 0 : value.toString()) !== null && _a !== void 0 ? _a : '';
     const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, string);
-    return Utilities.base64EncodeWebSafe(digest);
+    return digest
+        .map(num => num < 0 ? num + 256 : num)
+        .map(num => num.toString(16))
+        .map(num => (num.length == 1 ? '0' : '') + num)
+        .join('');
 }
 
 class EntryPoint {

@@ -26,7 +26,7 @@ class GSheetProjectSettings {
         }
 
         const json = JSON.stringify(hashableValues)
-        return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, json)
+        return SHA256(json)
     }
 
 }

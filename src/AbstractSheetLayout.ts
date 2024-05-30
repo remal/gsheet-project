@@ -82,7 +82,7 @@ abstract class AbstractSheetLayout {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, sheet.getRange(
                     GSheetProjectSettings.firstDataRow,
                     column,
-                    maxRows - GSheetProjectSettings.firstDataRow,
+                    maxRows,
                     1,
                 ))
             }
@@ -90,6 +90,11 @@ abstract class AbstractSheetLayout {
 
         if (cache != null) {
             cache.setProperty(cacheKey, 'true')
+        }
+
+        const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion']
+        if (Utils.isFunction(waitForAllDataExecutionsCompletion)) {
+            waitForAllDataExecutionsCompletion(10000)
         }
     }
 
