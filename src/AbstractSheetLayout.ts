@@ -68,9 +68,9 @@ abstract class AbstractSheetLayout {
                 const arrayFormulaNormalized = info.arrayFormula.split(/[\r\n]+/)
                     .map(line => line.trim())
                     .filter(line => line.length)
-                    .map(line => line + (line.endsWith(',') ? ' ' : ''))
+                    .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
                     .join('')
-                const formulaToExpect = `={"${Utils.escapeFormulaString(info.name)}", ${arrayFormulaNormalized}}`
+                const formulaToExpect = `={"${Utils.escapeFormulaString(info.name)}"; ${arrayFormulaNormalized}}`
                 const formula = existingFormulas.get()[index]
                 if (formula !== formulaToExpect) {
                     sheet.getRange(GSheetProjectSettings.titleRow, column)
