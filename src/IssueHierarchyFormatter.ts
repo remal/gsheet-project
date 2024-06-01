@@ -39,14 +39,11 @@ class IssueHierarchyFormatter {
         issues = issues
             .filter(it => it?.length)
             .filter(Utils.distinct())
-        console.info('issues', issues)
         issues.forEach(issue => this.formatHierarchyForIssue(issue))
     }
 
     static formatHierarchyForIssue(issue: string) {
-        console.info('issue', issue)
         const issueSlug = issue.replaceAll(/[\r\n]+/g, '').replace(/^(.{0,25}).*$/, '$1')
-        console.info('issueSlug', issueSlug)
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName)
         ProtectionLocks.lockRowsWithProtection(sheet)
 
@@ -66,7 +63,6 @@ class IssueHierarchyFormatter {
         }
 
         let issueRow = issueRange.getRow()
-        console.info('issueRow', issueRow)
 
 
         const issueTitleRange = sheet.getRange(
@@ -74,17 +70,14 @@ class IssueHierarchyFormatter {
             SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName),
         )
         let indentLevel = Math.ceil(RangeUtils.getIndent(issueTitleRange) / GSheetProjectSettings.indent)
-        console.info('indentLevel', indentLevel)
 
         const shouldIssueHaveIndent = sheet.getRange(
             issueRow,
             SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsParentIssueColumnName),
         ).getValue()?.toString()?.trim()?.length
-        console.info('shouldIssueHaveIndent', shouldIssueHaveIndent)
         if (!shouldIssueHaveIndent && indentLevel > 0) {
             indentLevel = 0
             RangeUtils.setStringIndent(issueTitleRange, 0)
-            console.info('indentLevel', indentLevel)
         }
 
 
@@ -120,27 +113,20 @@ class IssueHierarchyFormatter {
 
             let rows = 1
             let lastRow = row
-            console.info('lastRow', lastRow)
             for (let i = rowIndex + 1; i < childIssueRows.length; ++i) {
                 const nextRow = childIssueRows[i]
-                console.info('nextRow', nextRow)
                 if (nextRow === lastRow + 1) {
                     ++rows
                     lastRow = nextRow
-                    console.info('lastRow', lastRow)
                 } else {
                     break
                 }
             }
-            console.info('rows', rows)
             rowIndex += rows - 1
 
             const combinedRange = sheet.getRange(row, 1, rows, 1)
             childIssueRanges.push(combinedRange)
         }
-        console.info('childIssueRanges', childIssueRanges.map(range =>
-            `${range.getRow()}+${range.getNumRows() - 1}`,
-        ))
 
         Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust indents`, () => {
             for (const childIssueRange of childIssueRanges) {
@@ -155,6 +141,13 @@ class IssueHierarchyFormatter {
         })
 
 
+        if (childIssueRanges.length === 1
+            && childIssueRanges[0].getRow() === issueRow + 1
+        ) {
+            return
+        }
+
+
         // move children after the issue:
         Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Move children after the issue`, () => {
             let lastIssueOrConnectedChildIssueRow = issueRow
@@ -165,7 +158,6 @@ class IssueHierarchyFormatter {
                     break
                 }
             }
-            console.info('lastIssueOrConnectedChildIssueRow', lastIssueOrConnectedChildIssueRow)
 
             for (const childIssueRange of childIssueRanges) {
                 const childIssueRow = childIssueRange.getRow()
@@ -177,10 +169,8 @@ class IssueHierarchyFormatter {
                     continue
                 }
 
-                console.info('childIssueRow', childIssueRow)
                 sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1)
                 lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows()
-                console.info('lastIssueOrConnectedChildIssueRow', lastIssueOrConnectedChildIssueRow)
             }
         })
 
@@ -193,10 +183,8 @@ class IssueHierarchyFormatter {
                     continue
                 }
 
-                console.info('childIssueRow', childIssueRow)
                 sheet.moveRows(childIssueRange, issueRow + 1)
                 issueRow -= childIssueRange.getNumRows()
-                console.info('issueRow', issueRow)
             }
         })
     }

@@ -254,14 +254,11 @@ class IssueHierarchyFormatter {
         issues = issues
             .filter(it => it === null || it === void 0 ? void 0 : it.length)
             .filter(Utils.distinct());
-        console.info('issues', issues);
         issues.forEach(issue => this.formatHierarchyForIssue(issue));
     }
     static formatHierarchyForIssue(issue) {
         var _a, _b, _c;
-        console.info('issue', issue);
         const issueSlug = issue.replaceAll(/[\r\n]+/g, '').replace(/^(.{0,25}).*$/, '$1');
-        console.info('issueSlug', issueSlug);
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName);
         ProtectionLocks.lockRowsWithProtection(sheet);
         const issueRange = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsIssueColumnName, GSheetProjectSettings.firstDataRow)
@@ -274,16 +271,12 @@ class IssueHierarchyFormatter {
             return;
         }
         let issueRow = issueRange.getRow();
-        console.info('issueRow', issueRow);
         const issueTitleRange = sheet.getRange(issueRow, SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName));
         let indentLevel = Math.ceil(RangeUtils.getIndent(issueTitleRange) / GSheetProjectSettings.indent);
-        console.info('indentLevel', indentLevel);
         const shouldIssueHaveIndent = (_c = (_b = (_a = sheet.getRange(issueRow, SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsParentIssueColumnName)).getValue()) === null || _a === void 0 ? void 0 : _a.toString()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.length;
-        console.info('shouldIssueHaveIndent', shouldIssueHaveIndent);
         if (!shouldIssueHaveIndent && indentLevel > 0) {
             indentLevel = 0;
             RangeUtils.setStringIndent(issueTitleRange, 0);
-            console.info('indentLevel', indentLevel);
         }
         const childIssueRows = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsParentIssueColumnName, GSheetProjectSettings.firstDataRow)
             .createTextFinder(issue)
@@ -310,31 +303,30 @@ class IssueHierarchyFormatter {
             const row = childIssueRows[rowIndex];
             let rows = 1;
             let lastRow = row;
-            console.info('lastRow', lastRow);
             for (let i = rowIndex + 1; i < childIssueRows.length; ++i) {
                 const nextRow = childIssueRows[i];
-                console.info('nextRow', nextRow);
                 if (nextRow === lastRow + 1) {
                     ++rows;
                     lastRow = nextRow;
-                    console.info('lastRow', lastRow);
                 }
                 else {
                     break;
                 }
             }
-            console.info('rows', rows);
             rowIndex += rows - 1;
             const combinedRange = sheet.getRange(row, 1, rows, 1);
             childIssueRanges.push(combinedRange);
         }
-        console.info('childIssueRanges', childIssueRanges.map(range => `${range.getRow()}+${range.getNumRows() - 1}`));
         Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust indents`, () => {
             for (const childIssueRange of childIssueRanges) {
                 const childIssueTitleRange = sheet.getRange(childIssueRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName), childIssueRange.getNumRows(), 1);
                 RangeUtils.setStringIndent(childIssueTitleRange, (indentLevel + 1) * GSheetProjectSettings.indent);
             }
         });
+        if (childIssueRanges.length === 1
+            && childIssueRanges[0].getRow() === issueRow + 1) {
+            return;
+        }
         // move children after the issue:
         Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Move children after the issue`, () => {
             let lastIssueOrConnectedChildIssueRow = issueRow;
@@ -345,7 +337,6 @@ class IssueHierarchyFormatter {
                     break;
                 }
             }
-            console.info('lastIssueOrConnectedChildIssueRow', lastIssueOrConnectedChildIssueRow);
             for (const childIssueRange of childIssueRanges) {
                 const childIssueRow = childIssueRange.getRow();
                 if (childIssueRow < issueRow) {
@@ -354,10 +345,8 @@ class IssueHierarchyFormatter {
                 if (childIssueRow < lastIssueOrConnectedChildIssueRow) {
                     continue;
                 }
-                console.info('childIssueRow', childIssueRow);
                 sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1);
                 lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows();
-                console.info('lastIssueOrConnectedChildIssueRow', lastIssueOrConnectedChildIssueRow);
             }
         });
         // move children before the issue:
@@ -367,10 +356,8 @@ class IssueHierarchyFormatter {
                 if (childIssueRow >= issueRow) {
                     continue;
                 }
-                console.info('childIssueRow', childIssueRow);
                 sheet.moveRows(childIssueRange, issueRow + 1);
                 issueRow -= childIssueRange.getNumRows();
-                console.info('issueRow', issueRow);
             }
         });
     }
@@ -727,7 +714,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}c24705e7d863de516fa39451144520ca21e8c6adf18e6ca9731fee1535301eab:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}87c2c6cd0cb89d40bc8f107f10d8c30d96563c3084a97c639d9c52ed88441e06:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }
