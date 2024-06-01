@@ -404,60 +404,6 @@ class NamedRangeUtils {
         })();
     }
 }
-class ProjectsSheetLayout extends SheetLayout {
-    get sheetName() {
-        return GSheetProjectSettings.projectsSheetName;
-    }
-    get columns() {
-        return [
-            {
-                name: GSheetProjectSettings.projectsIconColumnName,
-                defaultFontSize: 1,
-                defaultWidth: '#default-height',
-            },
-            {
-                name: GSheetProjectSettings.projectsDoneColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsIssueColumnName,
-                //rangeName: GSheetProjectSettings.projectsIssuesRangeName,
-            },
-            {
-                name: GSheetProjectSettings.projectsTitleColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsParentIssueColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsTeamColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsEstimateColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsDeadlineColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsStartColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsEndColumnName,
-            },
-            /*
-            {
-                name: GSheetProjectSettings.projectsIssueHashColumnName,
-                arrayFormula: `
-                    MAP(
-                        ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
-                        LAMBDA(issue, IF(ISBLANK(issue), "", ${SHA256.name}(issue)))
-                    )
-                `,
-            },
-            */
-        ];
-    }
-}
-ProjectsSheetLayout.instance = new ProjectsSheetLayout();
 class ProtectionLocks {
     static lockColumnsWithProtection(sheet) {
         const sheetId = sheet.getSheetId();
@@ -746,7 +692,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}8abcd88012288b6fd9e487d16a560cd5a13b5ac0060681f1a67308f4ed9b759d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}ce517baed3c4e0af40766c8ddd471bdf8729b85bb955a5a0a0e0efd45c9ecd12:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }
@@ -811,13 +757,67 @@ class SheetLayout {
         }
     }
 }
+class SheetLayoutProjects extends SheetLayout {
+    get sheetName() {
+        return GSheetProjectSettings.projectsSheetName;
+    }
+    get columns() {
+        return [
+            {
+                name: GSheetProjectSettings.projectsIconColumnName,
+                defaultFontSize: 1,
+                defaultWidth: '#default-height',
+            },
+            {
+                name: GSheetProjectSettings.projectsDoneColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsIssueColumnName,
+                //rangeName: GSheetProjectSettings.projectsIssuesRangeName,
+            },
+            {
+                name: GSheetProjectSettings.projectsTitleColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsParentIssueColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsTeamColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsEstimateColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsDeadlineColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsStartColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsEndColumnName,
+            },
+            /*
+            {
+                name: GSheetProjectSettings.projectsIssueHashColumnName,
+                arrayFormula: `
+                    MAP(
+                        ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
+                        LAMBDA(issue, IF(ISBLANK(issue), "", ${SHA256.name}(issue)))
+                    )
+                `,
+            },
+            */
+        ];
+    }
+}
+SheetLayoutProjects.instance = new SheetLayoutProjects();
 class SheetLayouts {
     static migrateColumns() {
         this.instances.forEach(instance => instance.migrateColumns());
     }
 }
 SheetLayouts.instances = [
-    ProjectsSheetLayout.instance,
+    SheetLayoutProjects.instance,
 ];
 class SheetUtils {
     static findSheetByName(sheetName) {

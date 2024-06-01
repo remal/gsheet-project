@@ -1,6 +1,6 @@
-class ProjectsSheetLayout extends SheetLayout {
+class SheetLayoutProjects extends SheetLayout {
 
-    static readonly instance = new ProjectsSheetLayout()
+    static readonly instance = new SheetLayoutProjects()
 
     protected get sheetName(): string {
         return GSheetProjectSettings.projectsSheetName
