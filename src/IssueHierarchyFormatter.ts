@@ -116,11 +116,25 @@ class IssueHierarchyFormatter {
         const childIssueRanges: Range[] = []
         for (let rowIndex = 0; rowIndex < childIssueRows.length; ++rowIndex) {
             const row = childIssueRows[rowIndex]
+
+            let rows = 1
             let lastRow = row
-            for (; rowIndex < childIssueRanges.length && childIssueRows[rowIndex] === lastRow + 1; ++rowIndex) {
-                ++lastRow
+            console.info('lastRow', lastRow)
+            for (let i = rowIndex + 1; i < childIssueRows.length; ++i) {
+                const nextRow = childIssueRows[i]
+                console.info('nextRow', nextRow)
+                if (nextRow === lastRow + 1) {
+                    ++rows
+                    lastRow = nextRow
+                    console.info('lastRow', lastRow)
+                } else {
+                    break
+                }
             }
-            const combinedRange = sheet.getRange(row, 1, lastRow - row + 1, 1)
+            console.info('rows', rows)
+            rowIndex += rows - 1
+
+            const combinedRange = sheet.getRange(row, 1, rows, 1)
             childIssueRanges.push(combinedRange)
         }
         console.info('childIssueRanges', childIssueRanges.map(range =>

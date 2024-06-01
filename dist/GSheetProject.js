@@ -307,11 +307,24 @@ class IssueHierarchyFormatter {
         const childIssueRanges = [];
         for (let rowIndex = 0; rowIndex < childIssueRows.length; ++rowIndex) {
             const row = childIssueRows[rowIndex];
+            let rows = 1;
             let lastRow = row;
-            for (; rowIndex < childIssueRanges.length && childIssueRows[rowIndex] === lastRow + 1; ++rowIndex) {
-                ++lastRow;
+            console.info('lastRow', lastRow);
+            for (let i = rowIndex + 1; i < childIssueRows.length; ++i) {
+                const nextRow = childIssueRows[i];
+                console.info('nextRow', nextRow);
+                if (nextRow === lastRow + 1) {
+                    ++rows;
+                    lastRow = nextRow;
+                    console.info('lastRow', lastRow);
+                }
+                else {
+                    break;
+                }
             }
-            const combinedRange = sheet.getRange(row, 1, lastRow - row + 1, 1);
+            console.info('rows', rows);
+            rowIndex += rows - 1;
+            const combinedRange = sheet.getRange(row, 1, rows, 1);
             childIssueRanges.push(combinedRange);
         }
         console.info('childIssueRanges', childIssueRanges.map(range => `${range.getRow()}+${range.getNumRows()}`));
@@ -713,7 +726,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}82f76aaaf908f9ae9bf23100fca62eb2d3f7f4ad2229d4b69ec569bdc4e2bc94:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}01e050b4e3acba06cde15ab000791ef710f7232c2f75b037e3317203d0368d70:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }
