@@ -330,6 +330,7 @@ class IssueHierarchyFormatter {
                     break;
                 }
             }
+            console.info('lastIssueOrConnectedChildIssueRow', lastIssueOrConnectedChildIssueRow);
             for (const childIssueRange of childIssueRanges) {
                 const childIssueRow = childIssueRange.getRow();
                 if (childIssueRow < issueRow) {
@@ -338,8 +339,10 @@ class IssueHierarchyFormatter {
                 if (childIssueRow < lastIssueOrConnectedChildIssueRow) {
                     continue;
                 }
+                console.info('childIssueRow', childIssueRow);
                 sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1);
                 lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows();
+                console.info('lastIssueOrConnectedChildIssueRow', lastIssueOrConnectedChildIssueRow);
             }
         });
         // move children before the issue:
@@ -349,8 +352,10 @@ class IssueHierarchyFormatter {
                 if (childIssueRow >= issueRow) {
                     continue;
                 }
+                console.info('childIssueRow', childIssueRow);
                 sheet.moveRows(childIssueRange, issueRow + 1);
                 issueRow -= childIssueRange.getNumRows();
+                console.info('issueRow', issueRow);
             }
         });
     }
@@ -707,7 +712,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}687373c1fd45803778ea47915fb50b361ad93e935916b6fa567af3a21bcb549d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}1b2dff5f81b8cdf682aa01456ca47e8a07d9586583591337f891a8b6bafdecd3:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }

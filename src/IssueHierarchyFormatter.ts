@@ -148,6 +148,7 @@ class IssueHierarchyFormatter {
                     break
                 }
             }
+            console.info('lastIssueOrConnectedChildIssueRow', lastIssueOrConnectedChildIssueRow)
 
             for (const childIssueRange of childIssueRanges) {
                 const childIssueRow = childIssueRange.getRow()
@@ -159,8 +160,10 @@ class IssueHierarchyFormatter {
                     continue
                 }
 
+                console.info('childIssueRow', childIssueRow)
                 sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1)
                 lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows()
+                console.info('lastIssueOrConnectedChildIssueRow', lastIssueOrConnectedChildIssueRow)
             }
         })
 
@@ -173,8 +176,10 @@ class IssueHierarchyFormatter {
                     continue
                 }
 
+                console.info('childIssueRow', childIssueRow)
                 sheet.moveRows(childIssueRange, issueRow + 1)
                 issueRow -= childIssueRange.getNumRows()
+                console.info('issueRow', issueRow)
             }
         })
     }
