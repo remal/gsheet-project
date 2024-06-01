@@ -326,7 +326,7 @@ class IssueHierarchyFormatter {
             for (const childIssueRange of childIssueRanges) {
                 const childIssueRow = childIssueRange.getRow();
                 if (childIssueRow === issueRow + 1) {
-                    lastIssueOrConnectedChildIssueRow = childIssueRow + childIssueRange.getNumRows();
+                    lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows();
                     break;
                 }
             }
@@ -712,7 +712,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}1b2dff5f81b8cdf682aa01456ca47e8a07d9586583591337f891a8b6bafdecd3:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}b91164c4d3f080dcd91ee0a939c544cc118dbd12a9a79fece212443dcaee315d:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }

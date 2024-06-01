@@ -144,7 +144,7 @@ class IssueHierarchyFormatter {
             for (const childIssueRange of childIssueRanges) {
                 const childIssueRow = childIssueRange.getRow()
                 if (childIssueRow === issueRow + 1) {
-                    lastIssueOrConnectedChildIssueRow = childIssueRow + childIssueRange.getNumRows()
+                    lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows()
                     break
                 }
             }
