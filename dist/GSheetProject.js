@@ -692,7 +692,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}9cd905d93ad58f70033c681f498513ace2d8ed9586f5b2c706d1844ec46fc4b1:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}628644e2f13ba0ec1fe1d5aa7b70238f02ab23a7f6536cf9338f09b09136923f:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }
@@ -707,7 +707,7 @@ class SheetLayout {
         for (const [columnName, info] of columns.entries()) {
             if (!existingNormalizedNames.includes(columnName)) {
                 const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
-                    .setValue(info.name);
+                    .setValue(info.name.replace(' ', '\n'));
                 if (info.defaultFontSize) {
                     titleRange.setFontSize(info.defaultFontSize);
                 }
@@ -772,14 +772,14 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.projectsDoneColumnName,
             },
             {
+                name: GSheetProjectSettings.projectsParentIssueColumnName,
+            },
+            {
                 name: GSheetProjectSettings.projectsIssueColumnName,
                 //rangeName: GSheetProjectSettings.projectsIssuesRangeName,
             },
             {
                 name: GSheetProjectSettings.projectsTitleColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsParentIssueColumnName,
             },
             {
                 name: GSheetProjectSettings.projectsTeamColumnName,

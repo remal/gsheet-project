@@ -17,14 +17,14 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.projectsDoneColumnName,
             },
             {
+                name: GSheetProjectSettings.projectsParentIssueColumnName,
+            },
+            {
                 name: GSheetProjectSettings.projectsIssueColumnName,
                 //rangeName: GSheetProjectSettings.projectsIssuesRangeName,
             },
             {
                 name: GSheetProjectSettings.projectsTitleColumnName,
-            },
-            {
-                name: GSheetProjectSettings.projectsParentIssueColumnName,
             },
             {
                 name: GSheetProjectSettings.projectsTeamColumnName,

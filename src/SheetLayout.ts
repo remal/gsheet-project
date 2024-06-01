@@ -38,7 +38,7 @@ abstract class SheetLayout {
         for (const [columnName, info] of columns.entries()) {
             if (!existingNormalizedNames.includes(columnName)) {
                 const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
-                    .setValue(info.name)
+                    .setValue(info.name.replace(' ', '\n'))
 
                 if (info.defaultFontSize) {
                     titleRange.setFontSize(info.defaultFontSize)
