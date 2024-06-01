@@ -314,6 +314,7 @@ class IssueHierarchyFormatter {
             const combinedRange = sheet.getRange(row, 1, lastRow - row + 1, 1);
             childIssueRanges.push(combinedRange);
         }
+        console.info('childIssueRanges', childIssueRanges.map(range => `${range.getRow()}+${range.getNumRows()}`));
         Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust indents`, () => {
             for (const childIssueRange of childIssueRanges) {
                 const childIssueTitleRange = sheet.getRange(childIssueRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName), childIssueRange.getNumRows(), 1);
@@ -712,7 +713,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}6b42a724df870a834d0f3dd13c5c479e688630f30220f19152c8729b5d8f8f4d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}82f76aaaf908f9ae9bf23100fca62eb2d3f7f4ad2229d4b69ec569bdc4e2bc94:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }

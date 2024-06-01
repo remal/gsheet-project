@@ -123,6 +123,9 @@ class IssueHierarchyFormatter {
             const combinedRange = sheet.getRange(row, 1, lastRow - row + 1, 1)
             childIssueRanges.push(combinedRange)
         }
+        console.info('childIssueRanges', childIssueRanges.map(range =>
+            `${range.getRow()}+${range.getNumRows()}`,
+        ))
 
         Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust indents`, () => {
             for (const childIssueRange of childIssueRanges) {
