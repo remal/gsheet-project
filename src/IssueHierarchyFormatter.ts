@@ -75,14 +75,14 @@ class IssueHierarchyFormatter {
 
 
         const issueTitleRange = sheet.getRange(
-            issuesRange.getRow(),
+            issueRow,
             SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName),
         )
         let indentLevel = Math.ceil(RangeUtils.getIndent(issueTitleRange) / GSheetProjectSettings.indent)
         console.info('indentLevel', indentLevel)
 
         const shouldIssueHaveIndent = sheet.getRange(
-            issuesRange.getRow(),
+            issueRow,
             SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsParentIssueColumnName),
         ).getValue()?.toString()?.trim()?.length
         console.info('shouldIssueHaveIndent', shouldIssueHaveIndent)

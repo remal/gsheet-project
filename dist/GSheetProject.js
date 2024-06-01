@@ -275,10 +275,10 @@ class IssueHierarchyFormatter {
         }
         let issueRow = issueRange.getRow();
         console.info('issueRow', issueRow);
-        const issueTitleRange = sheet.getRange(issuesRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName));
+        const issueTitleRange = sheet.getRange(issueRow, SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName));
         let indentLevel = Math.ceil(RangeUtils.getIndent(issueTitleRange) / GSheetProjectSettings.indent);
         console.info('indentLevel', indentLevel);
-        const shouldIssueHaveIndent = (_c = (_b = (_a = sheet.getRange(issuesRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsParentIssueColumnName)).getValue()) === null || _a === void 0 ? void 0 : _a.toString()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.length;
+        const shouldIssueHaveIndent = (_c = (_b = (_a = sheet.getRange(issueRow, SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsParentIssueColumnName)).getValue()) === null || _a === void 0 ? void 0 : _a.toString()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.length;
         console.info('shouldIssueHaveIndent', shouldIssueHaveIndent);
         if (!shouldIssueHaveIndent && indentLevel > 0) {
             indentLevel = 0;
@@ -712,7 +712,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}b91164c4d3f080dcd91ee0a939c544cc118dbd12a9a79fece212443dcaee315d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}edc2ddf2ca5d34a450a132e9b9546133ebc23f9b94f050c182eb55d41d8360cf:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }
