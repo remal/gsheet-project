@@ -251,10 +251,11 @@ class IssueHierarchyFormatter {
         this.formatHierarchyForIssues(issues);
     }
     static formatHierarchyForIssues(issues) {
-        issues
+        issues = issues
             .filter(it => it === null || it === void 0 ? void 0 : it.length)
-            .filter(Utils.distinct)
-            .forEach(issue => this.formatHierarchyForIssue(issue));
+            .filter(Utils.distinct);
+        console.info('issues', issues);
+        issues.forEach(issue => this.formatHierarchyForIssue(issue));
     }
     static formatHierarchyForIssue(issue) {
         var _a, _b, _c;
@@ -327,7 +328,7 @@ class IssueHierarchyFormatter {
             const combinedRange = sheet.getRange(row, 1, rows, 1);
             childIssueRanges.push(combinedRange);
         }
-        console.info('childIssueRanges', childIssueRanges.map(range => `${range.getRow()}+${range.getNumRows()}`));
+        console.info('childIssueRanges', childIssueRanges.map(range => `${range.getRow()}+${range.getNumRows() - 1}`));
         Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust indents`, () => {
             for (const childIssueRange of childIssueRanges) {
                 const childIssueTitleRange = sheet.getRange(childIssueRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName), childIssueRange.getNumRows(), 1);
@@ -726,7 +727,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}01e050b4e3acba06cde15ab000791ef710f7232c2f75b037e3317203d0368d70:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}a48700e5859fdfc407968f59669e7a926d162c6c590f472fdb18b921448fd520:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }

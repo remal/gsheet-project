@@ -36,10 +36,11 @@ class IssueHierarchyFormatter {
     }
 
     static formatHierarchyForIssues(issues: string[]) {
-        issues
+        issues = issues
             .filter(it => it?.length)
             .filter(Utils.distinct)
-            .forEach(issue => this.formatHierarchyForIssue(issue))
+        console.info('issues', issues)
+        issues.forEach(issue => this.formatHierarchyForIssue(issue))
     }
 
     static formatHierarchyForIssue(issue: string) {
@@ -138,7 +139,7 @@ class IssueHierarchyFormatter {
             childIssueRanges.push(combinedRange)
         }
         console.info('childIssueRanges', childIssueRanges.map(range =>
-            `${range.getRow()}+${range.getNumRows()}`,
+            `${range.getRow()}+${range.getNumRows() - 1}`,
         ))
 
         Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust indents`, () => {
