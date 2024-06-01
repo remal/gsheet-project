@@ -6,25 +6,33 @@ class GSheetProjectSettings {
     static settingsSheetName: string = "Settings"
 
     static projectsSheetName: string = "Projects"
+    static projectsIconColumnName: string = "Icon"
+    static projectsDoneColumnName: string = "Done"
     static projectsIssueColumnName: string = "Issue"
-    static projectsIssuesRangeName: string = "Issues"
-    static projectsIssueHashColumnName: string = "Issue Hash"
-    static projectsIssueHashesRangeName: string = "IssueHashes"
+    //static projectsIssuesRangeName: string = "Issues"
+    static projectsParentIssueColumnName: string = "Parent Issue"
+    static projectsTitleColumnName: string = "Title"
+    static projectsTeamColumnName: string = "Team"
+    static projectsEstimateColumnName: string = "Estimate (days)"
+    static projectsDeadlineColumnName: string = "Deadline"
+    static projectsStartColumnName: string = "Start"
+    static projectsEndColumnName: string = "End"
+    //static projectsIssueHashColumnName: string = "Issue Hash"
+
+    static indent: number = 4
 
     static issueLoaderFactories: IssueLoaderFactory[] = []
+    static issueChildrenLoaderFactories: IssueChildrenLoaderFactory[] = []
+    static issueBlockersLoaderFactories: IssueBlockersLoaderFactory[] = []
+    static issueSearcherFactories: IssueSearcherFactory[] = []
 
 
-    static computeSettingsHash() {
+    static computeStringSettingsHash(): string {
         const hashableValues: Record<string, any> = {}
         for (const [key, value] of Object.entries(GSheetProjectSettings)) {
-            if (value == null
-                || typeof value === 'function'
-                || typeof value === 'object'
-            ) {
-                continue
+            if (Utils.isString(value)) {
+                hashableValues[key] = value
             }
-
-            hashableValues[key] = value
         }
 
         const json = JSON.stringify(hashableValues)

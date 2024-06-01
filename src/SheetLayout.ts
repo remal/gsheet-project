@@ -20,17 +20,10 @@ abstract class SheetLayout {
             return
         }
 
-        const cacheKey = [
-            this.constructor?.name || Utils.normalizeName(this.sheetName),
-            'migrateColumns',
-            '$$$HASH$$$',
-            GSheetProjectSettings.computeSettingsHash(),
-        ].join(':').replace(/^(.{1,250}).*$/, '$1')
-        const cache = PropertiesService.getDocumentProperties()
-        if (cache != null) {
-            if (cache.getProperty(cacheKey) === 'true') {
-                return
-            }
+        const documentFlagPrefix = `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrateColumns:`
+        const documentFlag = `${documentFlagPrefix}$$$HASH$$$:${GSheetProjectSettings.computeStringSettingsHash()}`
+        if (DocumentFlags.isSet(documentFlag)) {
+            return
         }
 
         const sheet = this.sheet
@@ -44,8 +37,21 @@ abstract class SheetLayout {
             .map(it => it?.length ? Utils.normalizeName(it) : '')
         for (const [columnName, info] of columns.entries()) {
             if (!existingNormalizedNames.includes(columnName)) {
-                sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
+                const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
                     .setValue(info.name)
+
+                if (info.defaultFontSize) {
+                    titleRange.setFontSize(info.defaultFontSize)
+                }
+
+                if (Utils.isNumber(info.defaultWidth)) {
+                    sheet.setColumnWidth(lastColumn, info.defaultWidth)
+                } else if (info.defaultWidth === '#default-height') {
+                    sheet.setColumnWidth(lastColumn, 21)
+                } else if (info.defaultWidth === '#height') {
+                    const height = sheet.getRowHeight(1)
+                    sheet.setColumnWidth(lastColumn, height)
+                }
 
                 existingNormalizedNames.push(columnName)
 
@@ -88,9 +94,8 @@ abstract class SheetLayout {
             }
         }
 
-        if (cache != null) {
-            cache.setProperty(cacheKey, 'true')
-        }
+        DocumentFlags.set(documentFlag)
+        DocumentFlags.cleanupByPrefix(documentFlagPrefix)
 
         const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion']
         if (Utils.isFunction(waitForAllDataExecutionsCompletion)) {
@@ -104,4 +109,8 @@ interface ColumnInfo {
     name: string
     arrayFormula?: string
     rangeName?: string
+    defaultFontSize?: number
+    defaultWidth?: number | WidthString
 }
+
+type WidthString = '#height' | '#default-height'

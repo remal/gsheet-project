@@ -8,17 +8,34 @@ class GSheetProject {
             SheetLayouts.migrateColumns();
         });
     }
+    static cleanup() {
+        EntryPoint.entryPoint(() => {
+            ProtectionLocks.releaseExpiredLocks();
+        });
+    }
     static onOpen(event) {
         EntryPoint.entryPoint(() => {
             SheetLayouts.migrateColumns();
         });
     }
     static onChange(event) {
-        var _a, _b;
-        if (!['INSERT_ROW', 'OTHER'].includes((_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '')) {
-            return;
+        var _a;
+        const changeType = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString();
+        if (changeType === 'INSERT_ROW') {
+            this._onInsertRow();
         }
+        else if (changeType === 'REMOVE_COLUMN') {
+            this._onRemoveColumn();
+        }
+    }
+    static _onInsertRow() {
         EntryPoint.entryPoint(() => {
+            IssueHierarchyFormatter.formatHierarchyForAllIssues();
+        });
+    }
+    static _onRemoveColumn() {
+        EntryPoint.entryPoint(() => {
+            SheetLayouts.migrateColumns();
         });
     }
     static onEdit(event) {
@@ -32,19 +49,17 @@ class GSheetProject {
             return;
         }
         EntryPoint.entryPoint(() => {
+            IssueHierarchyFormatter.formatHierarchy(range);
         });
     }
 }
 class GSheetProjectSettings {
-    static computeSettingsHash() {
+    static computeStringSettingsHash() {
         const hashableValues = {};
         for (const [key, value] of Object.entries(GSheetProjectSettings)) {
-            if (value == null
-                || typeof value === 'function'
-                || typeof value === 'object') {
-                continue;
+            if (Utils.isString(value)) {
+                hashableValues[key] = value;
             }
-            hashableValues[key] = value;
         }
         const json = JSON.stringify(hashableValues);
         return SHA256(json);
@@ -54,11 +69,39 @@ GSheetProjectSettings.titleRow = 1;
 GSheetProjectSettings.firstDataRow = 2;
 GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.projectsSheetName = "Projects";
+GSheetProjectSettings.projectsIconColumnName = "Icon";
+GSheetProjectSettings.projectsDoneColumnName = "Done";
 GSheetProjectSettings.projectsIssueColumnName = "Issue";
-GSheetProjectSettings.projectsIssuesRangeName = "Issues";
-GSheetProjectSettings.projectsIssueHashColumnName = "Issue Hash";
-GSheetProjectSettings.projectsIssueHashesRangeName = "IssueHashes";
+//static projectsIssuesRangeName: string = "Issues"
+GSheetProjectSettings.projectsParentIssueColumnName = "Parent Issue";
+GSheetProjectSettings.projectsTitleColumnName = "Title";
+GSheetProjectSettings.projectsTeamColumnName = "Team";
+GSheetProjectSettings.projectsEstimateColumnName = "Estimate (days)";
+GSheetProjectSettings.projectsDeadlineColumnName = "Deadline";
+GSheetProjectSettings.projectsStartColumnName = "Start";
+GSheetProjectSettings.projectsEndColumnName = "End";
+//static projectsIssueHashColumnName: string = "Issue Hash"
+GSheetProjectSettings.indent = 4;
 GSheetProjectSettings.issueLoaderFactories = [];
+GSheetProjectSettings.issueChildrenLoaderFactories = [];
+GSheetProjectSettings.issueBlockersLoaderFactories = [];
+GSheetProjectSettings.issueSearcherFactories = [];
+class CommonFormatter {
+    static setMiddleVerticalAlign() {
+        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+            .filter(sheet => SheetUtils.isGridSheet(sheet))
+            .forEach(sheet => {
+            sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
+                .setVerticalAlignment('middle');
+        });
+    }
+    static onChange(event) {
+        var _a, _b;
+        if (['INSERT_ROW', 'INSERT_COLUMN'].includes((_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '')) {
+            this.setMiddleVerticalAlign();
+        }
+    }
+}
 /**
  * SHA-256 digest of the provided input
  * @param {unknown} value
@@ -75,6 +118,42 @@ function SHA256(value) {
         .map(num => (num.length === 1 ? '0' : '') + num)
         .join('');
 }
+class DocumentFlags {
+    static set(key, value = true) {
+        if (value) {
+            PropertiesService.getDocumentProperties().setProperty(key, new Date().getTime().toString());
+        }
+        else {
+            PropertiesService.getDocumentProperties().deleteProperty(key);
+        }
+    }
+    static isSet(key) {
+        var _a;
+        return (_a = PropertiesService.getDocumentProperties().getProperty(key)) === null || _a === void 0 ? void 0 : _a.length;
+    }
+    static cleanupByPrefix(keyPrefix) {
+        const entries = [];
+        for (const [key, value] of Object.entries(PropertiesService.getDocumentProperties().getProperties())) {
+            if (key.startsWith(keyPrefix)) {
+                const number = parseFloat(value);
+                if (isNaN(number)) {
+                    console.warn(`Removing NaN document flag: ${key}`);
+                    PropertiesService.getDocumentProperties().deleteProperty(key);
+                    continue;
+                }
+                entries.push({ key, number });
+            }
+        }
+        // sort ascending:
+        entries.sort((e1, e2) => e1.number - e2.number);
+        // skip last element:
+        entries.pop();
+        // remove old keys:
+        for (const entry of entries) {
+            PropertiesService.getDocumentProperties().deleteProperty(entry.key);
+        }
+    }
+}
 class EntryPoint {
     static entryPoint(action) {
         try {
@@ -83,11 +162,11 @@ class EntryPoint {
         }
         catch (e) {
             console.error(e);
+            SpreadsheetApp.getActiveSpreadsheet().toast(e.toString(), "Automation error");
             throw e;
         }
         finally {
             ProtectionLocks.release();
-            ProtectionLocks.releaseExpiredLocks();
         }
     }
 }
@@ -117,6 +196,150 @@ class ExecutionCache {
     }
 }
 ExecutionCache._data = new Map();
+class Images {
+}
+Images.loadingImageUrl = 'https://raw.githubusercontent.com/remal/misc/main/spinner.gif';
+class IssueBlockersLoader {
+    loadBlockers(issueId) {
+        return this.loadBlockersBulk([issueId]);
+    }
+    loadBlockersBulk(issueIds) {
+        return [];
+    }
+}
+class IssueBlockersLoaderFactory {
+    getIssueBlockerLoader(issueId) {
+        return undefined;
+    }
+}
+class IssueChildrenLoader {
+    loadChildren(issueId) {
+        return this.loadChildrenBulk([issueId]);
+    }
+    loadChildrenBulk(issueIds) {
+        return [];
+    }
+}
+class IssueChildrenLoaderFactory {
+    getIssueChildrenLoader(issueId) {
+        return undefined;
+    }
+}
+class IssueHierarchyFormatter {
+    static formatHierarchy(range) {
+        const issues = [];
+        const issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.projectsIssueColumnName);
+        if (issuesRange != null) {
+            issuesRange.getValues()
+                .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); })
+                .forEach(it => issues.push(it));
+        }
+        const parentIssuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.projectsParentIssueColumnName);
+        if (parentIssuesRange != null) {
+            parentIssuesRange.getValues()
+                .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); })
+                .forEach(it => issues.push(it));
+        }
+        this.formatHierarchyForIssues(issues);
+    }
+    static formatHierarchyForAllIssues() {
+        const issues = [];
+        const parentIssuesRange = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsParentIssueColumnName, GSheetProjectSettings.firstDataRow);
+        parentIssuesRange.getValues()
+            .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); })
+            .forEach(it => issues.push(it));
+        this.formatHierarchyForIssues(issues);
+    }
+    static formatHierarchyForIssues(issues) {
+        issues
+            .filter(it => it === null || it === void 0 ? void 0 : it.length)
+            .filter(Utils.distinct)
+            .forEach(issue => this.formatHierarchyForIssue(issue));
+    }
+    static formatHierarchyForIssue(issue) {
+        var _a, _b, _c;
+        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName);
+        ProtectionLocks.lockRowsWithProtection(sheet);
+        const issuesRange = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsIssueColumnName, GSheetProjectSettings.firstDataRow);
+        const parentIssuesRange = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsParentIssueColumnName, GSheetProjectSettings.firstDataRow);
+        const issueRange = issuesRange.createTextFinder(issue)
+            .ignoreDiacritics(false)
+            .matchCase(true)
+            .matchEntireCell(true)
+            .findNext();
+        if (issueRange == null) {
+            return;
+        }
+        let issueRow = issueRange.getRow();
+        const issueTitleRange = sheet.getRange(issuesRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName));
+        let indentLevel = Math.ceil(RangeUtils.getIndent(issueTitleRange) / GSheetProjectSettings.indent);
+        const shouldIssueHaveIndent = (_c = (_b = (_a = sheet.getRange(issuesRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsParentIssueColumnName)).getValue()) === null || _a === void 0 ? void 0 : _a.toString()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.length;
+        if (!shouldIssueHaveIndent && indentLevel > 0) {
+            indentLevel = 0;
+            RangeUtils.setStringIndent(issueTitleRange, 0);
+        }
+        const childIssueRows = parentIssuesRange.createTextFinder(issue)
+            .ignoreDiacritics(false)
+            .matchCase(true)
+            .matchEntireCell(true)
+            .findAll()
+            .map(it => it.getRow())
+            .filter(it => it !== issueRow);
+        if (!childIssueRows.length) {
+            return;
+        }
+        for (const row of childIssueRows) {
+            const currentGroupDepth = sheet.getRowGroupDepth(row);
+            const expectedGroupDepth = Math.min(indentLevel + 1, 4);
+            if (currentGroupDepth !== expectedGroupDepth) {
+                sheet.getRange(row, 1).shiftRowGroupDepth(expectedGroupDepth - currentGroupDepth);
+            }
+        }
+        const childIssueRanges = [];
+        for (let rowIndex = 0; rowIndex < childIssueRows.length; ++rowIndex) {
+            const row = childIssueRows[rowIndex];
+            let lastRow = row;
+            for (; rowIndex < childIssueRanges.length && childIssueRows[rowIndex] === lastRow + 1; ++rowIndex) {
+                ++lastRow;
+            }
+            const combinedRange = sheet.getRange(row, 1, lastRow - row + 1, 1);
+            childIssueRanges.push(combinedRange);
+        }
+        for (const childIssueRange of childIssueRanges) {
+            const childIssueTitleRange = sheet.getRange(childIssueRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName), childIssueRange.getNumRows(), 1);
+            RangeUtils.setStringIndent(childIssueTitleRange, (indentLevel + 1) * GSheetProjectSettings.indent);
+        }
+        // move children after the issue:
+        let lastIssueOrConnectedChildIssueRow = issueRow;
+        for (const childIssueRange of childIssueRanges) {
+            const childIssueRow = childIssueRange.getRow();
+            if (childIssueRow === issueRow + 1) {
+                lastIssueOrConnectedChildIssueRow = childIssueRow + childIssueRange.getNumRows();
+                break;
+            }
+        }
+        for (const childIssueRange of childIssueRanges) {
+            const childIssueRow = childIssueRange.getRow();
+            if (childIssueRow < issueRow) {
+                continue;
+            }
+            if (childIssueRow < lastIssueOrConnectedChildIssueRow) {
+                continue;
+            }
+            sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1);
+            lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows();
+        }
+        // move children before the issue:
+        for (const childIssueRange of childIssueRanges.toReversed()) {
+            const childIssueRow = childIssueRange.getRow();
+            if (childIssueRow >= issueRow) {
+                continue;
+            }
+            sheet.moveRows(childIssueRange, issueRow + 1);
+            issueRow -= childIssueRange.getNumRows();
+        }
+    }
+}
 class IssueLoader {
     load(issueId) {
         return null;
@@ -161,6 +384,26 @@ class Lazy {
         return this._value;
     }
 }
+class NamedRangeUtils {
+    static findNamedRange(rangeName) {
+        rangeName = Utils.normalizeName(rangeName);
+        return ExecutionCache.getOrComputeCache(['findNamedRange', rangeName], () => {
+            for (const namedRange of SpreadsheetApp.getActiveSpreadsheet().getNamedRanges()) {
+                const name = Utils.normalizeName(namedRange.getName());
+                if (name === rangeName) {
+                    return namedRange;
+                }
+            }
+            return undefined;
+        });
+    }
+    static getNamedRange(rangeName) {
+        var _a;
+        return (_a = this.findNamedRange(rangeName)) !== null && _a !== void 0 ? _a : (() => {
+            throw new Error(`"${rangeName}" named range can't be found`);
+        })();
+    }
+}
 class ProjectsSheetLayout extends SheetLayout {
     get sheetName() {
         return GSheetProjectSettings.projectsSheetName;
@@ -168,9 +411,39 @@ class ProjectsSheetLayout extends SheetLayout {
     get columns() {
         return [
             {
-                name: GSheetProjectSettings.projectsIssueColumnName,
-                rangeName: GSheetProjectSettings.projectsIssuesRangeName,
+                name: GSheetProjectSettings.projectsIconColumnName,
+                defaultFontSize: 1,
+                defaultWidth: '#default-height',
             },
+            {
+                name: GSheetProjectSettings.projectsDoneColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsIssueColumnName,
+                //rangeName: GSheetProjectSettings.projectsIssuesRangeName,
+            },
+            {
+                name: GSheetProjectSettings.projectsTitleColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsParentIssueColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsTeamColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsEstimateColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsDeadlineColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsStartColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsEndColumnName,
+            },
+            /*
             {
                 name: GSheetProjectSettings.projectsIssueHashColumnName,
                 arrayFormula: `
@@ -179,8 +452,8 @@ class ProjectsSheetLayout extends SheetLayout {
                         LAMBDA(issue, IF(ISBLANK(issue), "", ${SHA256.name}(issue)))
                     )
                 `,
-                rangeName: GSheetProjectSettings.projectsIssueHashesRangeName,
             },
+            */
         ];
     }
 }
@@ -243,32 +516,96 @@ class ProtectionLocks {
 ProtectionLocks._columnsProtections = new Map();
 ProtectionLocks._rowsProtections = new Map();
 class RangeUtils {
-    static doesRangeHaveColumn(range, columnName) {
-        if (range == null) {
+    static toColumnRange(range, column) {
+        if (range == null || column == null) {
+            return undefined;
+        }
+        if (Utils.isString(column)) {
+            column = SheetUtils.findColumnByName(range.getSheet(), column);
+        }
+        if (column == null) {
+            return undefined;
+        }
+        if (!this.doesRangeHaveColumn(range, column)) {
+            return undefined;
+        }
+        return range.offset(0, column - range.getColumn(), range.getNumRows(), 1);
+    }
+    static doesRangeHaveColumn(range, column) {
+        if (range == null || column == null) {
             return false;
         }
-        const sheet = range.getSheet();
-        const columnToFind = SheetUtils.findColumnByName(sheet, columnName);
-        if (columnToFind == null) {
+        if (Utils.isString(column)) {
+            column = SheetUtils.findColumnByName(range.getSheet(), column);
+        }
+        if (column == null) {
             return false;
         }
-        for (const y of Utils.range(1, range.getHeight())) {
-            let hasMerge = false;
-            for (const x of Utils.range(1, range.getWidth())) {
-                const cell = range.getCell(y, x);
-                if (cell.isPartOfMerge()) {
-                    hasMerge = true;
-                }
-                const col = cell.getColumn();
-                if (col === columnToFind) {
-                    return true;
-                }
-            }
-            if (!hasMerge) {
-                break;
-            }
+        const minColumn = range.getColumn();
+        const maxColumn = minColumn + range.getNumColumns() - 1;
+        return minColumn <= column && column <= maxColumn;
+    }
+    static doesRangeIntersectsWithNamedRange(range, namedRange) {
+        if (range == null || namedRange == null) {
+            return false;
         }
-        return false;
+        if (Utils.isString(namedRange)) {
+            namedRange = NamedRangeUtils.findNamedRange(namedRange);
+        }
+        if (namedRange == null) {
+            return false;
+        }
+        const rangeToFind = namedRange.getRange();
+        if (range.getSheet().getSheetId() !== namedRange.getRange().getSheet().getSheetId()) {
+            return false;
+        }
+        const minColumnToFind = rangeToFind.getColumn();
+        const maxColumnToFind = minColumnToFind + rangeToFind.getNumColumns() - 1;
+        const minColumn = range.getColumn();
+        const maxColumn = minColumn + range.getNumColumns() - 1;
+        if (maxColumnToFind < minColumn || maxColumn < minColumnToFind) {
+            return false;
+        }
+        const minRowToFind = rangeToFind.getRow();
+        const maxRowToFind = minRowToFind + rangeToFind.getNumRows() - 1;
+        const minRow = range.getRow();
+        const maxRow = minRow + range.getNumRows() - 1;
+        if (maxRowToFind < minRow || maxRow < minRowToFind) {
+            return false;
+        }
+        return true;
+    }
+    static getIndent(range) {
+        const numberFormat = range.getNumberFormat();
+        return this._parseIndent(numberFormat);
+    }
+    static setIndent(range, indent) {
+        indent = Math.max(indent, 0);
+        let numberFormat = range.getNumberFormat();
+        if (indent === this._parseIndent(numberFormat)) {
+            return;
+        }
+        numberFormat = numberFormat.trim();
+        if (numberFormat.length) {
+            range.setNumberFormat(`${' '.repeat(indent)}${numberFormat}`);
+        }
+        else if (indent > 0) {
+            range.setNumberFormat(`${' '.repeat(indent)}@`);
+        }
+        else {
+            // do nothing
+        }
+    }
+    static setStringIndent(range, indent) {
+        indent = Math.max(indent, 0);
+        range.setNumberFormat(`${' '.repeat(indent)}@`);
+    }
+    static _parseIndent(numberFormat) {
+        const indentMatch = numberFormat.match(/^( +)/);
+        if (indentMatch) {
+            return indentMatch[0].length;
+        }
+        return 0;
     }
 }
 class RichTextUtils {
@@ -408,17 +745,10 @@ class SheetLayout {
         if (!columns.size) {
             return;
         }
-        const cacheKey = [
-            ((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName),
-            'migrateColumns',
-            '0678f889f360aa768ade04dfc2a1385c24c18b6f8784ff7bcc7617472af1c1ba',
-            GSheetProjectSettings.computeSettingsHash(),
-        ].join(':').replace(/^(.{1,250}).*$/, '$1');
-        const cache = PropertiesService.getDocumentProperties();
-        if (cache != null) {
-            if (cache.getProperty(cacheKey) === 'true') {
-                return;
-            }
+        const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
+        const documentFlag = `${documentFlagPrefix}8abcd88012288b6fd9e487d16a560cd5a13b5ac0060681f1a67308f4ed9b759d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        if (DocumentFlags.isSet(documentFlag)) {
+            return;
         }
         const sheet = this.sheet;
         ProtectionLocks.lockColumnsWithProtection(sheet);
@@ -430,8 +760,21 @@ class SheetLayout {
             .map(it => (it === null || it === void 0 ? void 0 : it.length) ? Utils.normalizeName(it) : '');
         for (const [columnName, info] of columns.entries()) {
             if (!existingNormalizedNames.includes(columnName)) {
-                sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
+                const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
                     .setValue(info.name);
+                if (info.defaultFontSize) {
+                    titleRange.setFontSize(info.defaultFontSize);
+                }
+                if (Utils.isNumber(info.defaultWidth)) {
+                    sheet.setColumnWidth(lastColumn, info.defaultWidth);
+                }
+                else if (info.defaultWidth === '#default-height') {
+                    sheet.setColumnWidth(lastColumn, 21);
+                }
+                else if (info.defaultWidth === '#height') {
+                    const height = sheet.getRowHeight(1);
+                    sheet.setColumnWidth(lastColumn, height);
+                }
                 existingNormalizedNames.push(columnName);
                 ++lastColumn;
             }
@@ -460,9 +803,8 @@ class SheetLayout {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows, 1));
             }
         }
-        if (cache != null) {
-            cache.setProperty(cacheKey, 'true');
-        }
+        DocumentFlags.set(documentFlag);
+        DocumentFlags.cleanupByPrefix(documentFlagPrefix);
         const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion'];
         if (Utils.isFunction(waitForAllDataExecutionsCompletion)) {
             waitForAllDataExecutionsCompletion(10);
@@ -693,6 +1035,9 @@ class Utils {
     }
     static isString(value) {
         return typeof value === 'string';
+    }
+    static isNumber(value) {
+        return typeof value === 'number';
     }
     static isFunction(value) {
         return typeof value === 'function';

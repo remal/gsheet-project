@@ -9,9 +9,39 @@ class ProjectsSheetLayout extends SheetLayout {
     protected get columns(): ReadonlyArray<ColumnInfo> {
         return [
             {
-                name: GSheetProjectSettings.projectsIssueColumnName,
-                rangeName: GSheetProjectSettings.projectsIssuesRangeName,
+                name: GSheetProjectSettings.projectsIconColumnName,
+                defaultFontSize: 1,
+                defaultWidth: '#default-height',
             },
+            {
+                name: GSheetProjectSettings.projectsDoneColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsIssueColumnName,
+                //rangeName: GSheetProjectSettings.projectsIssuesRangeName,
+            },
+            {
+                name: GSheetProjectSettings.projectsTitleColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsParentIssueColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsTeamColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsEstimateColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsDeadlineColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsStartColumnName,
+            },
+            {
+                name: GSheetProjectSettings.projectsEndColumnName,
+            },
+            /*
             {
                 name: GSheetProjectSettings.projectsIssueHashColumnName,
                 arrayFormula: `
@@ -20,8 +50,8 @@ class ProjectsSheetLayout extends SheetLayout {
                         LAMBDA(issue, IF(ISBLANK(issue), "", ${SHA256.name}(issue)))
                     )
                 `,
-                rangeName: GSheetProjectSettings.projectsIssueHashesRangeName,
             },
+            */
         ]
     }
 

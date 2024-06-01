@@ -142,6 +142,10 @@ class Utils {
         return typeof value === 'string'
     }
 
+    static isNumber(value: unknown): value is number {
+        return typeof value === 'number'
+    }
+
     static isFunction(value: unknown): value is Function {
         return typeof value === 'function'
     }
