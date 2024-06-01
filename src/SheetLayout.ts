@@ -29,7 +29,7 @@ abstract class SheetLayout {
         const sheet = this.sheet
         ProtectionLocks.lockColumnsWithProtection(sheet)
 
-        let lastColumn = sheet.getLastColumn()
+        let lastColumn = Math.max(sheet.getLastColumn(), 1)
         const maxRows = sheet.getMaxRows()
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]

@@ -692,13 +692,13 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}ce517baed3c4e0af40766c8ddd471bdf8729b85bb955a5a0a0e0efd45c9ecd12:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}9cd905d93ad58f70033c681f498513ace2d8ed9586f5b2c706d1844ec46fc4b1:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }
         const sheet = this.sheet;
         ProtectionLocks.lockColumnsWithProtection(sheet);
-        let lastColumn = sheet.getLastColumn();
+        let lastColumn = Math.max(sheet.getLastColumn(), 1);
         const maxRows = sheet.getMaxRows();
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]
