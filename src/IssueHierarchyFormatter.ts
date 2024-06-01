@@ -43,6 +43,9 @@ class IssueHierarchyFormatter {
     }
 
     static formatHierarchyForIssue(issue: string) {
+        console.info('issue', issue)
+        const issueSlug = issue.replaceAll(/[\r\n]+/g, '').replace(/^(.{0,25}).*$/, '$1')
+        console.info('issueSlug', issueSlug)
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName)
         ProtectionLocks.lockRowsWithProtection(sheet)
 
@@ -68,6 +71,7 @@ class IssueHierarchyFormatter {
         }
 
         let issueRow = issueRange.getRow()
+        console.info('issueRow', issueRow)
 
 
         const issueTitleRange = sheet.getRange(
@@ -75,14 +79,17 @@ class IssueHierarchyFormatter {
             SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName),
         )
         let indentLevel = Math.ceil(RangeUtils.getIndent(issueTitleRange) / GSheetProjectSettings.indent)
+        console.info('indentLevel', indentLevel)
 
         const shouldIssueHaveIndent = sheet.getRange(
             issuesRange.getRow(),
             SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsParentIssueColumnName),
         ).getValue()?.toString()?.trim()?.length
+        console.info('shouldIssueHaveIndent', shouldIssueHaveIndent)
         if (!shouldIssueHaveIndent && indentLevel > 0) {
             indentLevel = 0
             RangeUtils.setStringIndent(issueTitleRange, 0)
+            console.info('indentLevel', indentLevel)
         }
 
 
@@ -97,13 +104,15 @@ class IssueHierarchyFormatter {
             return
         }
 
-        for (const row of childIssueRows) {
-            const currentGroupDepth = sheet.getRowGroupDepth(row)
-            const expectedGroupDepth = Math.min(indentLevel + 1, 4)
-            if (currentGroupDepth !== expectedGroupDepth) {
-                sheet.getRange(row, 1).shiftRowGroupDepth(expectedGroupDepth - currentGroupDepth)
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust groups`, () => {
+            for (const row of childIssueRows) {
+                const currentGroupDepth = sheet.getRowGroupDepth(row)
+                const expectedGroupDepth = Math.min(indentLevel + 1, 4)
+                if (currentGroupDepth !== expectedGroupDepth) {
+                    sheet.getRange(row, 1).shiftRowGroupDepth(expectedGroupDepth - currentGroupDepth)
+                }
             }
-        }
+        })
 
         const childIssueRanges: Range[] = []
         for (let rowIndex = 0; rowIndex < childIssueRows.length; ++rowIndex) {
@@ -116,52 +125,58 @@ class IssueHierarchyFormatter {
             childIssueRanges.push(combinedRange)
         }
 
-        for (const childIssueRange of childIssueRanges) {
-            const childIssueTitleRange = sheet.getRange(
-                childIssueRange.getRow(),
-                SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName),
-                childIssueRange.getNumRows(),
-                1,
-            )
-            RangeUtils.setStringIndent(childIssueTitleRange, (indentLevel + 1) * GSheetProjectSettings.indent)
-        }
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust indents`, () => {
+            for (const childIssueRange of childIssueRanges) {
+                const childIssueTitleRange = sheet.getRange(
+                    childIssueRange.getRow(),
+                    SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName),
+                    childIssueRange.getNumRows(),
+                    1,
+                )
+                RangeUtils.setStringIndent(childIssueTitleRange, (indentLevel + 1) * GSheetProjectSettings.indent)
+            }
+        })
 
 
         // move children after the issue:
-        let lastIssueOrConnectedChildIssueRow = issueRow
-        for (const childIssueRange of childIssueRanges) {
-            const childIssueRow = childIssueRange.getRow()
-            if (childIssueRow === issueRow + 1) {
-                lastIssueOrConnectedChildIssueRow = childIssueRow + childIssueRange.getNumRows()
-                break
-            }
-        }
-
-        for (const childIssueRange of childIssueRanges) {
-            const childIssueRow = childIssueRange.getRow()
-            if (childIssueRow < issueRow) {
-                continue
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Move children after the issue`, () => {
+            let lastIssueOrConnectedChildIssueRow = issueRow
+            for (const childIssueRange of childIssueRanges) {
+                const childIssueRow = childIssueRange.getRow()
+                if (childIssueRow === issueRow + 1) {
+                    lastIssueOrConnectedChildIssueRow = childIssueRow + childIssueRange.getNumRows()
+                    break
+                }
             }
 
-            if (childIssueRow < lastIssueOrConnectedChildIssueRow) {
-                continue
-            }
+            for (const childIssueRange of childIssueRanges) {
+                const childIssueRow = childIssueRange.getRow()
+                if (childIssueRow < issueRow) {
+                    continue
+                }
 
-            sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1)
-            lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows()
-        }
+                if (childIssueRow < lastIssueOrConnectedChildIssueRow) {
+                    continue
+                }
+
+                sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1)
+                lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows()
+            }
+        })
 
 
         // move children before the issue:
-        for (const childIssueRange of childIssueRanges.toReversed()) {
-            const childIssueRow = childIssueRange.getRow()
-            if (childIssueRow >= issueRow) {
-                continue
-            }
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Move children before the issue`, () => {
+            for (const childIssueRange of childIssueRanges.toReversed()) {
+                const childIssueRow = childIssueRange.getRow()
+                if (childIssueRow >= issueRow) {
+                    continue
+                }
 
-            sheet.moveRows(childIssueRange, issueRow + 1)
-            issueRow -= childIssueRange.getNumRows()
-        }
+                sheet.moveRows(childIssueRange, issueRow + 1)
+                issueRow -= childIssueRange.getNumRows()
+            }
+        })
     }
 
 }

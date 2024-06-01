@@ -138,6 +138,15 @@ class Utils {
         return string.replaceAll(/"/g, '""')
     }
 
+    static timed<T>(timerLabel: string, action: () => T): T {
+        console.time(timerLabel)
+        try {
+            return action()
+        } finally {
+            console.timeEnd(timerLabel)
+        }
+    }
+
     static isString(value: unknown): value is string {
         return typeof value === 'string'
     }

@@ -258,6 +258,9 @@ class IssueHierarchyFormatter {
     }
     static formatHierarchyForIssue(issue) {
         var _a, _b, _c;
+        console.info('issue', issue);
+        const issueSlug = issue.replaceAll(/[\r\n]+/g, '').replace(/^(.{0,25}).*$/, '$1');
+        console.info('issueSlug', issueSlug);
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName);
         ProtectionLocks.lockRowsWithProtection(sheet);
         const issuesRange = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsIssueColumnName, GSheetProjectSettings.firstDataRow);
@@ -271,12 +274,16 @@ class IssueHierarchyFormatter {
             return;
         }
         let issueRow = issueRange.getRow();
+        console.info('issueRow', issueRow);
         const issueTitleRange = sheet.getRange(issuesRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName));
         let indentLevel = Math.ceil(RangeUtils.getIndent(issueTitleRange) / GSheetProjectSettings.indent);
+        console.info('indentLevel', indentLevel);
         const shouldIssueHaveIndent = (_c = (_b = (_a = sheet.getRange(issuesRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsParentIssueColumnName)).getValue()) === null || _a === void 0 ? void 0 : _a.toString()) === null || _b === void 0 ? void 0 : _b.trim()) === null || _c === void 0 ? void 0 : _c.length;
+        console.info('shouldIssueHaveIndent', shouldIssueHaveIndent);
         if (!shouldIssueHaveIndent && indentLevel > 0) {
             indentLevel = 0;
             RangeUtils.setStringIndent(issueTitleRange, 0);
+            console.info('indentLevel', indentLevel);
         }
         const childIssueRows = parentIssuesRange.createTextFinder(issue)
             .ignoreDiacritics(false)
@@ -288,13 +295,15 @@ class IssueHierarchyFormatter {
         if (!childIssueRows.length) {
             return;
         }
-        for (const row of childIssueRows) {
-            const currentGroupDepth = sheet.getRowGroupDepth(row);
-            const expectedGroupDepth = Math.min(indentLevel + 1, 4);
-            if (currentGroupDepth !== expectedGroupDepth) {
-                sheet.getRange(row, 1).shiftRowGroupDepth(expectedGroupDepth - currentGroupDepth);
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust groups`, () => {
+            for (const row of childIssueRows) {
+                const currentGroupDepth = sheet.getRowGroupDepth(row);
+                const expectedGroupDepth = Math.min(indentLevel + 1, 4);
+                if (currentGroupDepth !== expectedGroupDepth) {
+                    sheet.getRange(row, 1).shiftRowGroupDepth(expectedGroupDepth - currentGroupDepth);
+                }
             }
-        }
+        });
         const childIssueRanges = [];
         for (let rowIndex = 0; rowIndex < childIssueRows.length; ++rowIndex) {
             const row = childIssueRows[rowIndex];
@@ -305,39 +314,45 @@ class IssueHierarchyFormatter {
             const combinedRange = sheet.getRange(row, 1, lastRow - row + 1, 1);
             childIssueRanges.push(combinedRange);
         }
-        for (const childIssueRange of childIssueRanges) {
-            const childIssueTitleRange = sheet.getRange(childIssueRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName), childIssueRange.getNumRows(), 1);
-            RangeUtils.setStringIndent(childIssueTitleRange, (indentLevel + 1) * GSheetProjectSettings.indent);
-        }
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Adjust indents`, () => {
+            for (const childIssueRange of childIssueRanges) {
+                const childIssueTitleRange = sheet.getRange(childIssueRange.getRow(), SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsTitleColumnName), childIssueRange.getNumRows(), 1);
+                RangeUtils.setStringIndent(childIssueTitleRange, (indentLevel + 1) * GSheetProjectSettings.indent);
+            }
+        });
         // move children after the issue:
-        let lastIssueOrConnectedChildIssueRow = issueRow;
-        for (const childIssueRange of childIssueRanges) {
-            const childIssueRow = childIssueRange.getRow();
-            if (childIssueRow === issueRow + 1) {
-                lastIssueOrConnectedChildIssueRow = childIssueRow + childIssueRange.getNumRows();
-                break;
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Move children after the issue`, () => {
+            let lastIssueOrConnectedChildIssueRow = issueRow;
+            for (const childIssueRange of childIssueRanges) {
+                const childIssueRow = childIssueRange.getRow();
+                if (childIssueRow === issueRow + 1) {
+                    lastIssueOrConnectedChildIssueRow = childIssueRow + childIssueRange.getNumRows();
+                    break;
+                }
             }
-        }
-        for (const childIssueRange of childIssueRanges) {
-            const childIssueRow = childIssueRange.getRow();
-            if (childIssueRow < issueRow) {
-                continue;
+            for (const childIssueRange of childIssueRanges) {
+                const childIssueRow = childIssueRange.getRow();
+                if (childIssueRow < issueRow) {
+                    continue;
+                }
+                if (childIssueRow < lastIssueOrConnectedChildIssueRow) {
+                    continue;
+                }
+                sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1);
+                lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows();
             }
-            if (childIssueRow < lastIssueOrConnectedChildIssueRow) {
-                continue;
-            }
-            sheet.moveRows(childIssueRange, lastIssueOrConnectedChildIssueRow + 1);
-            lastIssueOrConnectedChildIssueRow += childIssueRange.getNumRows();
-        }
+        });
         // move children before the issue:
-        for (const childIssueRange of childIssueRanges.toReversed()) {
-            const childIssueRow = childIssueRange.getRow();
-            if (childIssueRow >= issueRow) {
-                continue;
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${issueSlug}: Move children before the issue`, () => {
+            for (const childIssueRange of childIssueRanges.toReversed()) {
+                const childIssueRow = childIssueRange.getRow();
+                if (childIssueRow >= issueRow) {
+                    continue;
+                }
+                sheet.moveRows(childIssueRange, issueRow + 1);
+                issueRow -= childIssueRange.getNumRows();
             }
-            sheet.moveRows(childIssueRange, issueRow + 1);
-            issueRow -= childIssueRange.getNumRows();
-        }
+        });
     }
 }
 class IssueLoader {
@@ -692,7 +707,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}628644e2f13ba0ec1fe1d5aa7b70238f02ab23a7f6536cf9338f09b09136923f:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}687373c1fd45803778ea47915fb50b361ad93e935916b6fa567af3a21bcb549d:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }
@@ -707,7 +722,7 @@ class SheetLayout {
         for (const [columnName, info] of columns.entries()) {
             if (!existingNormalizedNames.includes(columnName)) {
                 const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
-                    .setValue(info.name.replace(' ', '\n'));
+                    .setValue(info.name);
                 if (info.defaultFontSize) {
                     titleRange.setFontSize(info.defaultFontSize);
                 }
@@ -1032,6 +1047,15 @@ class Utils {
     }
     static escapeFormulaString(string) {
         return string.replaceAll(/"/g, '""');
+    }
+    static timed(timerLabel, action) {
+        console.time(timerLabel);
+        try {
+            return action();
+        }
+        finally {
+            console.timeEnd(timerLabel);
+        }
     }
     static isString(value) {
         return typeof value === 'string';
