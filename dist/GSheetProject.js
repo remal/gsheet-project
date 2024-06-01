@@ -253,7 +253,7 @@ class IssueHierarchyFormatter {
     static formatHierarchyForIssues(issues) {
         issues = issues
             .filter(it => it === null || it === void 0 ? void 0 : it.length)
-            .filter(Utils.distinct);
+            .filter(Utils.distinct());
         console.info('issues', issues);
         issues.forEach(issue => this.formatHierarchyForIssue(issue));
     }
@@ -727,7 +727,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}a48700e5859fdfc407968f59669e7a926d162c6c590f472fdb18b921448fd520:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}c24705e7d863de516fa39451144520ca21e8c6adf18e6ca9731fee1535301eab:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }

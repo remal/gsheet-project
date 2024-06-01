@@ -38,7 +38,7 @@ class IssueHierarchyFormatter {
     static formatHierarchyForIssues(issues: string[]) {
         issues = issues
             .filter(it => it?.length)
-            .filter(Utils.distinct)
+            .filter(Utils.distinct())
         console.info('issues', issues)
         issues.forEach(issue => this.formatHierarchyForIssue(issue))
     }
