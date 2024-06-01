@@ -263,9 +263,8 @@ class IssueHierarchyFormatter {
         console.info('issueSlug', issueSlug);
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName);
         ProtectionLocks.lockRowsWithProtection(sheet);
-        const issuesRange = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsIssueColumnName, GSheetProjectSettings.firstDataRow);
-        const parentIssuesRange = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsParentIssueColumnName, GSheetProjectSettings.firstDataRow);
-        const issueRange = issuesRange.createTextFinder(issue)
+        const issueRange = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsIssueColumnName, GSheetProjectSettings.firstDataRow)
+            .createTextFinder(issue)
             .ignoreDiacritics(false)
             .matchCase(true)
             .matchEntireCell(true)
@@ -285,7 +284,8 @@ class IssueHierarchyFormatter {
             RangeUtils.setStringIndent(issueTitleRange, 0);
             console.info('indentLevel', indentLevel);
         }
-        const childIssueRows = parentIssuesRange.createTextFinder(issue)
+        const childIssueRows = SheetUtils.getColumnRange(GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsParentIssueColumnName, GSheetProjectSettings.firstDataRow)
+            .createTextFinder(issue)
             .ignoreDiacritics(false)
             .matchCase(true)
             .matchEntireCell(true)
@@ -712,7 +712,7 @@ class SheetLayout {
             return;
         }
         const documentFlagPrefix = `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
-        const documentFlag = `${documentFlagPrefix}edc2ddf2ca5d34a450a132e9b9546133ebc23f9b94f050c182eb55d41d8360cf:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        const documentFlag = `${documentFlagPrefix}6b42a724df870a834d0f3dd13c5c479e688630f30220f19152c8729b5d8f8f4d:${GSheetProjectSettings.computeStringSettingsHash()}`;
         if (DocumentFlags.isSet(documentFlag)) {
             return;
         }

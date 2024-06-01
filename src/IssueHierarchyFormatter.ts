@@ -49,19 +49,13 @@ class IssueHierarchyFormatter {
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName)
         ProtectionLocks.lockRowsWithProtection(sheet)
 
-        const issuesRange = SheetUtils.getColumnRange(
+
+        const issueRange = SheetUtils.getColumnRange(
             GSheetProjectSettings.projectsSheetName,
             GSheetProjectSettings.projectsIssueColumnName,
             GSheetProjectSettings.firstDataRow,
         )
-        const parentIssuesRange = SheetUtils.getColumnRange(
-            GSheetProjectSettings.projectsSheetName,
-            GSheetProjectSettings.projectsParentIssueColumnName,
-            GSheetProjectSettings.firstDataRow,
-        )
-
-
-        const issueRange = issuesRange.createTextFinder(issue)
+            .createTextFinder(issue)
             .ignoreDiacritics(false)
             .matchCase(true)
             .matchEntireCell(true)
@@ -93,7 +87,12 @@ class IssueHierarchyFormatter {
         }
 
 
-        const childIssueRows = parentIssuesRange.createTextFinder(issue)
+        const childIssueRows = SheetUtils.getColumnRange(
+            GSheetProjectSettings.projectsSheetName,
+            GSheetProjectSettings.projectsParentIssueColumnName,
+            GSheetProjectSettings.firstDataRow,
+        )
+            .createTextFinder(issue)
             .ignoreDiacritics(false)
             .matchCase(true)
             .matchEntireCell(true)
