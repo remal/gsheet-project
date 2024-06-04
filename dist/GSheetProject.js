@@ -5,7 +5,7 @@ class GSheetProject {
     }
     static migrateColumns() {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumnsIfNeeded();
+            SheetLayouts.migrateColumns();
         });
     }
     static cleanup() {
@@ -34,9 +34,7 @@ class GSheetProject {
         });
     }
     static _onRemoveColumn() {
-        EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumns();
-        });
+        this.migrateColumns();
     }
     static onEdit(event) {
         this._onEditRange(event === null || event === void 0 ? void 0 : event.range);
@@ -733,7 +731,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}8c070c5e1d6c3285314442cb9c2ec5dffaba0e7123e7d9d3125d494658c52335:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}cd922c58e57f9964497b44ea94b6b2679bf7479f74138e629baeb93cdfd128d8:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateColumnsIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

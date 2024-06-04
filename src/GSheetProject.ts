@@ -7,7 +7,7 @@ class GSheetProject {
 
     static migrateColumns() {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumnsIfNeeded()
+            SheetLayouts.migrateColumns()
         })
     }
 
@@ -41,9 +41,7 @@ class GSheetProject {
     }
 
     private static _onRemoveColumn() {
-        EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumns()
-        })
+        this.migrateColumns()
     }
 
 
