@@ -9,8 +9,9 @@ class GSheetProjectSettings {
     static projectsIconColumnName: string = "Icon"
     static projectsDoneColumnName: string = "Done"
     static projectsIssueColumnName: string = "Issue"
-    //static projectsIssuesRangeName: string = "Issues"
-    static projectsParentIssueColumnName: string = "Parent Issue"
+    static projectsIssuesRangeName: string = "Issues"
+    static projectsChildIssueColumnName: string = "Child Issue"
+    static projectsChildIssuesRangeName: string = "ChildIssues"
     static projectsTitleColumnName: string = "Title"
     static projectsTeamColumnName: string = "Team"
     static projectsEstimateColumnName: string = "Estimate (days)"
@@ -20,6 +21,7 @@ class GSheetProjectSettings {
     //static projectsIssueHashColumnName: string = "Issue Hash"
 
     static indent: number = 4
+    static groupChildIssues: boolean = false
 
     static issueLoaderFactories: IssueLoaderFactory[] = []
     static issueChildrenLoaderFactories: IssueChildrenLoaderFactory[] = []

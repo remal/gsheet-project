@@ -5,7 +5,29 @@ abstract class SheetLayout {
     protected abstract get columns(): ReadonlyArray<ColumnInfo>
 
     protected get sheet(): Sheet {
-        return SheetUtils.getSheetByName(this.sheetName)
+        const sheetName = this.sheetName
+        let sheet = SheetUtils.findSheetByName(sheetName)
+        if (sheet == null) {
+            sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(sheetName)
+            ExecutionCache.resetCache()
+        }
+        return sheet
+    }
+
+    private get _documentFlagPrefix(): string {
+        return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrateColumns:`
+    }
+
+    private get _documentFlag(): string {
+        return `${this._documentFlagPrefix}$$$HASH$$$:${GSheetProjectSettings.computeStringSettingsHash()}`
+    }
+
+    migrateColumnsIfNeeded() {
+        if (DocumentFlags.isSet(this._documentFlag)) {
+            return
+        }
+
+        this.migrateColumns()
     }
 
     migrateColumns() {
@@ -20,11 +42,6 @@ abstract class SheetLayout {
             return
         }
 
-        const documentFlagPrefix = `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrateColumns:`
-        const documentFlag = `${documentFlagPrefix}$$$HASH$$$:${GSheetProjectSettings.computeStringSettingsHash()}`
-        if (DocumentFlags.isSet(documentFlag)) {
-            return
-        }
 
         const sheet = this.sheet
         ProtectionLocks.lockColumnsWithProtection(sheet)
@@ -51,6 +68,10 @@ abstract class SheetLayout {
                 } else if (info.defaultWidth === '#height') {
                     const height = sheet.getRowHeight(1)
                     sheet.setColumnWidth(lastColumn, height)
+                }
+
+                if (info.hiddenByDefault) {
+                    sheet.hideColumns(lastColumn)
                 }
 
                 existingNormalizedNames.push(columnName)
@@ -84,22 +105,44 @@ abstract class SheetLayout {
                 }
             }
 
+            const range = sheet.getRange(
+                GSheetProjectSettings.firstDataRow,
+                column,
+                maxRows,
+                1,
+            )
             if (info.rangeName?.length) {
-                SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, sheet.getRange(
-                    GSheetProjectSettings.firstDataRow,
-                    column,
-                    maxRows,
-                    1,
-                ))
+                SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range)
             }
+
+            let dataValidation: (DataValidation | null) = info.dataValidation?.call(info) ?? null
+            if (dataValidation != null) {
+                if (dataValidation.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CUSTOM_FORMULA) {
+                    const formula = dataValidation.getCriteriaValues()[0].toString()
+                        .replaceAll(/#SELF\b/g, 'INDIRECT(ADDRESS(ROW(), COLUMN()))')
+                        .split(/[\r\n]+/)
+                        .map(line => line.trim())
+                        .filter(line => line.length)
+                        .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
+                        .join('')
+                    dataValidation = dataValidation.copy()
+                        .requireFormulaSatisfied(formula)
+                        .build()
+                }
+            }
+            range.setDataValidation(dataValidation)
         }
 
-        DocumentFlags.set(documentFlag)
-        DocumentFlags.cleanupByPrefix(documentFlagPrefix)
+        DocumentFlags.set(this._documentFlag)
+        DocumentFlags.cleanupByPrefix(this._documentFlagPrefix)
 
         const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion']
         if (Utils.isFunction(waitForAllDataExecutionsCompletion)) {
-            waitForAllDataExecutionsCompletion(10)
+            try {
+                waitForAllDataExecutionsCompletion(10)
+            } catch (e) {
+                console.warn(e)
+            }
         }
     }
 
@@ -109,8 +152,10 @@ interface ColumnInfo {
     name: string
     arrayFormula?: string
     rangeName?: string
+    dataValidation?: () => (DataValidation | null)
     defaultFontSize?: number
     defaultWidth?: number | WidthString
+    hiddenByDefault?: boolean
 }
 
 type WidthString = '#height' | '#default-height'

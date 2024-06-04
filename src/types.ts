@@ -6,6 +6,7 @@ type RangeList = GoogleAppsScript.Spreadsheet.RangeList
 type Sheet = GoogleAppsScript.Spreadsheet.Sheet
 type Protection = GoogleAppsScript.Spreadsheet.Protection
 type NamedRange = GoogleAppsScript.Spreadsheet.NamedRange
+type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation
 type RichTextValue = GoogleAppsScript.Spreadsheet.RichTextValue
 
 type SheetsOnOpen = GoogleAppsScript.Events.SheetsOnOpen

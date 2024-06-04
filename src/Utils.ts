@@ -76,6 +76,30 @@ class Utils {
         }
     }
 
+    static trimArrayEndBy<T>(array: T[], predicate: (element: T) => boolean) {
+        while (array.length) {
+            const lastElement = array[array.length - 1]
+            if (predicate(lastElement)) {
+                --array.length
+            } else {
+                break
+            }
+        }
+    }
+
+    static moveArrayElements(array: any[], fromIndex: number, count: number, targetIndex: number) {
+        if (fromIndex === targetIndex || count <= 0) {
+            return
+        }
+
+        if (array.length <= targetIndex) {
+            array.length = targetIndex + 1
+        }
+
+        const moved = array.splice(fromIndex, count)
+        array.splice(targetIndex, 0, ...moved)
+    }
+
     static merge<T extends Record<string, any>, P extends Partial<T>>(...objects: P[]): T {
         const result = {}
         for (const object of objects) {

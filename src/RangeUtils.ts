@@ -1,5 +1,23 @@
 class RangeUtils {
 
+    static isRangeSheet(
+        range: Range | null | undefined,
+        sheet: Sheet | string | null | undefined,
+    ): boolean {
+        if (range == null) {
+            return false
+        }
+
+        if (Utils.isString(sheet)) {
+            sheet = SheetUtils.findSheetByName(sheet)
+        }
+        if (sheet == null) {
+            return false
+        }
+
+        return range.getSheet().getSheetId() === sheet.getSheetId()
+    }
+
     static toColumnRange(
         range: Range | null | undefined,
         column: number | string | null | undefined,
@@ -15,10 +33,6 @@ class RangeUtils {
             return undefined
         }
 
-        if (!this.doesRangeHaveColumn(range, column)) {
-            return undefined
-        }
-
         return range.offset(
             0,
             column - range.getColumn(),
@@ -31,7 +45,7 @@ class RangeUtils {
         range: Range | null | undefined,
         column: number | string | null | undefined,
     ): boolean {
-        if (range == null || column == null) {
+        if (range == null) {
             return false
         }
 
@@ -45,6 +59,14 @@ class RangeUtils {
         const minColumn = range.getColumn()
         const maxColumn = minColumn + range.getNumColumns() - 1
         return minColumn <= column && column <= maxColumn
+    }
+
+    static doesRangeHaveSheetColumn(
+        range: Range | null | undefined,
+        sheet: Sheet | string | null | undefined,
+        column: number | string | null | undefined,
+    ): boolean {
+        return this.isRangeSheet(range, sheet) && this.doesRangeHaveColumn(range, column)
     }
 
     static doesRangeIntersectsWithNamedRange(

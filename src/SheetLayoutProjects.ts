@@ -17,11 +17,21 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.projectsDoneColumnName,
             },
             {
-                name: GSheetProjectSettings.projectsParentIssueColumnName,
+                name: GSheetProjectSettings.projectsIssueColumnName,
+                rangeName: GSheetProjectSettings.projectsIssuesRangeName,
+                dataValidation: () => SpreadsheetApp.newDataValidation().requireFormulaSatisfied(
+                    `=OR(
+                        NOT(ISBLANK(${GSheetProjectSettings.projectsChildIssuesRangeName})),
+                        COUNTIFS(
+                            ${GSheetProjectSettings.projectsIssuesRangeName}, "=" & #SELF,
+                            ${GSheetProjectSettings.projectsChildIssuesRangeName}, "="
+                        ) <= 1
+                    )`,
+                ).build(),
             },
             {
-                name: GSheetProjectSettings.projectsIssueColumnName,
-                //rangeName: GSheetProjectSettings.projectsIssuesRangeName,
+                name: GSheetProjectSettings.projectsChildIssueColumnName,
+                rangeName: GSheetProjectSettings.projectsChildIssuesRangeName,
             },
             {
                 name: GSheetProjectSettings.projectsTitleColumnName,

@@ -7,7 +7,7 @@ class GSheetProject {
 
     static migrateColumns() {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumns()
+            SheetLayouts.migrateColumnsIfNeeded()
         })
     }
 
@@ -20,7 +20,7 @@ class GSheetProject {
 
     static onOpen(event?: SheetsOnOpen) {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumns()
+            SheetLayouts.migrateColumnsIfNeeded()
         })
     }
 

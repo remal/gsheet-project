@@ -4,6 +4,10 @@ class SheetLayouts {
         SheetLayoutProjects.instance,
     ]
 
+    static migrateColumnsIfNeeded() {
+        this.instances.forEach(instance => instance.migrateColumnsIfNeeded())
+    }
+
     static migrateColumns() {
         this.instances.forEach(instance => instance.migrateColumns())
     }
