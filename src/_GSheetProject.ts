@@ -11,6 +11,21 @@ class GSheetProject {
         })
     }
 
+    static reprocessEverything() {
+        EntryPoint.entryPoint(() => {
+            SheetLayouts.migrateColumnsIfNeeded()
+
+            const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName)
+            const range = sheet.getRange(
+                GSheetProjectSettings.firstDataRow,
+                1,
+                sheet.getLastRow() - GSheetProjectSettings.firstDataRow + 1,
+                sheet.getLastColumn(),
+            )
+            this._onEditRange(range)
+        })
+    }
+
     static cleanup() {
         EntryPoint.entryPoint(() => {
             ProtectionLocks.releaseExpiredLocks()

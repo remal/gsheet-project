@@ -70,32 +70,38 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.teamColumnName,
+                rangeName: GSheetProjectSettings.teamsRangeName,
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
+                rangeName: GSheetProjectSettings.estimatesRangeName,
                 defaultFormat: '#,##0',
                 defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.deadlineColumnName,
-                defaultFormat: 'yyyy-MM-dd',
-                defaultHorizontalAlignment: 'center',
-            },
-            {
                 name: GSheetProjectSettings.startColumnName,
+                rangeName: GSheetProjectSettings.startsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.endColumnName,
+                rangeName: GSheetProjectSettings.endsRangeName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.deadlineColumnName,
+                rangeName: GSheetProjectSettings.deadlinesRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },
             /*
             {
                 name: GSheetProjectSettings.projectsIssueHashColumnName,
+                hiddenByDefault: true,
                 arrayFormula: `
                     MAP(
                         ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),

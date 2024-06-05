@@ -24,6 +24,14 @@ class GSheetProject {
             SheetLayouts.migrateColumns();
         });
     }
+    static reprocessEverything() {
+        EntryPoint.entryPoint(() => {
+            SheetLayouts.migrateColumnsIfNeeded();
+            const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
+            const range = sheet.getRange(GSheetProjectSettings.firstDataRow, 1, sheet.getLastRow() - GSheetProjectSettings.firstDataRow + 1, sheet.getLastColumn());
+            this._onEditRange(range);
+        });
+    }
     static cleanup() {
         EntryPoint.entryPoint(() => {
             ProtectionLocks.releaseExpiredLocks();
@@ -82,20 +90,25 @@ class GSheetProjectSettings {
 GSheetProjectSettings.titleRow = 1;
 GSheetProjectSettings.firstDataRow = 2;
 GSheetProjectSettings.sheetName = "Projects";
-GSheetProjectSettings.iconColumnName = "Icon";
+GSheetProjectSettings.iconColumnName = "icon";
 GSheetProjectSettings.doneColumnName = "Done";
 GSheetProjectSettings.milestoneColumnName = "Milestone";
 GSheetProjectSettings.typeColumnName = "Type";
 GSheetProjectSettings.issueColumnName = "Issue";
 GSheetProjectSettings.issuesRangeName = "Issues";
-GSheetProjectSettings.childIssueColumnName = "Child Issue";
+GSheetProjectSettings.childIssueColumnName = "Child\nIssue";
 GSheetProjectSettings.childIssuesRangeName = "ChildIssues";
 GSheetProjectSettings.titleColumnName = "Title";
 GSheetProjectSettings.teamColumnName = "Team";
-GSheetProjectSettings.estimateColumnName = "Estimate (days)";
+GSheetProjectSettings.teamsRangeName = "Teams";
+GSheetProjectSettings.estimateColumnName = "Estimate\n(days)";
+GSheetProjectSettings.estimatesRangeName = "Estimates";
 GSheetProjectSettings.deadlineColumnName = "Deadline";
+GSheetProjectSettings.deadlinesRangeName = "Deadlines";
 GSheetProjectSettings.startColumnName = "Start";
+GSheetProjectSettings.startsRangeName = "Starts";
 GSheetProjectSettings.endColumnName = "End";
+GSheetProjectSettings.endsRangeName = "Ends";
 //static issueHashColumnName: string = "Issue Hash"
 GSheetProjectSettings.indent = 4;
 GSheetProjectSettings.taskTrackers = [];
@@ -166,7 +179,11 @@ class DocumentFlags {
 }
 class EntryPoint {
     static entryPoint(action) {
+        if (this._isInEntryPoint) {
+            return action();
+        }
         try {
+            this._isInEntryPoint = true;
             ExecutionCache.resetCache();
             return action();
         }
@@ -178,9 +195,11 @@ class EntryPoint {
         finally {
             ProtectionLocks.release();
             ProtectionLocks.releaseExpiredLocks();
+            this._isInEntryPoint = false;
         }
     }
 }
+EntryPoint._isInEntryPoint = false;
 class ExecutionCache {
     static getOrComputeCache(key, compute) {
         const stringKey = JSON.stringify(key, (_, value) => {
@@ -700,7 +719,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}4f0280916b9012b61864bcff95cd6a636018e68e536abcddedda1e3b8b94abd0:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}b6f69c9622922548470b0a86a267de5db9c5703dff04123a35c7099dec2c5810:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateColumnsIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -877,32 +896,38 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.teamColumnName,
+                rangeName: GSheetProjectSettings.teamsRangeName,
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
+                rangeName: GSheetProjectSettings.estimatesRangeName,
                 defaultFormat: '#,##0',
                 defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.deadlineColumnName,
-                defaultFormat: 'yyyy-MM-dd',
-                defaultHorizontalAlignment: 'center',
-            },
-            {
                 name: GSheetProjectSettings.startColumnName,
+                rangeName: GSheetProjectSettings.startsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.endColumnName,
+                rangeName: GSheetProjectSettings.endsRangeName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.deadlineColumnName,
+                rangeName: GSheetProjectSettings.deadlinesRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },
             /*
             {
                 name: GSheetProjectSettings.projectsIssueHashColumnName,
+                hiddenByDefault: true,
                 arrayFormula: `
                     MAP(
                         ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
