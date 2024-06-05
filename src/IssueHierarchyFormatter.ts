@@ -3,67 +3,57 @@ class IssueHierarchyFormatter {
     static formatHierarchy(range: Range) {
         if (!RangeUtils.doesRangeHaveSheetColumn(
             range,
-            GSheetProjectSettings.projectsSheetName,
-            GSheetProjectSettings.projectsChildIssueColumnName,
+            GSheetProjectSettings.sheetName,
+            GSheetProjectSettings.childIssueColumnName,
         )) {
             return
         }
 
-        const issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.projectsIssueColumnName)
+        let issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.issueColumnName)
         if (issuesRange != null) {
-            this.formatHierarchyForIssues(
-                issuesRange.getValues()
-                    .map(it => it[0]?.toString()),
-            )
+            issuesRange = RangeUtils.withMinRow(issuesRange, GSheetProjectSettings.firstDataRow)
+            const issues = issuesRange.getValues()
+                .map(it => it[0]?.toString())
+                .filter(it => it?.length)
+                .filter(Utils.distinct())
+            if (issues.length) {
+                this.reorderIssuesAccordingToHierarchy(issues)
+                this.formatHierarchyIssues(issues)
+            }
         }
     }
 
-    static formatHierarchyForAllIssues() {
-        this.formatHierarchyForIssues(undefined)
+    static reorderAllIssuesAccordingToHierarchy() {
+        this.reorderIssuesAccordingToHierarchy(undefined)
     }
 
 
-    static formatHierarchyForIssues(issuesToFormat: string[] | undefined) {
-        issuesToFormat = issuesToFormat
-            ?.filter(it => it?.length)
-            ?.filter(Utils.distinct())
-        if (issuesToFormat != null && !issuesToFormat.length) {
+    static reorderIssuesAccordingToHierarchy(issuesToReorder: string[] | undefined) {
+        if (issuesToReorder != null && !issuesToReorder.length) {
             return
         }
 
-        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName)
-        ProtectionLocks.lockRowsWithProtection(sheet)
+        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName)
+        ProtectionLocks.lockAllRows(sheet)
 
-        const projectsIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsIssueColumnName)
-        const issuesRange = SheetUtils.getColumnRange(
-            sheet,
-            projectsIssueColumn,
-            GSheetProjectSettings.firstDataRow,
-        )
-        const projectsChildIssueColumn = SheetUtils.getColumnByName(
-            sheet,
-            GSheetProjectSettings.projectsChildIssueColumnName,
-        )
-        const childIssuesRange = SheetUtils.getColumnRange(
-            sheet,
-            projectsChildIssueColumn,
-            GSheetProjectSettings.firstDataRow,
-        )
+        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName)
+        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName)
 
-        const issues = issuesRange.getValues()
-            .map(it => it[0]?.toString())
-            .map(it => it?.length ? it as string : null)
-        Utils.trimArrayEndBy(issues, it => it == null)
+        const {
+            issues,
+            childIssues,
+        } = SheetUtils.getColumnsStringValues(sheet, {
+            issues: issuesColumn,
+            childIssues: childIssuesColumn,
+        }, GSheetProjectSettings.firstDataRow)
 
-        const nonNullIssues = issues.filter(it => it != null).map(it => it!)
-        const nonNullUniqueIssues = nonNullIssues.filter(Utils.distinct())
-        if (nonNullIssues.length === nonNullUniqueIssues.length) {
+        const notEmptyIssues = issues.filter(it => it?.length).map(it => it!)
+        const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct())
+        if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
             return
         }
 
-        const childIssues = childIssuesRange.getValues()
-            .map(it => it[0]?.toString())
-            .map(it => it?.length ? it as string : null)
+        Utils.trimArrayEndBy(issues, it => !it?.length)
         childIssues.length = issues.length
 
 
@@ -118,8 +108,8 @@ class IssueHierarchyFormatter {
             return indexes.length >= 2 && indexes[indexes.length - 1] - indexes[0] >= indexes.length
         }
 
-        for (const issue of nonNullUniqueIssues) {
-            if (issuesToFormat != null && !issuesToFormat.includes(issue)) {
+        for (const issue of notEmptyUniqueIssues) {
+            if (issuesToReorder != null && !issuesToReorder.includes(issue)) {
                 continue
             }
 
@@ -127,13 +117,13 @@ class IssueHierarchyFormatter {
                 .map((it, index) => issue === it ? index : null)
                 .filter(index => index != null)
                 .map(index => index!)
-                .toSorted((i1, i2) => i1 - i2)
+                .toSorted(Utils.numericAsc())
 
             const getIndexesWithoutChild = () => getIndexes()
-                .filter(index => childIssues[index] == null)
+                .filter(index => !childIssues[index]?.length)
 
             const getIndexesWithChild = () => getIndexes()
-                .filter(index => childIssues[index] != null)
+                .filter(index => childIssues[index]?.length)
 
             { // group issues without child
                 const indexesWithoutChild = getIndexesWithoutChild()
@@ -160,6 +150,97 @@ class IssueHierarchyFormatter {
                     }
                 }
             }
+        }
+    }
+
+    static formatHierarchyIssues(issuesToFormat: string[]) {
+        if (!issuesToFormat.length) {
+            return
+        }
+
+        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName)
+        ProtectionLocks.lockAllRows(sheet)
+
+        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName)
+        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName)
+        const milestonesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName)
+        const typesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.typeColumnName)
+        const deadlinesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName)
+        const titlesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName)
+        const {
+            issues,
+            childIssues,
+            milestones,
+            types,
+            deadlines,
+        } = SheetUtils.getColumnsStringValues(sheet, {
+            issues: issuesColumn,
+            childIssues: childIssuesColumn,
+            milestones: milestonesColumn,
+            types: typesColumn,
+            deadlines: deadlinesColumn,
+        }, GSheetProjectSettings.firstDataRow)
+
+        const notEmptyIssues = issues.filter(it => it?.length).map(it => it!)
+        const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct())
+        if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
+            return
+        }
+
+        const {
+            milestoneFormulas,
+            typeFormulas,
+            deadlineFormulas,
+        } = SheetUtils.getColumnsFormulas(sheet, {
+            milestoneFormulas: milestonesColumn,
+            typeFormulas: typesColumn,
+            deadlineFormulas: deadlinesColumn,
+        }, GSheetProjectSettings.firstDataRow)
+
+        Utils.trimArrayEndBy(issues, it => !it?.length)
+        childIssues.length = issues.length
+        milestones.length = issues.length
+        types.length = issues.length
+        deadlines.length = issues.length
+        milestoneFormulas.length = issues.length
+        typeFormulas.length = issues.length
+        deadlineFormulas.length = issues.length
+
+        for (const issue of notEmptyUniqueIssues) {
+            if (!issuesToFormat.includes(issue)) {
+                continue
+            }
+
+            const getIndexes = () => issues
+                .map((it, index) => issue === it ? index : null)
+                .filter(index => index != null)
+                .map(index => index!)
+                .toSorted(Utils.numericAsc())
+
+            const getIndexesWithoutChild = () => getIndexes()
+                .filter(index => !childIssues[index]?.length)
+
+            const getIndexesWithChild = () => getIndexes()
+                .filter(index => childIssues[index]?.length)
+
+            { // set indent
+                const setIndent = (indexes: number[], indent: number) => {
+                    if (!indexes.length) {
+                        return
+                    }
+
+                    const notations = indexes.map(index => {
+                        const row = GSheetProjectSettings.firstDataRow + index
+                        return sheet.getRange(row, titlesColumn).getA1Notation()
+                    })
+                    const numberFormat = indent > 0
+                        ? ' '.repeat(indent) + '@'
+                        : '@'
+                    sheet.getRangeList(notations).setNumberFormat(numberFormat)
+                }
+                setIndent(getIndexesWithoutChild(), 0)
+                setIndent(getIndexesWithChild(), GSheetProjectSettings.indent)
+            }
 
             { // set formulas
                 const indexesWithoutChild = getIndexesWithoutChild()
@@ -167,19 +248,33 @@ class IssueHierarchyFormatter {
                 if (indexesWithoutChild.length && indexesWithChild.length) {
                     const firstIndexWithoutChild = indexesWithoutChild[0]
                     const firstRowWithoutChild = GSheetProjectSettings.firstDataRow + firstIndexWithoutChild
-                    const formula = `=${sheet.getRange(firstRowWithoutChild, projectsIssueColumn).getA1Notation()}`
-                        .replace(/[A-Z]+/, '$$$&')
-                        .replace(/\d+/, '$$$&')
+
+                    const getIssueFormula = (column: number): string =>
+                        `=${sheet.getRange(firstRowWithoutChild, column).getA1Notation()}`
+                            .replace(/[A-Z]+/, '$$$&')
+                            .replace(/\d+/, '$$$&')
 
                     const firstIndexWithChild = indexesWithChild[0]
                     const firstRowWithChild = GSheetProjectSettings.firstDataRow + firstIndexWithChild
-                    const withChildRange = sheet.getRange(
-                        firstRowWithChild,
-                        projectsIssueColumn,
-                        indexesWithChild.length,
-                        1,
-                    )
-                    withChildRange.setFormula(formula)
+
+                    sheet.getRange(firstRowWithChild, issuesColumn, indexesWithChild.length, 1)
+                        .setFormula(getIssueFormula(issuesColumn))
+
+                    indexesWithChild.forEach(index => {
+                        const row = GSheetProjectSettings.firstDataRow + index
+                        if (!milestones[index]?.length && !milestoneFormulas[index]?.length) {
+                            sheet.getRange(row, milestonesColumn)
+                                .setFormula(getIssueFormula(milestonesColumn))
+                        }
+                        if (!types[index]?.length && !typeFormulas[index]?.length) {
+                            sheet.getRange(row, typesColumn)
+                                .setFormula(getIssueFormula(typesColumn))
+                        }
+                        if (!deadlines[index]?.length && !deadlineFormulas[index]?.length) {
+                            sheet.getRange(row, deadlinesColumn)
+                                .setFormula(getIssueFormula(deadlinesColumn))
+                        }
+                    })
                 }
             }
         }

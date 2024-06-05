@@ -44,40 +44,52 @@ abstract class SheetLayout {
 
 
         const sheet = this.sheet
-        ProtectionLocks.lockColumnsWithProtection(sheet)
+        ProtectionLocks.lockAllColumns(sheet)
 
-        let lastColumn = Math.max(sheet.getLastColumn(), 1)
+        let lastColumn = sheet.getLastColumn()
         const maxRows = sheet.getMaxRows()
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]
             .map(it => it?.toString())
             .map(it => it?.length ? Utils.normalizeName(it) : '')
         for (const [columnName, info] of columns.entries()) {
-            if (!existingNormalizedNames.includes(columnName)) {
-                const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
-                    .setValue(info.name)
-
-                if (info.defaultFontSize) {
-                    titleRange.setFontSize(info.defaultFontSize)
-                }
-
-                if (Utils.isNumber(info.defaultWidth)) {
-                    sheet.setColumnWidth(lastColumn, info.defaultWidth)
-                } else if (info.defaultWidth === '#default-height') {
-                    sheet.setColumnWidth(lastColumn, 21)
-                } else if (info.defaultWidth === '#height') {
-                    const height = sheet.getRowHeight(1)
-                    sheet.setColumnWidth(lastColumn, height)
-                }
-
-                if (info.hiddenByDefault) {
-                    sheet.hideColumns(lastColumn)
-                }
-
-                existingNormalizedNames.push(columnName)
-
-                ++lastColumn
+            if (existingNormalizedNames.includes(columnName)) {
+                continue
             }
+
+            console.info(`Adding "${info.name}" column`)
+            ++lastColumn
+            const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
+                .setValue(info.name)
+
+            if (info.defaultFontSize) {
+                titleRange.setFontSize(info.defaultFontSize)
+            }
+
+            if (Utils.isNumber(info.defaultWidth)) {
+                sheet.setColumnWidth(lastColumn, info.defaultWidth)
+            } else if (info.defaultWidth === '#default-height') {
+                sheet.setColumnWidth(lastColumn, 21)
+            } else if (info.defaultWidth === '#height') {
+                const height = sheet.getRowHeight(1)
+                sheet.setColumnWidth(lastColumn, height)
+            }
+
+            if (info.defaultFormat != null) {
+                sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
+                    .setNumberFormat(info.defaultFormat)
+            }
+
+            if (info.defaultHorizontalAlignment?.length) {
+                sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
+                    .setHorizontalAlignment(info.defaultHorizontalAlignment)
+            }
+
+            if (info.hiddenByDefault) {
+                sheet.hideColumns(lastColumn)
+            }
+
+            existingNormalizedNames.push(columnName)
         }
 
         const existingFormulas = new Lazy(() =>
@@ -133,6 +145,11 @@ abstract class SheetLayout {
             range.setDataValidation(dataValidation)
         }
 
+        sheet.getRange(1, 1, lastColumn, 1)
+            .setHorizontalAlignment('center')
+            .setFontWeight('bold')
+            .setNumberFormat('')
+
         DocumentFlags.set(this._documentFlag)
         DocumentFlags.cleanupByPrefix(this._documentFlagPrefix)
 
@@ -155,6 +172,8 @@ interface ColumnInfo {
     dataValidation?: () => (DataValidation | null)
     defaultFontSize?: number
     defaultWidth?: number | WidthString
+    defaultFormat?: string
+    defaultHorizontalAlignment?: HorizontalAlignment
     hiddenByDefault?: boolean
 }
 

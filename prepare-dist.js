@@ -12,10 +12,10 @@ rimraf.sync(distDir)
 fs.mkdirSync(distDir, {recursive: true})
 
 const files = fs.readdirSync(buildDir)
-    .sort((f1, f2) => {
-        if (f1.startsWith(mainClass) && !f2.startsWith(mainClass)) {
+    .toSorted((f1, f2) => {
+        if (f1.startsWith('_') && !f2.startsWith('_')) {
             return -1
-        } else if (!f1.startsWith(mainClass) && f2.startsWith(mainClass)) {
+        } else if (!f1.startsWith('_') && f2.startsWith('_')) {
             return 1
         }
         return f1.localeCompare(f2)

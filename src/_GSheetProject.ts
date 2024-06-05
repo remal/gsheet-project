@@ -36,7 +36,6 @@ class GSheetProject {
 
     private static _onInsertRow() {
         EntryPoint.entryPoint(() => {
-            IssueHierarchyFormatter.formatHierarchyForAllIssues()
         })
     }
 
@@ -59,6 +58,7 @@ class GSheetProject {
         }
 
         EntryPoint.entryPoint(() => {
+            DefaultFormulas.insertDefaultFormulas(range)
             IssueHierarchyFormatter.formatHierarchy(range)
         })
     }

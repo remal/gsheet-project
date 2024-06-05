@@ -3,53 +3,95 @@ class SheetLayoutProjects extends SheetLayout {
     static readonly instance = new SheetLayoutProjects()
 
     protected get sheetName(): string {
-        return GSheetProjectSettings.projectsSheetName
+        return GSheetProjectSettings.sheetName
     }
 
     protected get columns(): ReadonlyArray<ColumnInfo> {
         return [
             {
-                name: GSheetProjectSettings.projectsIconColumnName,
+                name: GSheetProjectSettings.iconColumnName,
                 defaultFontSize: 1,
                 defaultWidth: '#default-height',
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsDoneColumnName,
+                name: GSheetProjectSettings.doneColumnName,
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsIssueColumnName,
-                rangeName: GSheetProjectSettings.projectsIssuesRangeName,
-                dataValidation: () => SpreadsheetApp.newDataValidation().requireFormulaSatisfied(
-                    `=OR(
-                        NOT(ISBLANK(${GSheetProjectSettings.projectsChildIssuesRangeName})),
-                        COUNTIFS(
-                            ${GSheetProjectSettings.projectsIssuesRangeName}, "=" & #SELF,
-                            ${GSheetProjectSettings.projectsChildIssuesRangeName}, "="
-                        ) <= 1
-                    )`,
-                ).build(),
+                name: GSheetProjectSettings.milestoneColumnName,
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsChildIssueColumnName,
-                rangeName: GSheetProjectSettings.projectsChildIssuesRangeName,
+                name: GSheetProjectSettings.typeColumnName,
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsTitleColumnName,
+                name: GSheetProjectSettings.issueColumnName,
+                rangeName: GSheetProjectSettings.issuesRangeName,
+                dataValidation: () => SpreadsheetApp.newDataValidation()
+                    .requireFormulaSatisfied(
+                        `=OR(
+                            NOT(ISBLANK(${GSheetProjectSettings.childIssuesRangeName})),
+                            COUNTIFS(
+                                ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
+                                ${GSheetProjectSettings.childIssuesRangeName}, "="
+                            ) <= 1
+                        )`,
+                    )
+                    .setHelpText(
+                        `Multiple rows with the same ${GSheetProjectSettings.issueColumnName}`
+                        + ` without ${GSheetProjectSettings.childIssueColumnName}`,
+                    )
+                    .build(),
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.projectsTeamColumnName,
+                name: GSheetProjectSettings.childIssueColumnName,
+                rangeName: GSheetProjectSettings.childIssuesRangeName,
+                dataValidation: () => SpreadsheetApp.newDataValidation()
+                    .requireFormulaSatisfied(
+                        `=COUNTIF(${GSheetProjectSettings.issuesRangeName}, "=" & #SELF) = 0`,
+                    )
+                    .setHelpText(
+                        `Only one level of hierarchy is supported`,
+                    )
+                    .build(),
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.projectsEstimateColumnName,
+                name: GSheetProjectSettings.titleColumnName,
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.projectsDeadlineColumnName,
+                name: GSheetProjectSettings.teamColumnName,
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.projectsStartColumnName,
+                name: GSheetProjectSettings.estimateColumnName,
+                defaultFormat: '#,##0',
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsEndColumnName,
+                name: GSheetProjectSettings.deadlineColumnName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.startColumnName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.endColumnName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
             },
             /*
             {

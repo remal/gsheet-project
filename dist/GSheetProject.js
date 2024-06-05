@@ -1,3 +1,19 @@
+/**
+ * SHA-256 digest of the provided input
+ * @param {unknown} value
+ * @returns {string}
+ * @customFunction
+ */
+function SHA256(value) {
+    var _a;
+    const string = (_a = value === null || value === void 0 ? void 0 : value.toString()) !== null && _a !== void 0 ? _a : '';
+    const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, string);
+    return digest
+        .map(num => num < 0 ? num + 256 : num)
+        .map(num => num.toString(16))
+        .map(num => (num.length === 1 ? '0' : '') + num)
+        .join('');
+}
 class GSheetProject {
     static reloadIssues() {
         EntryPoint.entryPoint(() => {
@@ -30,7 +46,6 @@ class GSheetProject {
     }
     static _onInsertRow() {
         EntryPoint.entryPoint(() => {
-            IssueHierarchyFormatter.formatHierarchyForAllIssues();
         });
     }
     static _onRemoveColumn() {
@@ -47,6 +62,7 @@ class GSheetProject {
             return;
         }
         EntryPoint.entryPoint(() => {
+            DefaultFormulas.insertDefaultFormulas(range);
             IssueHierarchyFormatter.formatHierarchy(range);
         });
     }
@@ -65,27 +81,24 @@ class GSheetProjectSettings {
 }
 GSheetProjectSettings.titleRow = 1;
 GSheetProjectSettings.firstDataRow = 2;
-GSheetProjectSettings.settingsSheetName = "Settings";
-GSheetProjectSettings.projectsSheetName = "Projects";
-GSheetProjectSettings.projectsIconColumnName = "Icon";
-GSheetProjectSettings.projectsDoneColumnName = "Done";
-GSheetProjectSettings.projectsIssueColumnName = "Issue";
-GSheetProjectSettings.projectsIssuesRangeName = "Issues";
-GSheetProjectSettings.projectsChildIssueColumnName = "Child Issue";
-GSheetProjectSettings.projectsChildIssuesRangeName = "ChildIssues";
-GSheetProjectSettings.projectsTitleColumnName = "Title";
-GSheetProjectSettings.projectsTeamColumnName = "Team";
-GSheetProjectSettings.projectsEstimateColumnName = "Estimate (days)";
-GSheetProjectSettings.projectsDeadlineColumnName = "Deadline";
-GSheetProjectSettings.projectsStartColumnName = "Start";
-GSheetProjectSettings.projectsEndColumnName = "End";
-//static projectsIssueHashColumnName: string = "Issue Hash"
+GSheetProjectSettings.sheetName = "Projects";
+GSheetProjectSettings.iconColumnName = "Icon";
+GSheetProjectSettings.doneColumnName = "Done";
+GSheetProjectSettings.milestoneColumnName = "Milestone";
+GSheetProjectSettings.typeColumnName = "Type";
+GSheetProjectSettings.issueColumnName = "Issue";
+GSheetProjectSettings.issuesRangeName = "Issues";
+GSheetProjectSettings.childIssueColumnName = "Child Issue";
+GSheetProjectSettings.childIssuesRangeName = "ChildIssues";
+GSheetProjectSettings.titleColumnName = "Title";
+GSheetProjectSettings.teamColumnName = "Team";
+GSheetProjectSettings.estimateColumnName = "Estimate (days)";
+GSheetProjectSettings.deadlineColumnName = "Deadline";
+GSheetProjectSettings.startColumnName = "Start";
+GSheetProjectSettings.endColumnName = "End";
+//static issueHashColumnName: string = "Issue Hash"
 GSheetProjectSettings.indent = 4;
-GSheetProjectSettings.groupChildIssues = false;
-GSheetProjectSettings.issueLoaderFactories = [];
-GSheetProjectSettings.issueChildrenLoaderFactories = [];
-GSheetProjectSettings.issueBlockersLoaderFactories = [];
-GSheetProjectSettings.issueSearcherFactories = [];
+GSheetProjectSettings.taskTrackers = [];
 class CommonFormatter {
     static setMiddleVerticalAlign() {
         SpreadsheetApp.getActiveSpreadsheet().getSheets()
@@ -102,21 +115,18 @@ class CommonFormatter {
         }
     }
 }
-/**
- * SHA-256 digest of the provided input
- * @param {unknown} value
- * @returns {string}
- * @customFunction
- */
-function SHA256(value) {
-    var _a;
-    const string = (_a = value === null || value === void 0 ? void 0 : value.toString()) !== null && _a !== void 0 ? _a : '';
-    const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, string);
-    return digest
-        .map(num => num < 0 ? num + 256 : num)
-        .map(num => num.toString(16))
-        .map(num => (num.length === 1 ? '0' : '') + num)
-        .join('');
+class DefaultFormulas {
+    static insertDefaultFormulas(range) {
+        if (!RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, GSheetProjectSettings.issueColumnName)
+            && !RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, GSheetProjectSettings.titleColumnName)) {
+            return;
+        }
+        const startRow = range.getRow();
+        const endRow = startRow + range.getNumRows();
+        ProtectionLocks.lockRows(range.getSheet(), endRow);
+        for (let row = startRow; row <= endRow; ++row) {
+        }
+    }
 }
 class DocumentFlags {
     static set(key, value = true) {
@@ -200,70 +210,45 @@ ExecutionCache._data = new Map();
 class Images {
 }
 Images.loadingImageUrl = 'https://raw.githubusercontent.com/remal/misc/main/spinner.gif';
-class IssueBlockersLoader {
-    loadBlockers(issueId) {
-        return this.loadBlockersBulk([issueId]);
-    }
-    loadBlockersBulk(issueIds) {
-        return [];
-    }
-}
-class IssueBlockersLoaderFactory {
-    getIssueBlockerLoader(issueId) {
-        return undefined;
-    }
-}
-class IssueChildrenLoader {
-    loadChildren(issueId) {
-        return this.loadChildrenBulk([issueId]);
-    }
-    loadChildrenBulk(issueIds) {
-        return [];
-    }
-}
-class IssueChildrenLoaderFactory {
-    getIssueChildrenLoader(issueId) {
-        return undefined;
-    }
-}
 class IssueHierarchyFormatter {
     static formatHierarchy(range) {
-        if (!RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.projectsSheetName, GSheetProjectSettings.projectsChildIssueColumnName)) {
+        if (!RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, GSheetProjectSettings.childIssueColumnName)) {
             return;
         }
-        const issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.projectsIssueColumnName);
+        let issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.issueColumnName);
         if (issuesRange != null) {
-            this.formatHierarchyForIssues(issuesRange.getValues()
-                .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); }));
+            issuesRange = RangeUtils.withMinRow(issuesRange, GSheetProjectSettings.firstDataRow);
+            const issues = issuesRange.getValues()
+                .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); })
+                .filter(it => it === null || it === void 0 ? void 0 : it.length)
+                .filter(Utils.distinct());
+            if (issues.length) {
+                this.reorderIssuesAccordingToHierarchy(issues);
+                this.formatHierarchyIssues(issues);
+            }
         }
     }
-    static formatHierarchyForAllIssues() {
-        this.formatHierarchyForIssues(undefined);
+    static reorderAllIssuesAccordingToHierarchy() {
+        this.reorderIssuesAccordingToHierarchy(undefined);
     }
-    static formatHierarchyForIssues(issuesToFormat) {
-        var _a;
-        issuesToFormat = (_a = issuesToFormat === null || issuesToFormat === void 0 ? void 0 : issuesToFormat.filter(it => it === null || it === void 0 ? void 0 : it.length)) === null || _a === void 0 ? void 0 : _a.filter(Utils.distinct());
-        if (issuesToFormat != null && !issuesToFormat.length) {
+    static reorderIssuesAccordingToHierarchy(issuesToReorder) {
+        if (issuesToReorder != null && !issuesToReorder.length) {
             return;
         }
-        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.projectsSheetName);
-        ProtectionLocks.lockRowsWithProtection(sheet);
-        const projectsIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsIssueColumnName);
-        const issuesRange = SheetUtils.getColumnRange(sheet, projectsIssueColumn, GSheetProjectSettings.firstDataRow);
-        const projectsChildIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.projectsChildIssueColumnName);
-        const childIssuesRange = SheetUtils.getColumnRange(sheet, projectsChildIssueColumn, GSheetProjectSettings.firstDataRow);
-        const issues = issuesRange.getValues()
-            .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); })
-            .map(it => (it === null || it === void 0 ? void 0 : it.length) ? it : null);
-        Utils.trimArrayEndBy(issues, it => it == null);
-        const nonNullIssues = issues.filter(it => it != null).map(it => it);
-        const nonNullUniqueIssues = nonNullIssues.filter(Utils.distinct());
-        if (nonNullIssues.length === nonNullUniqueIssues.length) {
+        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
+        ProtectionLocks.lockAllRows(sheet);
+        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName);
+        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName);
+        const { issues, childIssues, } = SheetUtils.getColumnsStringValues(sheet, {
+            issues: issuesColumn,
+            childIssues: childIssuesColumn,
+        }, GSheetProjectSettings.firstDataRow);
+        const notEmptyIssues = issues.filter(it => it === null || it === void 0 ? void 0 : it.length).map(it => it);
+        const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct());
+        if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
             return;
         }
-        const childIssues = childIssuesRange.getValues()
-            .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); })
-            .map(it => (it === null || it === void 0 ? void 0 : it.length) ? it : null);
+        Utils.trimArrayEndBy(issues, it => !(it === null || it === void 0 ? void 0 : it.length));
         childIssues.length = issues.length;
         const moveIssues = (fromIndex, count, targetIndex) => {
             if (fromIndex === targetIndex || count <= 0) {
@@ -311,19 +296,19 @@ class IssueHierarchyFormatter {
         const hasGapsInIndexes = (indexes) => {
             return indexes.length >= 2 && indexes[indexes.length - 1] - indexes[0] >= indexes.length;
         };
-        for (const issue of nonNullUniqueIssues) {
-            if (issuesToFormat != null && !issuesToFormat.includes(issue)) {
+        for (const issue of notEmptyUniqueIssues) {
+            if (issuesToReorder != null && !issuesToReorder.includes(issue)) {
                 continue;
             }
             const getIndexes = () => issues
                 .map((it, index) => issue === it ? index : null)
                 .filter(index => index != null)
                 .map(index => index)
-                .toSorted((i1, i2) => i1 - i2);
+                .toSorted(Utils.numericAsc());
             const getIndexesWithoutChild = () => getIndexes()
-                .filter(index => childIssues[index] == null);
+                .filter(index => { var _a; return !((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length); });
             const getIndexesWithChild = () => getIndexes()
-                .filter(index => childIssues[index] != null);
+                .filter(index => { var _a; return (_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length; });
             { // group issues without child
                 const indexesWithoutChild = getIndexesWithoutChild();
                 if (hasGapsInIndexes(indexesWithoutChild)) {
@@ -348,54 +333,107 @@ class IssueHierarchyFormatter {
                     }
                 }
             }
+        }
+    }
+    static formatHierarchyIssues(issuesToFormat) {
+        if (!issuesToFormat.length) {
+            return;
+        }
+        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
+        ProtectionLocks.lockAllRows(sheet);
+        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName);
+        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName);
+        const milestonesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName);
+        const typesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.typeColumnName);
+        const deadlinesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName);
+        const titlesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName);
+        const { issues, childIssues, milestones, types, deadlines, } = SheetUtils.getColumnsStringValues(sheet, {
+            issues: issuesColumn,
+            childIssues: childIssuesColumn,
+            milestones: milestonesColumn,
+            types: typesColumn,
+            deadlines: deadlinesColumn,
+        }, GSheetProjectSettings.firstDataRow);
+        const notEmptyIssues = issues.filter(it => it === null || it === void 0 ? void 0 : it.length).map(it => it);
+        const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct());
+        if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
+            return;
+        }
+        const { milestoneFormulas, typeFormulas, deadlineFormulas, } = SheetUtils.getColumnsFormulas(sheet, {
+            milestoneFormulas: milestonesColumn,
+            typeFormulas: typesColumn,
+            deadlineFormulas: deadlinesColumn,
+        }, GSheetProjectSettings.firstDataRow);
+        Utils.trimArrayEndBy(issues, it => !(it === null || it === void 0 ? void 0 : it.length));
+        childIssues.length = issues.length;
+        milestones.length = issues.length;
+        types.length = issues.length;
+        deadlines.length = issues.length;
+        milestoneFormulas.length = issues.length;
+        typeFormulas.length = issues.length;
+        deadlineFormulas.length = issues.length;
+        for (const issue of notEmptyUniqueIssues) {
+            if (!issuesToFormat.includes(issue)) {
+                continue;
+            }
+            const getIndexes = () => issues
+                .map((it, index) => issue === it ? index : null)
+                .filter(index => index != null)
+                .map(index => index)
+                .toSorted(Utils.numericAsc());
+            const getIndexesWithoutChild = () => getIndexes()
+                .filter(index => { var _a; return !((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length); });
+            const getIndexesWithChild = () => getIndexes()
+                .filter(index => { var _a; return (_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length; });
+            { // set indent
+                const setIndent = (indexes, indent) => {
+                    if (!indexes.length) {
+                        return;
+                    }
+                    const notations = indexes.map(index => {
+                        const row = GSheetProjectSettings.firstDataRow + index;
+                        return sheet.getRange(row, titlesColumn).getA1Notation();
+                    });
+                    const numberFormat = indent > 0
+                        ? ' '.repeat(indent) + '@'
+                        : '@';
+                    sheet.getRangeList(notations).setNumberFormat(numberFormat);
+                };
+                setIndent(getIndexesWithoutChild(), 0);
+                setIndent(getIndexesWithChild(), GSheetProjectSettings.indent);
+            }
             { // set formulas
                 const indexesWithoutChild = getIndexesWithoutChild();
                 const indexesWithChild = getIndexesWithChild();
                 if (indexesWithoutChild.length && indexesWithChild.length) {
                     const firstIndexWithoutChild = indexesWithoutChild[0];
                     const firstRowWithoutChild = GSheetProjectSettings.firstDataRow + firstIndexWithoutChild;
-                    const formula = `=${sheet.getRange(firstRowWithoutChild, projectsIssueColumn).getA1Notation()}`
+                    const getIssueFormula = (column) => `=${sheet.getRange(firstRowWithoutChild, column).getA1Notation()}`
                         .replace(/[A-Z]+/, '$$$&')
                         .replace(/\d+/, '$$$&');
                     const firstIndexWithChild = indexesWithChild[0];
                     const firstRowWithChild = GSheetProjectSettings.firstDataRow + firstIndexWithChild;
-                    const withChildRange = sheet.getRange(firstRowWithChild, projectsIssueColumn, indexesWithChild.length, 1);
-                    withChildRange.setFormula(formula);
+                    sheet.getRange(firstRowWithChild, issuesColumn, indexesWithChild.length, 1)
+                        .setFormula(getIssueFormula(issuesColumn));
+                    indexesWithChild.forEach(index => {
+                        var _a, _b, _c, _d, _e, _f;
+                        const row = GSheetProjectSettings.firstDataRow + index;
+                        if (!((_a = milestones[index]) === null || _a === void 0 ? void 0 : _a.length) && !((_b = milestoneFormulas[index]) === null || _b === void 0 ? void 0 : _b.length)) {
+                            sheet.getRange(row, milestonesColumn)
+                                .setFormula(getIssueFormula(milestonesColumn));
+                        }
+                        if (!((_c = types[index]) === null || _c === void 0 ? void 0 : _c.length) && !((_d = typeFormulas[index]) === null || _d === void 0 ? void 0 : _d.length)) {
+                            sheet.getRange(row, typesColumn)
+                                .setFormula(getIssueFormula(typesColumn));
+                        }
+                        if (!((_e = deadlines[index]) === null || _e === void 0 ? void 0 : _e.length) && !((_f = deadlineFormulas[index]) === null || _f === void 0 ? void 0 : _f.length)) {
+                            sheet.getRange(row, deadlinesColumn)
+                                .setFormula(getIssueFormula(deadlinesColumn));
+                        }
+                    });
                 }
             }
         }
-    }
-}
-class IssueLoader {
-    load(issueId) {
-        return null;
-    }
-    canonizeId(issueId) {
-        return issueId;
-    }
-    createWebUrl(issueId) {
-        return null;
-    }
-}
-class IssueLoaderFactory {
-    getIssueLoader(issueId) {
-        return undefined;
-    }
-}
-class IssueSearcher {
-    search(query) {
-        return [];
-    }
-    canonizeQuery(query) {
-        return query;
-    }
-    createWebUrl(query) {
-        return null;
-    }
-}
-class IssueSearcherFactory {
-    getIssueSearcher(query) {
-        return undefined;
     }
 }
 class Lazy {
@@ -431,32 +469,55 @@ class NamedRangeUtils {
     }
 }
 class ProtectionLocks {
-    static lockColumnsWithProtection(sheet) {
+    static lockAllColumns(sheet) {
         const sheetId = sheet.getSheetId();
-        if (this._columnsProtections.has(sheetId)) {
+        if (this._allColumnsProtections.has(sheetId)) {
             return;
         }
         const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
         const protection = range.protect()
-            .setDescription(`lock|columns|${new Date().getTime()}`)
+            .setDescription(`lock|columns|all|${new Date().getTime()}`)
             .setWarningOnly(true);
-        this._columnsProtections.set(sheetId, protection);
+        this._allColumnsProtections.set(sheetId, protection);
     }
-    static lockRowsWithProtection(sheet) {
+    static lockAllRows(sheet) {
         const sheetId = sheet.getSheetId();
-        if (this._rowsProtections.has(sheetId)) {
+        if (this._allRowsProtections.has(sheetId)) {
             return;
         }
         const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1);
         const protection = range.protect()
-            .setDescription(`lock|rows|${new Date().getTime()}`)
+            .setDescription(`lock|rows|all|${new Date().getTime()}`)
             .setWarningOnly(true);
-        this._rowsProtections.set(sheetId, protection);
+        this._allRowsProtections.set(sheetId, protection);
+    }
+    static lockRows(sheet, rowsToLock) {
+        if (rowsToLock <= 0) {
+            return;
+        }
+        const sheetId = sheet.getSheetId();
+        if (this._allRowsProtections.has(sheetId)) {
+            return;
+        }
+        if (!this._rowsProtections.has(sheetId)) {
+            this._rowsProtections.set(sheetId, new Map());
+        }
+        const rowsProtections = this._rowsProtections.get(sheetId);
+        const maxLockedRow = Array.from(rowsProtections.keys()).reduce((prev, cur) => Math.max(prev, cur), 0);
+        if (maxLockedRow < rowsToLock) {
+            const range = sheet.getRange(1, sheet.getMaxColumns(), rowsToLock, 1);
+            const protection = range.protect()
+                .setDescription(`lock|rows|${rowsToLock}|${new Date().getTime()}`)
+                .setWarningOnly(true);
+            rowsProtections.set(rowsToLock, protection);
+        }
     }
     static release() {
-        this._columnsProtections.forEach(protection => protection.remove());
-        this._columnsProtections.clear();
-        this._rowsProtections.forEach(protection => protection.remove());
+        this._allColumnsProtections.forEach(protection => protection.remove());
+        this._allColumnsProtections.clear();
+        this._allRowsProtections.forEach(protection => protection.remove());
+        this._allRowsProtections.clear();
+        this._rowsProtections.forEach(protections => Array.from(protections.values()).forEach(protection => protection.remove()));
         this._rowsProtections.clear();
     }
     static releaseExpiredLocks() {
@@ -485,7 +546,8 @@ class ProtectionLocks {
         });
     }
 }
-ProtectionLocks._columnsProtections = new Map();
+ProtectionLocks._allColumnsProtections = new Map();
+ProtectionLocks._allRowsProtections = new Map();
 ProtectionLocks._rowsProtections = new Map();
 class RangeUtils {
     static isRangeSheet(range, sheet) {
@@ -511,6 +573,13 @@ class RangeUtils {
             return undefined;
         }
         return range.offset(0, column - range.getColumn(), range.getNumRows(), 1);
+    }
+    static withMinRow(range, minRow) {
+        const rowDiff = minRow - range.getRow();
+        if (rowDiff <= 0) {
+            return range;
+        }
+        return range.offset(rowDiff, 0, Math.max(range.getNumRows() - rowDiff, 1), range.getNumColumns());
     }
     static doesRangeHaveColumn(range, column) {
         if (range == null) {
@@ -616,106 +685,6 @@ class RichTextUtils {
         return builder.build();
     }
 }
-class Settings {
-    static get settingsSheet() {
-        return SheetUtils.getSheetByName(GSheetProjectSettings.settingsSheetName);
-    }
-    static getMatrix(settingsScope) {
-        const settingsSheet = this.settingsSheet;
-        settingsScope = Utils.normalizeName(settingsScope);
-        return ExecutionCache.getOrComputeCache(['settings', 'matrix', settingsScope], () => {
-            const scopeRow = this._findScopeRow(settingsSheet, settingsScope);
-            if (scopeRow == null) {
-                throw new Error(`Settings with "${settingsScope}" can't be found`);
-            }
-            const columns = [];
-            const columnsValues = settingsSheet
-                .getRange(scopeRow + 1, 1, 1, settingsSheet.getLastColumn())
-                .getValues()[0];
-            for (const column of columnsValues) {
-                const name = Utils.toLowerCamelCase(column.toString().trim());
-                if (name.length) {
-                    columns.push(name);
-                }
-                else {
-                    break;
-                }
-            }
-            if (!columns.length) {
-                return [];
-            }
-            const result = [];
-            const allSettingsRange = result[':settingsRange'] = {
-                row: scopeRow + 2,
-                column: 1,
-                rows: 0,
-                columns: columns.length,
-            };
-            for (const row of Utils.range(scopeRow + 2, settingsSheet.getLastRow())) {
-                const item = new Map();
-                item[':settingsRange'] = {
-                    row: row,
-                    column: 1,
-                    rows: 1,
-                    columns: columns.length,
-                };
-                const values = settingsSheet.getRange(row, 1, 1, columns.length).getValues()[0];
-                for (let i = 0; i < columns.length; ++i) {
-                    let value = values[i].toString().trim();
-                    item.set(columns[i], value);
-                }
-                const areAllValuesEmpty = Array.from(item.values()).every(value => !value.length);
-                if (areAllValuesEmpty) {
-                    break;
-                }
-                result.push(item);
-                ++allSettingsRange.rows;
-            }
-            return result;
-        });
-    }
-    static getMap(settingsScope) {
-        const settingsSheet = this.settingsSheet;
-        settingsScope = Utils.normalizeName(settingsScope);
-        return ExecutionCache.getOrComputeCache(['settings', 'map', settingsScope], () => {
-            const scopeRow = this._findScopeRow(settingsSheet, settingsScope);
-            if (scopeRow == null) {
-                throw new Error(`Settings with "${settingsScope}" can't be found`);
-            }
-            const result = new Map();
-            const allSettingsRange = result[':settingsRange'] = {
-                row: scopeRow + 1,
-                column: 1,
-                rows: 0,
-                columns: 2,
-            };
-            for (const row of Utils.range(scopeRow + 1, settingsSheet.getLastRow())) {
-                const values = settingsSheet.getRange(row, 1, 1, 2).getValues()[0];
-                const key = Utils.toLowerCamelCase(values[0].toString().trim());
-                if (!key.length) {
-                    break;
-                }
-                const value = values[1].toString().trim();
-                result.set(key, value);
-                ++allSettingsRange.rows;
-            }
-            return result;
-        });
-    }
-    static _findScopeRow(sheet, scope) {
-        for (const row of Utils.range(1, sheet.getLastRow())) {
-            const range = sheet.getRange(row, 1);
-            if (range.getFontWeight() !== 'bold'
-                || !range.isPartOfMerge()) {
-                continue;
-            }
-            if (Utils.normalizeName(range.getValue()) === scope) {
-                return row;
-            }
-        }
-        return null;
-    }
-}
 class SheetLayout {
     get sheet() {
         const sheetName = this.sheetName;
@@ -731,7 +700,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}cd922c58e57f9964497b44ea94b6b2679bf7479f74138e629baeb93cdfd128d8:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}4f0280916b9012b61864bcff95cd6a636018e68e536abcddedda1e3b8b94abd0:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateColumnsIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -740,7 +709,7 @@ class SheetLayout {
         this.migrateColumns();
     }
     migrateColumns() {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         const columns = this.columns.reduce((map, info) => {
             map.set(Utils.normalizeName(info.name), info);
             return map;
@@ -749,36 +718,46 @@ class SheetLayout {
             return;
         }
         const sheet = this.sheet;
-        ProtectionLocks.lockColumnsWithProtection(sheet);
-        let lastColumn = Math.max(sheet.getLastColumn(), 1);
+        ProtectionLocks.lockAllColumns(sheet);
+        let lastColumn = sheet.getLastColumn();
         const maxRows = sheet.getMaxRows();
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]
             .map(it => it === null || it === void 0 ? void 0 : it.toString())
             .map(it => (it === null || it === void 0 ? void 0 : it.length) ? Utils.normalizeName(it) : '');
         for (const [columnName, info] of columns.entries()) {
-            if (!existingNormalizedNames.includes(columnName)) {
-                const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
-                    .setValue(info.name);
-                if (info.defaultFontSize) {
-                    titleRange.setFontSize(info.defaultFontSize);
-                }
-                if (Utils.isNumber(info.defaultWidth)) {
-                    sheet.setColumnWidth(lastColumn, info.defaultWidth);
-                }
-                else if (info.defaultWidth === '#default-height') {
-                    sheet.setColumnWidth(lastColumn, 21);
-                }
-                else if (info.defaultWidth === '#height') {
-                    const height = sheet.getRowHeight(1);
-                    sheet.setColumnWidth(lastColumn, height);
-                }
-                if (info.hiddenByDefault) {
-                    sheet.hideColumns(lastColumn);
-                }
-                existingNormalizedNames.push(columnName);
-                ++lastColumn;
+            if (existingNormalizedNames.includes(columnName)) {
+                continue;
             }
+            console.info(`Adding "${info.name}" column`);
+            ++lastColumn;
+            const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
+                .setValue(info.name);
+            if (info.defaultFontSize) {
+                titleRange.setFontSize(info.defaultFontSize);
+            }
+            if (Utils.isNumber(info.defaultWidth)) {
+                sheet.setColumnWidth(lastColumn, info.defaultWidth);
+            }
+            else if (info.defaultWidth === '#default-height') {
+                sheet.setColumnWidth(lastColumn, 21);
+            }
+            else if (info.defaultWidth === '#height') {
+                const height = sheet.getRowHeight(1);
+                sheet.setColumnWidth(lastColumn, height);
+            }
+            if (info.defaultFormat != null) {
+                sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
+                    .setNumberFormat(info.defaultFormat);
+            }
+            if ((_a = info.defaultHorizontalAlignment) === null || _a === void 0 ? void 0 : _a.length) {
+                sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
+                    .setHorizontalAlignment(info.defaultHorizontalAlignment);
+            }
+            if (info.hiddenByDefault) {
+                sheet.hideColumns(lastColumn);
+            }
+            existingNormalizedNames.push(columnName);
         }
         const existingFormulas = new Lazy(() => sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn).getFormulas()[0]);
         for (const [columnName, info] of columns.entries()) {
@@ -787,7 +766,7 @@ class SheetLayout {
                 continue;
             }
             const column = index + 1;
-            if ((_a = info.arrayFormula) === null || _a === void 0 ? void 0 : _a.length) {
+            if ((_b = info.arrayFormula) === null || _b === void 0 ? void 0 : _b.length) {
                 const arrayFormulaNormalized = info.arrayFormula.split(/[\r\n]+/)
                     .map(line => line.trim())
                     .filter(line => line.length)
@@ -801,10 +780,10 @@ class SheetLayout {
                 }
             }
             const range = sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows, 1);
-            if ((_b = info.rangeName) === null || _b === void 0 ? void 0 : _b.length) {
+            if ((_c = info.rangeName) === null || _c === void 0 ? void 0 : _c.length) {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range);
             }
-            let dataValidation = (_d = (_c = info.dataValidation) === null || _c === void 0 ? void 0 : _c.call(info)) !== null && _d !== void 0 ? _d : null;
+            let dataValidation = (_e = (_d = info.dataValidation) === null || _d === void 0 ? void 0 : _d.call(info)) !== null && _e !== void 0 ? _e : null;
             if (dataValidation != null) {
                 if (dataValidation.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CUSTOM_FORMULA) {
                     const formula = dataValidation.getCriteriaValues()[0].toString()
@@ -821,6 +800,10 @@ class SheetLayout {
             }
             range.setDataValidation(dataValidation);
         }
+        sheet.getRange(1, 1, lastColumn, 1)
+            .setHorizontalAlignment('center')
+            .setFontWeight('bold')
+            .setNumberFormat('');
         DocumentFlags.set(this._documentFlag);
         DocumentFlags.cleanupByPrefix(this._documentFlagPrefix);
         const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion'];
@@ -836,50 +819,86 @@ class SheetLayout {
 }
 class SheetLayoutProjects extends SheetLayout {
     get sheetName() {
-        return GSheetProjectSettings.projectsSheetName;
+        return GSheetProjectSettings.sheetName;
     }
     get columns() {
         return [
             {
-                name: GSheetProjectSettings.projectsIconColumnName,
+                name: GSheetProjectSettings.iconColumnName,
                 defaultFontSize: 1,
                 defaultWidth: '#default-height',
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsDoneColumnName,
+                name: GSheetProjectSettings.doneColumnName,
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsIssueColumnName,
-                rangeName: GSheetProjectSettings.projectsIssuesRangeName,
-                dataValidation: () => SpreadsheetApp.newDataValidation().requireFormulaSatisfied(`=OR(
-                        NOT(ISBLANK(${GSheetProjectSettings.projectsChildIssuesRangeName})),
-                        COUNTIFS(
-                            ${GSheetProjectSettings.projectsIssuesRangeName}, "=" & #SELF,
-                            ${GSheetProjectSettings.projectsChildIssuesRangeName}, "="
-                        ) <= 1
-                    )`).build(),
+                name: GSheetProjectSettings.milestoneColumnName,
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsChildIssueColumnName,
-                rangeName: GSheetProjectSettings.projectsChildIssuesRangeName,
+                name: GSheetProjectSettings.typeColumnName,
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsTitleColumnName,
+                name: GSheetProjectSettings.issueColumnName,
+                rangeName: GSheetProjectSettings.issuesRangeName,
+                dataValidation: () => SpreadsheetApp.newDataValidation()
+                    .requireFormulaSatisfied(`=OR(
+                            NOT(ISBLANK(${GSheetProjectSettings.childIssuesRangeName})),
+                            COUNTIFS(
+                                ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
+                                ${GSheetProjectSettings.childIssuesRangeName}, "="
+                            ) <= 1
+                        )`)
+                    .setHelpText(`Multiple rows with the same ${GSheetProjectSettings.issueColumnName}`
+                    + ` without ${GSheetProjectSettings.childIssueColumnName}`)
+                    .build(),
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.projectsTeamColumnName,
+                name: GSheetProjectSettings.childIssueColumnName,
+                rangeName: GSheetProjectSettings.childIssuesRangeName,
+                dataValidation: () => SpreadsheetApp.newDataValidation()
+                    .requireFormulaSatisfied(`=COUNTIF(${GSheetProjectSettings.issuesRangeName}, "=" & #SELF) = 0`)
+                    .setHelpText(`Only one level of hierarchy is supported`)
+                    .build(),
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.projectsEstimateColumnName,
+                name: GSheetProjectSettings.titleColumnName,
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.projectsDeadlineColumnName,
+                name: GSheetProjectSettings.teamColumnName,
+                defaultFormat: '',
+                defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.projectsStartColumnName,
+                name: GSheetProjectSettings.estimateColumnName,
+                defaultFormat: '#,##0',
+                defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.projectsEndColumnName,
+                name: GSheetProjectSettings.deadlineColumnName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.startColumnName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.endColumnName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
             },
             /*
             {
@@ -908,6 +927,15 @@ SheetLayouts.instances = [
     SheetLayoutProjects.instance,
 ];
 class SheetUtils {
+    static isGridSheet(sheet) {
+        if (Utils.isString(sheet)) {
+            sheet = this.findSheetByName(sheet);
+        }
+        if (sheet == null) {
+            return false;
+        }
+        return sheet.getType() === SpreadsheetApp.SheetType.GRID;
+    }
     static findSheetByName(sheetName) {
         if (!(sheetName === null || sheetName === void 0 ? void 0 : sheetName.length)) {
             return undefined;
@@ -939,7 +967,7 @@ class SheetUtils {
         if (sheet == null || !this.isGridSheet(sheet)) {
             return undefined;
         }
-        ProtectionLocks.lockColumnsWithProtection(sheet);
+        ProtectionLocks.lockAllColumns(sheet);
         columnName = Utils.normalizeName(columnName);
         return ExecutionCache.getOrComputeCache(['findColumnByName', sheet, columnName], () => {
             for (const col of Utils.range(GSheetProjectSettings.titleRow, sheet.getLastColumn())) {
@@ -977,6 +1005,70 @@ class SheetUtils {
         const rows = lastRow - fromRow + 1;
         return sheet.getRange(fromRow, column, rows, 1);
     }
+    static getColumnsValues(sheet, columns, fromRow) {
+        const getter = range => range.getValues();
+        return this._getColumnsProps(sheet, columns, getter, fromRow);
+    }
+    static getColumnsStringValues(sheet, columns, fromRow) {
+        const getter = range => range.getValues();
+        const result = this._getColumnsProps(sheet, columns, getter, fromRow);
+        for (const [key, values] of Object.entries(result)) {
+            result[key] = values.map(value => value.toString());
+        }
+        return result;
+    }
+    static getColumnsFormulas(sheet, columns, fromRow) {
+        const getter = range => range.getFormulas();
+        return this._getColumnsProps(sheet, columns, getter, fromRow);
+    }
+    static _getColumnsProps(sheet, columns, getter, fromRow) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        if (!Object.keys(columns).length) {
+            return {};
+        }
+        if (fromRow == null) {
+            fromRow = 1;
+        }
+        const columnToNumber = Object.keys(columns)
+            .reduce((rec, key) => {
+            const value = columns[key];
+            rec[key] = Utils.isString(value)
+                ? this.getColumnByName(sheet, value)
+                : value;
+            return rec;
+        }, {});
+        const numbers = Object.values(columnToNumber).filter(Utils.distinct()).toSorted(Utils.numericAsc());
+        const result = {};
+        Object.keys(columns).forEach(key => result[key] = []);
+        const lastRow = sheet.getLastRow();
+        while (numbers.length) {
+            const baseColumn = numbers.shift();
+            let columnsCount = 1;
+            while (numbers.length) {
+                const nextNumber = numbers[0];
+                if (nextNumber === baseColumn + columnsCount) {
+                    ++columnsCount;
+                    numbers.shift();
+                }
+                else {
+                    break;
+                }
+            }
+            const range = sheet.getRange(fromRow, baseColumn, Math.max(lastRow - fromRow + 1, 1), columnsCount);
+            const props = getter(range);
+            props.forEach(rows => rows.forEach((columnValue, index) => {
+                const column = baseColumn + index;
+                for (const [columnKey, columnNumber] of Object.entries(columnToNumber)) {
+                    if (column === columnNumber) {
+                        result[columnKey].push(columnValue);
+                    }
+                }
+            }));
+        }
+        return result;
+    }
     static getRowRange(sheet, row, fromColumn) {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet);
@@ -994,15 +1086,8 @@ class SheetUtils {
         const columns = lastColumn - fromColumn + 1;
         return sheet.getRange(row, fromColumn, 1, columns);
     }
-    static isGridSheet(sheet) {
-        if (Utils.isString(sheet)) {
-            sheet = this.findSheetByName(sheet);
-        }
-        if (sheet == null) {
-            return false;
-        }
-        return sheet.getType() === SpreadsheetApp.SheetType.GRID;
-    }
+}
+class TaskTracker {
 }
 
 class Utils {
@@ -1141,6 +1226,12 @@ class Utils {
     }
     static escapeFormulaString(string) {
         return string.replaceAll(/"/g, '""');
+    }
+    static numericAsc() {
+        return (n1, n2) => n1 - n2;
+    }
+    static numericDesc() {
+        return (n1, n2) => n2 - n1;
     }
     static timed(timerLabel, action) {
         console.time(timerLabel);

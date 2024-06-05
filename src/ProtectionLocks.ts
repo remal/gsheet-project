@@ -1,39 +1,70 @@
 class ProtectionLocks {
 
-    private static readonly _columnsProtections = new Map<number, Protection>()
-    private static readonly _rowsProtections = new Map<number, Protection>()
+    private static readonly _allColumnsProtections = new Map<number, Protection>()
+    private static readonly _allRowsProtections = new Map<number, Protection>()
+    private static readonly _rowsProtections = new Map<number, Map<number, Protection>>()
 
-    static lockColumnsWithProtection(sheet: Sheet) {
+    static lockAllColumns(sheet: Sheet) {
         const sheetId = sheet.getSheetId()
-        if (this._columnsProtections.has(sheetId)) {
+        if (this._allColumnsProtections.has(sheetId)) {
             return
         }
 
         const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns())
         const protection = range.protect()
-            .setDescription(`lock|columns|${new Date().getTime()}`)
+            .setDescription(`lock|columns|all|${new Date().getTime()}`)
             .setWarningOnly(true)
-        this._columnsProtections.set(sheetId, protection)
+        this._allColumnsProtections.set(sheetId, protection)
     }
 
-    static lockRowsWithProtection(sheet: Sheet) {
+    static lockAllRows(sheet: Sheet) {
         const sheetId = sheet.getSheetId()
-        if (this._rowsProtections.has(sheetId)) {
+        if (this._allRowsProtections.has(sheetId)) {
             return
         }
 
         const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1)
         const protection = range.protect()
-            .setDescription(`lock|rows|${new Date().getTime()}`)
+            .setDescription(`lock|rows|all|${new Date().getTime()}`)
             .setWarningOnly(true)
-        this._rowsProtections.set(sheetId, protection)
+        this._allRowsProtections.set(sheetId, protection)
+    }
+
+    static lockRows(sheet: Sheet, rowsToLock: number) {
+        if (rowsToLock <= 0) {
+            return
+        }
+
+        const sheetId = sheet.getSheetId()
+        if (this._allRowsProtections.has(sheetId)) {
+            return
+        }
+
+        if (!this._rowsProtections.has(sheetId)) {
+            this._rowsProtections.set(sheetId, new Map())
+        }
+
+        const rowsProtections = this._rowsProtections.get(sheetId)!
+        const maxLockedRow = Array.from(rowsProtections.keys()).reduce((prev, cur) => Math.max(prev, cur), 0)
+        if (maxLockedRow < rowsToLock) {
+            const range = sheet.getRange(1, sheet.getMaxColumns(), rowsToLock, 1)
+            const protection = range.protect()
+                .setDescription(`lock|rows|${rowsToLock}|${new Date().getTime()}`)
+                .setWarningOnly(true)
+            rowsProtections.set(rowsToLock, protection)
+        }
     }
 
     static release() {
-        this._columnsProtections.forEach(protection => protection.remove())
-        this._columnsProtections.clear()
+        this._allColumnsProtections.forEach(protection => protection.remove())
+        this._allColumnsProtections.clear()
 
-        this._rowsProtections.forEach(protection => protection.remove())
+        this._allRowsProtections.forEach(protection => protection.remove())
+        this._allRowsProtections.clear()
+
+        this._rowsProtections.forEach(protections =>
+            Array.from(protections.values()).forEach(protection => protection.remove()),
+        )
         this._rowsProtections.clear()
     }
 

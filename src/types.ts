@@ -14,4 +14,7 @@ type SheetsOnChange = GoogleAppsScript.Events.SheetsOnChange
 type SheetsOnEdit = GoogleAppsScript.Events.SheetsOnEdit
 type SheetsOnFormSubmit = GoogleAppsScript.Events.SheetsOnFormSubmit
 
+type HorizontalAlignment = 'left' | 'center' | 'normal' | 'right'
+type VerticalAlignment = 'top' | 'middle' | 'bottom'
+
 type StringKeys<T> = { [k in keyof T]: T[k] extends string ? k : never }[keyof T]

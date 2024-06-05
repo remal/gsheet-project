@@ -41,6 +41,20 @@ class RangeUtils {
         )
     }
 
+    static withMinRow(range: Range, minRow: number): Range {
+        const rowDiff = minRow - range.getRow()
+        if (rowDiff <= 0) {
+            return range
+        }
+
+        return range.offset(
+            rowDiff,
+            0,
+            Math.max(range.getNumRows() - rowDiff, 1),
+            range.getNumColumns(),
+        )
+    }
+
     static doesRangeHaveColumn(
         range: Range | null | undefined,
         column: number | string | null | undefined,

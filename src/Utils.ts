@@ -162,6 +162,14 @@ class Utils {
         return string.replaceAll(/"/g, '""')
     }
 
+    static numericAsc(): (n1: number, n2: number) => number {
+        return (n1, n2) => n1 - n2
+    }
+
+    static numericDesc(): (n1: number, n2: number) => number {
+        return (n1, n2) => n2 - n1
+    }
+
     static timed<T>(timerLabel: string, action: () => T): T {
         console.time(timerLabel)
         try {
