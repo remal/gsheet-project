@@ -2,6 +2,7 @@ class SheetLayouts {
 
     private static readonly instances: ReadonlyArray<SheetLayout> = [
         SheetLayoutProjects.instance,
+        SheetLayoutSettings.instance,
     ]
 
     static migrateColumnsIfNeeded() {

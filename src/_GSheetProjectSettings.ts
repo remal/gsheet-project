@@ -21,6 +21,8 @@ class GSheetProjectSettings {
     static endColumnName: string = "End"
     //static issueHashColumnName: string = "Issue Hash"
 
+    static settingsSheetName: string = "Settings"
+
     static indent: number = 4
 
     static taskTrackers: TaskTracker[] = []

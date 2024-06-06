@@ -107,6 +107,7 @@ GSheetProjectSettings.deadlineColumnName = "Deadline";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
 //static issueHashColumnName: string = "Issue Hash"
+GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.indent = 4;
 GSheetProjectSettings.taskTrackers = [];
 class AbstractIssueLogic {
@@ -910,7 +911,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}7b00280d6600e7a339bef58f35ca08965ac0188d942268f38f3ad8f9b48f3649:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}4a060920d2bfa6a04de6bee4434aedff4172863dfc80856677d81045ce630015:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateColumnsIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1130,7 +1131,17 @@ class SheetLayouts {
 }
 SheetLayouts.instances = [
     SheetLayoutProjects.instance,
+    SheetLayoutSettings.instance,
 ];
+class SheetLayoutSettings extends SheetLayout {
+    get sheetName() {
+        return GSheetProjectSettings.settingsSheetName;
+    }
+    get columns() {
+        return [];
+    }
+}
+SheetLayoutSettings.instance = new SheetLayoutSettings();
 class SheetUtils {
     static isGridSheet(sheet) {
         if (Utils.isString(sheet)) {
