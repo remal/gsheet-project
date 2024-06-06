@@ -70,9 +70,9 @@ class GSheetProject {
             return;
         }
         EntryPoint.entryPoint(() => {
-            DoneLogic.executeDoneLogic(range);
-            DefaultFormulas.insertDefaultFormulas(range);
-            IssueHierarchyFormatter.formatHierarchy(range);
+            Utils.timed('Done logic', () => DoneLogic.executeDoneLogic(range));
+            Utils.timed('Default formulas', () => DefaultFormulas.insertDefaultFormulas(range));
+            Utils.timed('Issue hierarchy', () => IssueHierarchyFormatter.formatHierarchy(range));
         });
     }
 }
@@ -911,7 +911,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}edff6f67d1456255bfd52a5ffa6fa6e2be28422cdfbdc9811f0d9e490b0274bb:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}f13e92e357b32b47d289d761e1350839e52a9e74ec1d74938e0153e9b2c584e3:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
