@@ -21,6 +21,20 @@ class Utils {
         return value
     }
 
+    static processFormula(formula: string): string {
+        return formula
+            .replaceAll(/#SELF\b/g, 'INDIRECT(ADDRESS(ROW(), COLUMN()))')
+            .split(/[\r\n]+/)
+            .map(line => line.trim())
+            .filter(line => line.length)
+            .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
+            .join('')
+    }
+
+    static escapeFormulaString(string: string): string {
+        return string.replaceAll(/"/g, '""')
+    }
+
     /**
      * See https://stackoverflow.com/a/44134328/3740528
      */
@@ -156,10 +170,6 @@ class Utils {
 
     static escapeRegex(string: string): string {
         return string.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    }
-
-    static escapeFormulaString(string: string): string {
-        return string.replaceAll(/"/g, '""')
     }
 
     static numericAsc(): (n1: number, n2: number) => number {

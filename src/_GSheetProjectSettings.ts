@@ -2,6 +2,7 @@ class GSheetProjectSettings {
 
     static titleRow: number = 1
     static firstDataRow: number = 2
+    static restoreUndoneEnd: boolean = false
 
     static sheetName: string = "Projects"
     static iconColumnName: string = "icon"
@@ -14,15 +15,10 @@ class GSheetProjectSettings {
     static childIssuesRangeName: string = "ChildIssues"
     static titleColumnName: string = "Title"
     static teamColumnName: string = "Team"
-    static teamsRangeName: string = "Teams"
     static estimateColumnName: string = "Estimate\n(days)"
-    static estimatesRangeName: string = "Estimates"
     static deadlineColumnName: string = "Deadline"
-    static deadlinesRangeName: string = "Deadlines"
     static startColumnName: string = "Start"
-    static startsRangeName: string = "Starts"
     static endColumnName: string = "End"
-    static endsRangeName: string = "Ends"
     //static issueHashColumnName: string = "Issue Hash"
 
     static indent: number = 4

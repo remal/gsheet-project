@@ -104,12 +104,12 @@ abstract class SheetLayout {
             const column = index + 1
 
             if (info.arrayFormula?.length) {
-                const arrayFormulaNormalized = info.arrayFormula.split(/[\r\n]+/)
-                    .map(line => line.trim())
-                    .filter(line => line.length)
-                    .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
-                    .join('')
-                const formulaToExpect = `={"${Utils.escapeFormulaString(info.name)}"; ${arrayFormulaNormalized}}`
+                const formulaToExpect = `
+                    ={
+                        "${Utils.escapeFormulaString(info.name)}";
+                        ${Utils.processFormula(info.arrayFormula)}
+                    }
+                `
                 const formula = existingFormulas.get()[index]
                 if (formula !== formulaToExpect) {
                     sheet.getRange(GSheetProjectSettings.titleRow, column)
@@ -130,13 +130,7 @@ abstract class SheetLayout {
             let dataValidation: (DataValidation | null) = info.dataValidation?.call(info) ?? null
             if (dataValidation != null) {
                 if (dataValidation.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CUSTOM_FORMULA) {
-                    const formula = dataValidation.getCriteriaValues()[0].toString()
-                        .replaceAll(/#SELF\b/g, 'INDIRECT(ADDRESS(ROW(), COLUMN()))')
-                        .split(/[\r\n]+/)
-                        .map(line => line.trim())
-                        .filter(line => line.length)
-                        .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
-                        .join('')
+                    const formula = Utils.processFormula(dataValidation.getCriteriaValues()[0].toString())
                     dataValidation = dataValidation.copy()
                         .requireFormulaSatisfied(formula)
                         .build()

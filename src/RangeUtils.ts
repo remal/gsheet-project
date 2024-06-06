@@ -18,6 +18,16 @@ class RangeUtils {
         return range.getSheet().getSheetId() === sheet.getSheetId()
     }
 
+    static getAbsoluteA1Notation(range: Range): string {
+        return range.getA1Notation()
+            .replace(/[A-Z]+/, '$$$&')
+            .replace(/\d+/, '$$$&')
+    }
+
+    static getAbsoluteReferenceFormula(range: Range): string {
+        return '=' + this.getAbsoluteA1Notation(range)
+    }
+
     static toColumnRange(
         range: Range | null | undefined,
         column: number | string | null | undefined,
@@ -53,6 +63,26 @@ class RangeUtils {
             Math.max(range.getNumRows() - rowDiff, 1),
             range.getNumColumns(),
         )
+    }
+
+    static withMaxRow(range: Range, maxRow: number): Range {
+        const startRow = range.getRow()
+        const endRow = startRow + range.getNumRows() - 1
+        if (maxRow >= endRow) {
+            return range
+        }
+        return range.offset(
+            0,
+            0,
+            Math.max(maxRow - startRow + 1, 1),
+            range.getNumColumns(),
+        )
+    }
+
+    static withMinMaxRows(range: Range, minRow: number, maxRow: number): Range {
+        range = this.withMinRow(range, minRow)
+        range = this.withMaxRow(range, maxRow)
+        return range
     }
 
     static doesRangeHaveColumn(

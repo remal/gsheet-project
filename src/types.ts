@@ -8,6 +8,7 @@ type Protection = GoogleAppsScript.Spreadsheet.Protection
 type NamedRange = GoogleAppsScript.Spreadsheet.NamedRange
 type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation
 type RichTextValue = GoogleAppsScript.Spreadsheet.RichTextValue
+type DeveloperMetadata = GoogleAppsScript.Spreadsheet.DeveloperMetadata
 
 type SheetsOnOpen = GoogleAppsScript.Events.SheetsOnOpen
 type SheetsOnChange = GoogleAppsScript.Events.SheetsOnChange

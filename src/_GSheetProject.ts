@@ -11,7 +11,7 @@ class GSheetProject {
         })
     }
 
-    static reprocessEverything() {
+    static refreshEverything() {
         EntryPoint.entryPoint(() => {
             SheetLayouts.migrateColumnsIfNeeded()
 
@@ -19,7 +19,7 @@ class GSheetProject {
             const range = sheet.getRange(
                 GSheetProjectSettings.firstDataRow,
                 1,
-                sheet.getLastRow() - GSheetProjectSettings.firstDataRow + 1,
+                Math.max(sheet.getLastRow() - GSheetProjectSettings.firstDataRow + 1, 1),
                 sheet.getLastColumn(),
             )
             this._onEditRange(range)
@@ -73,6 +73,7 @@ class GSheetProject {
         }
 
         EntryPoint.entryPoint(() => {
+            DoneLogic.executeDoneLogic(range)
             DefaultFormulas.insertDefaultFormulas(range)
             IssueHierarchyFormatter.formatHierarchy(range)
         })

@@ -1,10 +1,8 @@
 class IssueHierarchyFormatter {
 
     static formatHierarchy(range: Range) {
-        if (!RangeUtils.doesRangeHaveSheetColumn(
-            range,
-            GSheetProjectSettings.sheetName,
-            GSheetProjectSettings.childIssueColumnName,
+        if (![GSheetProjectSettings.childIssueColumnName].some(columnName =>
+            RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName),
         )) {
             return
         }
@@ -250,9 +248,7 @@ class IssueHierarchyFormatter {
                     const firstRowWithoutChild = GSheetProjectSettings.firstDataRow + firstIndexWithoutChild
 
                     const getIssueFormula = (column: number): string =>
-                        `=${sheet.getRange(firstRowWithoutChild, column).getA1Notation()}`
-                            .replace(/[A-Z]+/, '$$$&')
-                            .replace(/\d+/, '$$$&')
+                        RangeUtils.getAbsoluteReferenceFormula(sheet.getRange(firstRowWithoutChild, column))
 
                     const firstIndexWithChild = indexesWithChild[0]
                     const firstRowWithChild = GSheetProjectSettings.firstDataRow + firstIndexWithChild
