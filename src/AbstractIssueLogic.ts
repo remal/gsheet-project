@@ -28,9 +28,13 @@ abstract class AbstractIssueLogic {
         }, startRow, endRow)
     }
 
-    protected static _getStringValues(range: Range, column: number): string[] {
+    protected static _getValues(range: Range, column: number): any[] {
         return RangeUtils.toColumnRange(range, column)!.getValues()
-            .map(it => it[0].toString())
+            .map(it => it[0])
+    }
+
+    protected static _getStringValues(range: Range, column: number): string[] {
+        return this._getValues(range, column).map(it => it.toString())
     }
 
     protected static _getFormulas(range: Range, column: number): string[] {

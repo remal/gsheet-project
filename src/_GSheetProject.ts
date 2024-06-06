@@ -73,9 +73,9 @@ class GSheetProject {
         }
 
         EntryPoint.entryPoint(() => {
-            Utils.timed('Done logic', () => DoneLogic.executeDoneLogic(range))
-            Utils.timed('Default formulas', () => DefaultFormulas.insertDefaultFormulas(range))
-            Utils.timed('Issue hierarchy', () => IssueHierarchyFormatter.formatHierarchy(range))
+            //Utils.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
+            Utils.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range))
+            Utils.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range))
         })
     }
 

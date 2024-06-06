@@ -1,3 +1,4 @@
+/*
 class DoneLogic extends AbstractIssueLogic {
 
     static executeDoneLogic(range: Range) {
@@ -23,24 +24,27 @@ class DoneLogic extends AbstractIssueLogic {
         const doneColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.doneColumnName)
         let doneValues = this._getStringValues(range, doneColumn)
 
-        const checkboxesA1Notations = Array.from(Utils.range(startRow, endRow))
-            .filter(row => hasIssue(row))
-            .map(row => sheet.getRange(row, doneColumn).getA1Notation())
-        if (checkboxesA1Notations.length) {
-            sheet.getRangeList(checkboxesA1Notations).insertCheckboxes()
-        }
-        const notCheckboxesA1Notations = Array.from(Utils.range(startRow, endRow))
-            .filter(row => !hasIssue(row))
-            .filter(row => doneValues[row - startRow]?.length)
-            .map(row => sheet.getRange(row, doneColumn).getA1Notation())
-        if (notCheckboxesA1Notations.length) {
-            sheet.getRangeList(notCheckboxesA1Notations).removeCheckboxes().setValue('')
-        }
+        Utils.timed(`checkboxes`, () => {
+            const checkboxesA1Notations = Array.from(Utils.range(startRow, endRow))
+                .filter(row => hasIssue(row))
+                .map(row => sheet.getRange(row, doneColumn).getA1Notation())
+            if (checkboxesA1Notations.length) {
+                sheet.getRangeList(checkboxesA1Notations).insertCheckboxes()
+            }
+            const notCheckboxesA1Notations = Array.from(Utils.range(startRow, endRow))
+                .filter(row => !hasIssue(row))
+                .filter(row => doneValues[row - startRow]?.length)
+                .map(row => sheet.getRange(row, doneColumn).getA1Notation())
+            if (notCheckboxesA1Notations.length) {
+                sheet.getRangeList(notCheckboxesA1Notations).removeCheckboxes().setValue('')
+            }
 
-        doneValues = this._getStringValues(range, doneColumn)
+            doneValues = this._getStringValues(range, doneColumn)
+        })
 
 
         const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName)
+        const endValues = this._getValues(range, endColumn)
 
         for (let row = startRow; row <= endRow; ++row) {
             if (!hasIssue(row)) {
@@ -51,11 +55,10 @@ class DoneLogic extends AbstractIssueLogic {
             let doneValue = doneValues[index].toLowerCase()
 
             const endRange = sheet.getRange(row, endColumn)
-
             const rowRange = sheet.getRange(`${row}:${row}`)
 
             if (doneValue === 'true') {
-                const endValue = endRange.getValue()
+                const endValue = endValues[index]
                 let endDate: Date
                 if (Utils.isString(endValue)) {
                     endDate = new Date(Number.isNaN(endValue) ? endValue : parseFloat(endValue))
@@ -130,3 +133,4 @@ class DoneLogic extends AbstractIssueLogic {
     }
 
 }
+*/

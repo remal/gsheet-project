@@ -14,10 +14,12 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultWidth: '#default-height',
                 defaultHorizontalAlignment: 'center',
             },
+            /*
             {
                 name: GSheetProjectSettings.doneColumnName,
                 defaultHorizontalAlignment: 'center',
             },
+            */
             {
                 name: GSheetProjectSettings.milestoneColumnName,
                 defaultFormat: '',

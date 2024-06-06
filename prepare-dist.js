@@ -24,7 +24,8 @@ const files = fs.readdirSync(buildDir)
 const contents = []
 const digest = crypto.createHash('sha256')
 for (const file of files) {
-    const content = fs.readFileSync(`${buildDir}/${file}`, {encoding: 'UTF-8'}).trim()
+    let content = fs.readFileSync(`${buildDir}/${file}`, {encoding: 'UTF-8'}).trim()
+    content = content.replaceAll(/\/\*[^*][\s\S]*?\*\//g, '')
     contents.push(content)
     digest.update(content, 'utf-8')
 }

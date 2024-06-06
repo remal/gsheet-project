@@ -16,16 +16,17 @@ class SheetUtils {
             return undefined
         }
 
-        sheetName = Utils.normalizeName(sheetName)
-        return ExecutionCache.getOrComputeCache(['findSheetByName', sheetName], () => {
+        const sheets = ExecutionCache.getOrComputeCache('sheets-by-name', () => {
+            const result = new Map<string, Sheet>()
             for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
                 const name = Utils.normalizeName(sheet.getSheetName())
-                if (name === sheetName) {
-                    return sheet
-                }
+                result.set(name, sheet)
             }
-            return undefined
-        })
+            return result
+        }, `${SheetUtils.name}: ${this.findSheetByName.name}`)
+
+        sheetName = Utils.normalizeName(sheetName)
+        return sheets.get(sheetName)
     }
 
     static getSheetByName(sheetName: string): Sheet {
@@ -51,17 +52,17 @@ class SheetUtils {
 
         ProtectionLocks.lockAllColumns(sheet)
 
-        columnName = Utils.normalizeName(columnName)
-        return ExecutionCache.getOrComputeCache(['findColumnByName', sheet, columnName], () => {
+        const columns = ExecutionCache.getOrComputeCache(['columns-by-name', sheet], () => {
+            const result = new Map<string, number>()
             for (const col of Utils.range(GSheetProjectSettings.titleRow, sheet.getLastColumn())) {
                 const name = Utils.normalizeName(sheet.getRange(1, col).getValue())
-                if (name === columnName) {
-                    return col
-                }
+                result.set(name, col)
             }
+            return result
+        }, `${SheetUtils.name}: ${this.findColumnByName.name}`)
 
-            return undefined
-        })
+        columnName = Utils.normalizeName(columnName)
+        return columns.get(columnName)
     }
 
     static getColumnByName(sheet: Sheet | string, columnName: string): number {
@@ -98,16 +99,22 @@ class SheetUtils {
         C extends Record<string, string | number>,
         R extends Record<keyof C, any[]>
     >(sheet: Sheet | string, columns: C, minRow?: number, maxRow?: number): R {
-        const getter: (range: Range) => any[][] = range => range.getValues()
-        return this._getColumnsProps(sheet, columns, getter, minRow, maxRow)
+        function getValues(range: Range): any[][] {
+            return range.getValues()
+        }
+
+        return this._getColumnsProps(sheet, columns, getValues, minRow, maxRow)
     }
 
     static getColumnsStringValues<
         C extends Record<string, string | number>,
         R extends Record<keyof C, string[]>
     >(sheet: Sheet | string, columns: C, minRow?: number, maxRow?: number): R {
-        const getter: (range: Range) => any[][] = range => range.getValues()
-        const result = this._getColumnsProps(sheet, columns, getter, minRow, maxRow)
+        function getValues(range: Range): any[][] {
+            return range.getValues()
+        }
+
+        const result = this._getColumnsProps(sheet, columns, getValues, minRow, maxRow)
         for (const [key, values] of Object.entries(result)) {
             (result as {})[key] = values.map(value => value.toString())
         }
@@ -118,8 +125,11 @@ class SheetUtils {
         C extends Record<string, string | number>,
         R extends Record<keyof C, string[]>
     >(sheet: Sheet | string, columns: C, minRow?: number, maxRow?: number): R {
-        const getter: (range: Range) => string[][] = range => range.getFormulas()
-        return this._getColumnsProps(sheet, columns, getter, minRow, maxRow)
+        function getFormulas(range: Range): string[][] {
+            return range.getFormulas()
+        }
+
+        return this._getColumnsProps(sheet, columns, getFormulas, minRow, maxRow)
     }
 
     private static _getColumnsProps<
@@ -158,37 +168,51 @@ class SheetUtils {
 
         const result = {} as R
         Object.keys(columns).forEach(key => (result as {})[key] = [])
-
-        while (numbers.length) {
-            const baseColumn = numbers.shift()!
-            let columnsCount = 1
-            while (numbers.length) {
-                const nextNumber = numbers[0]
-                if (nextNumber === baseColumn + columnsCount) {
-                    ++columnsCount
-                    numbers.shift()
-                } else {
-                    break
-                }
-            }
-
-            const range = sheet.getRange(
-                minRow,
-                baseColumn,
-                Math.max(maxRow - minRow + 1, 1),
-                columnsCount,
-            )
-            const props = getter(range)
-
-            props.forEach(rows => rows.forEach((columnValue, index) => {
-                const column = baseColumn + index
-                for (const [columnKey, columnNumber] of Object.entries(columnToNumber)) {
-                    if (column === columnNumber) {
-                        result[columnKey].push(columnValue)
-                    }
-                }
-            }))
+        if (minRow >= maxRow) {
+            return result
         }
+
+        Utils.timed(
+            [
+                SheetUtils.name,
+                this._getColumnsProps.name,
+                sheet.getSheetName(),
+                `rows from #${minRow} to #${maxRow}`,
+                `columns #${numbers.join(', #')} (${getter.name})`,
+            ].join(': '),
+            () => {
+                while (numbers.length) {
+                    const baseColumn = numbers.shift()!
+                    let columnsCount = 1
+                    while (numbers.length) {
+                        const nextNumber = numbers[0]
+                        if (nextNumber === baseColumn + columnsCount) {
+                            ++columnsCount
+                            numbers.shift()
+                        } else {
+                            break
+                        }
+                    }
+
+                    const range = sheet.getRange(
+                        minRow,
+                        baseColumn,
+                        Math.max(maxRow - minRow + 1, 1),
+                        columnsCount,
+                    )
+                    const props = getter(range)
+
+                    props.forEach(rows => rows.forEach((columnValue, index) => {
+                        const column = baseColumn + index
+                        for (const [columnKey, columnNumber] of Object.entries(columnToNumber)) {
+                            if (column === columnNumber) {
+                                result[columnKey].push(columnValue)
+                            }
+                        }
+                    }))
+                }
+            },
+        )
         return result
     }
 

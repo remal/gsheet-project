@@ -2,11 +2,14 @@ class GSheetProjectSettings {
 
     static titleRow: number = 1
     static firstDataRow: number = 2
-    static restoreUndoneEnd: boolean = false
+
+    static lockColumns: boolean = false
+    static lockRows: boolean = false
+    //static restoreUndoneEnd: boolean = false
 
     static sheetName: string = "Projects"
     static iconColumnName: string = "icon"
-    static doneColumnName: string = "Done"
+    //static doneColumnName: string = "Done"
     static milestoneColumnName: string = "Milestone"
     static typeColumnName: string = "Type"
     static issueColumnName: string = "Issue"

@@ -8,25 +8,40 @@ class IssueHierarchyFormatter {
         }
 
         let issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.issueColumnName)
-        if (issuesRange != null) {
-            issuesRange = RangeUtils.withMinRow(issuesRange, GSheetProjectSettings.firstDataRow)
-            const issues = issuesRange.getValues()
+        if (issuesRange == null) {
+            return
+        }
+
+        issuesRange = RangeUtils.withMinRow(issuesRange, GSheetProjectSettings.firstDataRow)
+        const issues = Utils.timed(`${IssueHierarchyFormatter.name}: getting issues`, () =>
+            issuesRange.getValues()
                 .map(it => it[0]?.toString())
                 .filter(it => it?.length)
-                .filter(Utils.distinct())
-            if (issues.length) {
-                this.reorderIssuesAccordingToHierarchy(issues)
-                this.formatHierarchyIssues(issues)
-            }
+                .filter(Utils.distinct()),
+        )
+        if (!issues.length) {
+            return
         }
+
+        const lastRow = Utils.timed(
+            `${IssueHierarchyFormatter.name}: ${this.reorderIssuesAccordingToHierarchy.name}`,
+            () =>
+                this.reorderIssuesAccordingToHierarchy(issues),
+        )
+
+        Utils.timed(`${IssueHierarchyFormatter.name}: ${this.formatHierarchyIssues.name}`, () =>
+            this.formatHierarchyIssues(issues, lastRow),
+        )
     }
 
+    /*
     static reorderAllIssuesAccordingToHierarchy() {
         this.reorderIssuesAccordingToHierarchy(undefined)
     }
+    */
 
 
-    static reorderIssuesAccordingToHierarchy(issuesToReorder: string[] | undefined) {
+    static reorderIssuesAccordingToHierarchy(issuesToReorder: string[] | undefined): number | undefined {
         if (issuesToReorder != null && !issuesToReorder.length) {
             return
         }
@@ -47,12 +62,13 @@ class IssueHierarchyFormatter {
 
         const notEmptyIssues = issues.filter(it => it?.length).map(it => it!)
         const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct())
-        if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
-            return
-        }
 
         Utils.trimArrayEndBy(issues, it => !it?.length)
         childIssues.length = issues.length
+
+        if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
+            return GSheetProjectSettings.firstDataRow + issues.length
+        }
 
 
         const moveIssues = (fromIndex, count, targetIndex) => {
@@ -149,9 +165,11 @@ class IssueHierarchyFormatter {
                 }
             }
         }
+
+        return GSheetProjectSettings.firstDataRow + issues.length
     }
 
-    static formatHierarchyIssues(issuesToFormat: string[]) {
+    static formatHierarchyIssues(issuesToFormat: string[], lastRow?: number) {
         if (!issuesToFormat.length) {
             return
         }
@@ -177,13 +195,20 @@ class IssueHierarchyFormatter {
             milestones: milestonesColumn,
             types: typesColumn,
             deadlines: deadlinesColumn,
-        }, GSheetProjectSettings.firstDataRow)
+        }, GSheetProjectSettings.firstDataRow, lastRow ?? sheet.getLastRow())
 
         const notEmptyIssues = issues.filter(it => it?.length).map(it => it!)
         const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct())
         if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
             return
         }
+
+        Utils.trimArrayEndBy(issues, it => !it?.length)
+        childIssues.length = issues.length
+        milestones.length = issues.length
+        types.length = issues.length
+        deadlines.length = issues.length
+
 
         const {
             milestoneFormulas,
@@ -193,16 +218,12 @@ class IssueHierarchyFormatter {
             milestoneFormulas: milestonesColumn,
             typeFormulas: typesColumn,
             deadlineFormulas: deadlinesColumn,
-        }, GSheetProjectSettings.firstDataRow)
+        }, GSheetProjectSettings.firstDataRow, GSheetProjectSettings.firstDataRow + issues.length)
 
-        Utils.trimArrayEndBy(issues, it => !it?.length)
-        childIssues.length = issues.length
-        milestones.length = issues.length
-        types.length = issues.length
-        deadlines.length = issues.length
         milestoneFormulas.length = issues.length
         typeFormulas.length = issues.length
         deadlineFormulas.length = issues.length
+
 
         for (const issue of notEmptyUniqueIssues) {
             if (!issuesToFormat.includes(issue)) {

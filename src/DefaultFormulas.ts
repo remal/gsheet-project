@@ -14,34 +14,37 @@ class DefaultFormulas extends AbstractIssueLogic {
 
         const {issues, childIssues} = this._getIssueValues(range)
 
-        const generateAndInsertFormulas = (
+        const addFormulas = (
             column: number,
             formulaGenerator: (row: number) => string,
-        ) => {
-            const values = this._getStringValues(range, column)
-            const formulas = this._getFormulas(range, column)
-            for (let row = startRow; row <= endRow; ++row) {
-                const index = row - startRow
-                if (!issues[index].length && !childIssues[index].length) {
-                    if (formulas[index].length) {
-                        sheet.getRange(row, column).setFormula('')
+        ) => Utils.timed(
+            `${DefaultFormulas.name}: ${sheet.getSheetName()}: ${addFormulas.name}: column #${column}`,
+            () => {
+                const values = this._getStringValues(range, column)
+                const formulas = this._getFormulas(range, column)
+                for (let row = startRow; row <= endRow; ++row) {
+                    const index = row - startRow
+                    if (!issues[index].length && !childIssues[index].length) {
+                        if (formulas[index].length) {
+                            sheet.getRange(row, column).setFormula('')
+                        }
+                        continue
                     }
-                    continue
-                }
 
-                if (!values[index].length && !formulas[index].length) {
-                    const formula = Utils.processFormula(formulaGenerator(row))
-                    sheet.getRange(row, column).setFormula(formula)
+                    if (!values[index].length && !formulas[index].length) {
+                        const formula = Utils.processFormula(formulaGenerator(row))
+                        sheet.getRange(row, column).setFormula(formula)
+                    }
                 }
-            }
-        }
+            },
+        )
 
 
         const estimateColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName)
         const startColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.startColumnName)
         const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName)
 
-        generateAndInsertFormulas(endColumn, row => {
+        addFormulas(endColumn, row => {
             const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn))
             const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn))
             return `
