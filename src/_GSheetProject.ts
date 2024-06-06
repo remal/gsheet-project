@@ -5,15 +5,15 @@ class GSheetProject {
         })
     }
 
-    static migrateColumns() {
+    static migrate() {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumns()
+            SheetLayouts.migrate()
         })
     }
 
     static refreshEverything() {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumnsIfNeeded()
+            SheetLayouts.migrateIfNeeded()
 
             const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName)
             const range = sheet.getRange(
@@ -35,7 +35,7 @@ class GSheetProject {
 
     static onOpen(event?: SheetsOnOpen) {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumnsIfNeeded()
+            SheetLayouts.migrateIfNeeded()
         })
     }
 
@@ -55,7 +55,7 @@ class GSheetProject {
     }
 
     private static _onRemoveColumn() {
-        this.migrateColumns()
+        this.migrate()
     }
 
 

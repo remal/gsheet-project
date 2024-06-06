@@ -19,14 +19,14 @@ class GSheetProject {
         EntryPoint.entryPoint(() => {
         });
     }
-    static migrateColumns() {
+    static migrate() {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumns();
+            SheetLayouts.migrate();
         });
     }
     static refreshEverything() {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumnsIfNeeded();
+            SheetLayouts.migrateIfNeeded();
             const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
             const range = sheet.getRange(GSheetProjectSettings.firstDataRow, 1, Math.max(sheet.getLastRow() - GSheetProjectSettings.firstDataRow + 1, 1), sheet.getLastColumn());
             this._onEditRange(range);
@@ -39,7 +39,7 @@ class GSheetProject {
     }
     static onOpen(event) {
         EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateColumnsIfNeeded();
+            SheetLayouts.migrateIfNeeded();
         });
     }
     static onChange(event) {
@@ -57,7 +57,7 @@ class GSheetProject {
         });
     }
     static _onRemoveColumn() {
-        this.migrateColumns();
+        this.migrate();
     }
     static onEdit(event) {
         this._onEditRange(event === null || event === void 0 ? void 0 : event.range);
@@ -911,16 +911,17 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}5cdee2955d09ea6250251c7597b1c163ae5e583288225473a4ac7337ad12ea90:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}5a18403f4a9f94173ce373e3a757159e986fb9daa46561e733ae29551c9cd7cf:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
-    migrateColumnsIfNeeded() {
+    migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
             return;
         }
-        this.migrateColumns();
+        this.migrate();
     }
-    migrateColumns() {
+    migrate() {
         var _a, _b, _c, _d, _e;
+        const sheet = this.sheet;
         const columns = this.columns.reduce((map, info) => {
             map.set(Utils.normalizeName(info.name), info);
             return map;
@@ -928,7 +929,6 @@ class SheetLayout {
         if (!columns.size) {
             return;
         }
-        const sheet = this.sheet;
         ProtectionLocks.lockAllColumns(sheet);
         let lastColumn = sheet.getLastColumn();
         const maxRows = sheet.getMaxRows();
@@ -1128,11 +1128,11 @@ class SheetLayouts {
             SheetLayoutSettings.instance,
         ];
     }
-    static migrateColumnsIfNeeded() {
-        this.instances.forEach(instance => instance.migrateColumnsIfNeeded());
+    static migrateIfNeeded() {
+        this.instances.forEach(instance => instance.migrateIfNeeded());
     }
-    static migrateColumns() {
-        this.instances.forEach(instance => instance.migrateColumns());
+    static migrate() {
+        this.instances.forEach(instance => instance.migrate());
     }
 }
 class SheetLayoutSettings extends SheetLayout {

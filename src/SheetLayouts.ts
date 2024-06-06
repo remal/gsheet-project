@@ -7,12 +7,12 @@ class SheetLayouts {
         ]
     }
 
-    static migrateColumnsIfNeeded() {
-        this.instances.forEach(instance => instance.migrateColumnsIfNeeded())
+    static migrateIfNeeded() {
+        this.instances.forEach(instance => instance.migrateIfNeeded())
     }
 
-    static migrateColumns() {
-        this.instances.forEach(instance => instance.migrateColumns())
+    static migrate() {
+        this.instances.forEach(instance => instance.migrate())
     }
 
 }

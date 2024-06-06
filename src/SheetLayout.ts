@@ -22,15 +22,16 @@ abstract class SheetLayout {
         return `${this._documentFlagPrefix}$$$HASH$$$:${GSheetProjectSettings.computeStringSettingsHash()}`
     }
 
-    migrateColumnsIfNeeded() {
+    migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
             return
         }
 
-        this.migrateColumns()
+        this.migrate()
     }
 
-    migrateColumns() {
+    migrate() {
+        const sheet = this.sheet
         const columns = this.columns.reduce(
             (map, info) => {
                 map.set(Utils.normalizeName(info.name), info)
@@ -43,7 +44,6 @@ abstract class SheetLayout {
         }
 
 
-        const sheet = this.sheet
         ProtectionLocks.lockAllColumns(sheet)
 
         let lastColumn = sheet.getLastColumn()
