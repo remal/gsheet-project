@@ -908,10 +908,10 @@ class SheetLayout {
     }
     get _documentFlagPrefix() {
         var _a;
-        return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
+        return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}5a18403f4a9f94173ce373e3a757159e986fb9daa46561e733ae29551c9cd7cf:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}edff6f67d1456255bfd52a5ffa6fa6e2be28422cdfbdc9811f0d9e490b0274bb:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

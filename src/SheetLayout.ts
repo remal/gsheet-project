@@ -15,7 +15,7 @@ abstract class SheetLayout {
     }
 
     private get _documentFlagPrefix(): string {
-        return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrateColumns:`
+        return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`
     }
 
     private get _documentFlag(): string {
