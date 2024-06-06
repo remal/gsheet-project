@@ -911,7 +911,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrateColumns:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}4a060920d2bfa6a04de6bee4434aedff4172863dfc80856677d81045ce630015:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}5cdee2955d09ea6250251c7597b1c163ae5e583288225473a4ac7337ad12ea90:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateColumnsIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1122,6 +1122,12 @@ class SheetLayoutProjects extends SheetLayout {
 }
 SheetLayoutProjects.instance = new SheetLayoutProjects();
 class SheetLayouts {
+    static get instances() {
+        return [
+            SheetLayoutProjects.instance,
+            SheetLayoutSettings.instance,
+        ];
+    }
     static migrateColumnsIfNeeded() {
         this.instances.forEach(instance => instance.migrateColumnsIfNeeded());
     }
@@ -1129,10 +1135,6 @@ class SheetLayouts {
         this.instances.forEach(instance => instance.migrateColumns());
     }
 }
-SheetLayouts.instances = [
-    SheetLayoutProjects.instance,
-    SheetLayoutSettings.instance,
-];
 class SheetLayoutSettings extends SheetLayout {
     get sheetName() {
         return GSheetProjectSettings.settingsSheetName;

@@ -1,9 +1,11 @@
 class SheetLayouts {
 
-    private static readonly instances: ReadonlyArray<SheetLayout> = [
-        SheetLayoutProjects.instance,
-        SheetLayoutSettings.instance,
-    ]
+    private static get instances(): ReadonlyArray<SheetLayout> {
+        return [
+            SheetLayoutProjects.instance,
+            SheetLayoutSettings.instance,
+        ]
+    }
 
     static migrateColumnsIfNeeded() {
         this.instances.forEach(instance => instance.migrateColumnsIfNeeded())
