@@ -19,7 +19,7 @@ class GSheetProject {
             const range = sheet.getRange(
                 GSheetProjectSettings.firstDataRow,
                 1,
-                Math.max(sheet.getLastRow() - GSheetProjectSettings.firstDataRow + 1, 1),
+                Math.max(SheetUtils.getLastRow(sheet) - GSheetProjectSettings.firstDataRow + 1, 1),
                 sheet.getLastColumn(),
             )
             this._onEditRange(range)
@@ -44,6 +44,8 @@ class GSheetProject {
         const changeType = event?.changeType?.toString()
         if (changeType === 'INSERT_ROW') {
             this._onInsertRow()
+        } else if (changeType === 'INSERT_COLUMN') {
+            this._onInsertColumn()
         } else if (changeType === 'REMOVE_COLUMN') {
             this._onRemoveColumn()
         }
@@ -51,6 +53,13 @@ class GSheetProject {
 
     private static _onInsertRow() {
         EntryPoint.entryPoint(() => {
+            CommonFormatter.applyCommonFormatsToAllSheets()
+        })
+    }
+
+    private static _onInsertColumn() {
+        EntryPoint.entryPoint(() => {
+            CommonFormatter.applyCommonFormatsToAllSheets()
         })
     }
 

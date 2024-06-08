@@ -9,6 +9,8 @@ type NamedRange = GoogleAppsScript.Spreadsheet.NamedRange
 type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation
 type RichTextValue = GoogleAppsScript.Spreadsheet.RichTextValue
 type DeveloperMetadata = GoogleAppsScript.Spreadsheet.DeveloperMetadata
+type ConditionalFormatRule = GoogleAppsScript.Spreadsheet.ConditionalFormatRule
+type ConditionalFormatRuleBuilder = GoogleAppsScript.Spreadsheet.ConditionalFormatRuleBuilder
 
 type SheetsOnOpen = GoogleAppsScript.Events.SheetsOnOpen
 type SheetsOnChange = GoogleAppsScript.Events.SheetsOnChange

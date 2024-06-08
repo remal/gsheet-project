@@ -1,22 +1,11 @@
 class SheetUtils {
 
-    static isGridSheet(sheet: Sheet | string | null | undefined): boolean {
-        if (Utils.isString(sheet)) {
-            sheet = this.findSheetByName(sheet)
-        }
-        if (sheet == null) {
-            return false
-        }
-
-        return sheet.getType() === SpreadsheetApp.SheetType.GRID
-    }
-
     static findSheetByName(sheetName: string): Sheet | undefined {
         if (!sheetName?.length) {
             return undefined
         }
 
-        const sheets = ExecutionCache.getOrComputeCache('sheets-by-name', () => {
+        const sheets = ExecutionCache.getOrCompute('sheets-by-name', () => {
             const result = new Map<string, Sheet>()
             for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
                 const name = Utils.normalizeName(sheet.getSheetName())
@@ -33,6 +22,29 @@ class SheetUtils {
         return this.findSheetByName(sheetName) ?? (() => {
             throw new Error(`"${sheetName}" sheet can't be found`)
         })()
+    }
+
+    static isGridSheet(sheet: Sheet | string | null | undefined): boolean {
+        if (Utils.isString(sheet)) {
+            sheet = this.findSheetByName(sheet)
+        }
+        if (sheet == null) {
+            return false
+        }
+
+        return sheet.getType() === SpreadsheetApp.SheetType.GRID
+    }
+
+    static getLastRow(sheet: Sheet | string): number {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
+        return ExecutionCache.getOrCompute(['last-row', sheet], () => sheet.getLastRow())
+    }
+
+    static setLastRow(sheet: Sheet | string, lastRow: number) {
+        ExecutionCache.put(['last-row', sheet], lastRow)
     }
 
     static findColumnByName(
@@ -52,7 +64,7 @@ class SheetUtils {
 
         ProtectionLocks.lockAllColumns(sheet)
 
-        const columns = ExecutionCache.getOrComputeCache(['columns-by-name', sheet], () => {
+        const columns = ExecutionCache.getOrCompute(['columns-by-name', sheet], () => {
             const result = new Map<string, number>()
             for (const col of Utils.range(GSheetProjectSettings.titleRow, sheet.getLastColumn())) {
                 const name = Utils.normalizeName(sheet.getRange(1, col).getValue())
@@ -86,7 +98,7 @@ class SheetUtils {
             minRow = 1
         }
 
-        const lastRow = sheet.getLastRow()
+        const lastRow = this.getLastRow(sheet)
         if (minRow > lastRow) {
             return sheet.getRange(minRow, column)
         }
@@ -153,7 +165,7 @@ class SheetUtils {
             minRow = 1
         }
         if (maxRow == null) {
-            maxRow = sheet.getLastRow()
+            maxRow = this.getLastRow(sheet)
         }
 
         const columnToNumber = Object.keys(columns)

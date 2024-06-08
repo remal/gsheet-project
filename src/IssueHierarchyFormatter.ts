@@ -12,7 +12,12 @@ class IssueHierarchyFormatter {
             return
         }
 
-        issuesRange = RangeUtils.withMinRow(issuesRange, GSheetProjectSettings.firstDataRow)
+        const sheet = issuesRange.getSheet()
+        issuesRange = RangeUtils.withMinMaxRows(
+            issuesRange,
+            GSheetProjectSettings.firstDataRow,
+            SheetUtils.getLastRow(sheet),
+        )
         const issues = Utils.timed(`${IssueHierarchyFormatter.name}: getting issues`, () =>
             issuesRange.getValues()
                 .map(it => it[0]?.toString())
@@ -23,25 +28,23 @@ class IssueHierarchyFormatter {
             return
         }
 
-        const lastRow = Utils.timed(
-            `${IssueHierarchyFormatter.name}: ${this.reorderIssuesAccordingToHierarchy.name}`,
-            () =>
+        if (GSheetProjectSettings.reorderHierarchyAutomatically) {
+            Utils.timed(`${IssueHierarchyFormatter.name}: ${this.reorderIssuesAccordingToHierarchy.name}`, () =>
                 this.reorderIssuesAccordingToHierarchy(issues),
-        )
+            )
+        }
 
         Utils.timed(`${IssueHierarchyFormatter.name}: ${this.formatHierarchyIssues.name}`, () =>
-            this.formatHierarchyIssues(issues, lastRow),
+            this.formatHierarchyIssues(issues),
         )
     }
 
-    /*
     static reorderAllIssuesAccordingToHierarchy() {
         this.reorderIssuesAccordingToHierarchy(undefined)
     }
-    */
 
 
-    static reorderIssuesAccordingToHierarchy(issuesToReorder: string[] | undefined): number | undefined {
+    static reorderIssuesAccordingToHierarchy(issuesToReorder: string[] | undefined) {
         if (issuesToReorder != null && !issuesToReorder.length) {
             return
         }
@@ -60,10 +63,11 @@ class IssueHierarchyFormatter {
             childIssues: childIssuesColumn,
         }, GSheetProjectSettings.firstDataRow)
 
-        const notEmptyIssues = issues.filter(it => it?.length).map(it => it!)
+        const notEmptyIssues = issues.filter(it => it?.length)
         const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct())
 
         Utils.trimArrayEndBy(issues, it => !it?.length)
+        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length)
         childIssues.length = issues.length
 
         if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
@@ -165,11 +169,9 @@ class IssueHierarchyFormatter {
                 }
             }
         }
-
-        return GSheetProjectSettings.firstDataRow + issues.length
     }
 
-    static formatHierarchyIssues(issuesToFormat: string[], lastRow?: number) {
+    static formatHierarchyIssues(issuesToFormat: string[]) {
         if (!issuesToFormat.length) {
             return
         }
@@ -195,15 +197,16 @@ class IssueHierarchyFormatter {
             milestones: milestonesColumn,
             types: typesColumn,
             deadlines: deadlinesColumn,
-        }, GSheetProjectSettings.firstDataRow, lastRow ?? sheet.getLastRow())
+        }, GSheetProjectSettings.firstDataRow)
 
-        const notEmptyIssues = issues.filter(it => it?.length).map(it => it!)
+        const notEmptyIssues = issues.filter(it => it?.length)
         const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct())
         if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
             return
         }
 
         Utils.trimArrayEndBy(issues, it => !it?.length)
+        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length)
         childIssues.length = issues.length
         milestones.length = issues.length
         types.length = issues.length

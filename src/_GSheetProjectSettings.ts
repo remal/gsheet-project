@@ -5,6 +5,8 @@ class GSheetProjectSettings {
 
     static lockColumns: boolean = false
     static lockRows: boolean = false
+    static updateConditionalFormatRules: boolean = true
+    static reorderHierarchyAutomatically: boolean = false
     //static restoreUndoneEnd: boolean = false
 
     static sheetName: string = "Projects"
@@ -13,9 +15,9 @@ class GSheetProjectSettings {
     static milestoneColumnName: string = "Milestone"
     static typeColumnName: string = "Type"
     static issueColumnName: string = "Issue"
-    static issuesRangeName: string = "Issues"
+    static issuesRangeName: string = 'Issues'
     static childIssueColumnName: string = "Child\nIssue"
-    static childIssuesRangeName: string = "ChildIssues"
+    static childIssuesRangeName: string = 'ChildIssues'
     static titleColumnName: string = "Title"
     static teamColumnName: string = "Team"
     static estimateColumnName: string = "Estimate\n(days)"
@@ -25,6 +27,8 @@ class GSheetProjectSettings {
     //static issueHashColumnName: string = "Issue Hash"
 
     static settingsSheetName: string = "Settings"
+    static settingsScheduleStartRangeName: string = 'ScheduleStart'
+    static settingsScheduleBufferRangeName: string = 'ScheduleBuffer'
 
     static indent: number = 4
 

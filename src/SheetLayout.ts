@@ -32,6 +32,11 @@ abstract class SheetLayout {
 
     migrate() {
         const sheet = this.sheet
+
+
+        ConditionalFormatting.removeConditionalFormatRulesByScope(sheet, 'layout')
+
+
         const columns = this.columns.reduce(
             (map, info) => {
                 map.set(Utils.normalizeName(info.name), info)
@@ -46,6 +51,8 @@ abstract class SheetLayout {
 
         ProtectionLocks.lockAllColumns(sheet)
 
+        const columnByKey = new Map<string, { columnNumber: number, info: ColumnInfo }>()
+
         let lastColumn = sheet.getLastColumn()
         const maxRows = sheet.getMaxRows()
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
@@ -53,7 +60,12 @@ abstract class SheetLayout {
             .map(it => it?.toString())
             .map(it => it?.length ? Utils.normalizeName(it) : '')
         for (const [columnName, info] of columns.entries()) {
-            if (existingNormalizedNames.includes(columnName)) {
+            const existingIndex = existingNormalizedNames.indexOf(columnName)
+            if (existingIndex >= 0) {
+                if (info.key?.length) {
+                    const columnNumber = existingIndex + 1
+                    columnByKey.set(info.key, {columnNumber, info})
+                }
                 continue
             }
 
@@ -61,6 +73,11 @@ abstract class SheetLayout {
             ++lastColumn
             const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
                 .setValue(info.name)
+
+            if (info.key?.length) {
+                const columnNumber = lastColumn
+                columnByKey.set(info.key, {columnNumber, info})
+            }
 
             if (info.defaultFontSize) {
                 titleRange.setFontSize(info.defaultFontSize)
@@ -127,16 +144,52 @@ abstract class SheetLayout {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range)
             }
 
-            let dataValidation: (DataValidation | null) = info.dataValidation?.call(info) ?? null
+
+            const processFormula = (formula: string): string => {
+                formula = Utils.processFormula(formula)
+                formula = formula.replaceAll(/#COLUMN_CELL\(([^)]+)\)/g, (_, key) => {
+                    const columnNumber = columnByKey.get(key)?.columnNumber
+                    if (columnNumber == null) {
+                        throw new Error(`Column with key '${key}' can't be found`)
+                    }
+                    return sheet.getRange(GSheetProjectSettings.firstDataRow, columnNumber).getA1Notation()
+                })
+                formula = formula.replaceAll(/#COLUMN_CELL\b/g, () => {
+                    return range.getCell(1, 1).getA1Notation()
+                })
+                return formula
+            }
+
+
+            let dataValidation: (DataValidation | null) = info.dataValidation != null
+                ? info.dataValidation()
+                : null
             if (dataValidation != null) {
                 if (dataValidation.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CUSTOM_FORMULA) {
-                    const formula = Utils.processFormula(dataValidation.getCriteriaValues()[0].toString())
+                    const formula = processFormula(dataValidation.getCriteriaValues()[0].toString())
                     dataValidation = dataValidation.copy()
                         .requireFormulaSatisfied(formula)
                         .build()
                 }
             }
             range.setDataValidation(dataValidation)
+
+            info.conditionalFormats?.forEach(rule => {
+                const originalConfigurer = rule.configurer
+                rule.configurer = builder => {
+                    originalConfigurer(builder)
+                    const formula = ConditionalFormatRuleUtils.extractFormula(builder)
+                    if (formula != null) {
+                        builder.whenFormulaSatisfied(processFormula(formula))
+                    }
+                    return builder
+                }
+                const fullRule = {
+                    scope: 'layout',
+                    ...rule,
+                }
+                ConditionalFormatting.addConditionalFormatRule(range, fullRule)
+            })
         }
 
         sheet.getRange(1, 1, lastColumn, 1)
@@ -159,11 +212,15 @@ abstract class SheetLayout {
 
 }
 
+type LayoutOrderedConditionalFormatRule = Omit<OrderedConditionalFormatRule, 'scope'>
+
 interface ColumnInfo {
+    key?: string
     name: string
     arrayFormula?: string
     rangeName?: string
     dataValidation?: () => (DataValidation | null)
+    conditionalFormats?: LayoutOrderedConditionalFormatRule[]
     defaultFontSize?: number
     defaultWidth?: number | WidthString
     defaultFormat?: string

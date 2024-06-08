@@ -89,8 +89,30 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.endColumnName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
+                conditionalFormats: [
+                    {
+                        order: 1,
+                        configurer: builder => builder
+                            .whenFormulaSatisfied(
+                                `=AND(ISFORMULA(#COLUMN_CELL), NOT(ISBLANK(#COLUMN_CELL)), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
+                            )
+                            .setItalic(true)
+                            .setBold(true)
+                            .setFontColor('red'),
+                    },
+                    {
+                        order: 2,
+                        configurer: builder => builder
+                            .whenFormulaSatisfied(
+                                `=AND(NOT(ISBLANK(#COLUMN_CELL)), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
+                            )
+                            .setBold(true)
+                            .setFontColor('red'),
+                    },
+                ],
             },
             {
+                key: 'deadline',
                 name: GSheetProjectSettings.deadlineColumnName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',

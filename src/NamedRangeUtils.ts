@@ -1,7 +1,7 @@
 class NamedRangeUtils {
 
     static findNamedRange(rangeName: string): NamedRange | undefined {
-        const namedRanges = ExecutionCache.getOrComputeCache('named-ranges', () => {
+        const namedRanges = ExecutionCache.getOrCompute('named-ranges', () => {
             const result = new Map<string, NamedRange>()
             for (const namedRange of SpreadsheetApp.getActiveSpreadsheet().getNamedRanges()) {
                 const name = Utils.normalizeName(namedRange.getName())

@@ -10,7 +10,7 @@ abstract class AbstractIssueLogic {
         const sheet = range.getSheet()
         ProtectionLocks.lockAllColumns(sheet)
 
-        range = RangeUtils.withMinMaxRows(range, GSheetProjectSettings.firstDataRow, sheet.getLastRow())
+        range = RangeUtils.withMinMaxRows(range, GSheetProjectSettings.firstDataRow, SheetUtils.getLastRow(sheet))
         const startRow = range.getRow()
         const rows = range.getNumRows()
         const endRow = startRow + rows - 1
@@ -23,7 +23,7 @@ abstract class AbstractIssueLogic {
         const startRow = range.getRow()
         const endRow = startRow + range.getNumRows() - 1
         return SheetUtils.getColumnsStringValues(sheet, {
-            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName),
+            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
             childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
         }, startRow, endRow)
     }
