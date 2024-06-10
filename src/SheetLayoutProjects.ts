@@ -36,7 +36,7 @@ class SheetLayoutProjects extends SheetLayout {
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(
                         `=OR(
-                            NOT(ISBLANK(${GSheetProjectSettings.childIssuesRangeName})),
+                            ${GSheetProjectSettings.childIssuesRangeName} <> "",
                             COUNTIFS(
                                 ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
                                 ${GSheetProjectSettings.childIssuesRangeName}, "="
@@ -72,13 +72,23 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.teamColumnName,
+                rangeName: GSheetProjectSettings.teamsRangeName,
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
+                rangeName: GSheetProjectSettings.estimatesRangeName,
                 defaultFormat: '#,##0',
                 defaultHorizontalAlignment: 'center',
+                dataValidation: () => SpreadsheetApp.newDataValidation()
+                    .requireFormulaSatisfied(
+                        `=INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""`,
+                    )
+                    .setHelpText(
+                        `Estimate must be defined for a team`,
+                    )
+                    .build(),
             },
             {
                 name: GSheetProjectSettings.startColumnName,
@@ -87,6 +97,7 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.endColumnName,
+                rangeName: GSheetProjectSettings.endsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
@@ -94,7 +105,7 @@ class SheetLayoutProjects extends SheetLayout {
                         order: 1,
                         configurer: builder => builder
                             .whenFormulaSatisfied(
-                                `=AND(ISFORMULA(#COLUMN_CELL), NOT(ISBLANK(#COLUMN_CELL)), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
+                                `=AND(ISFORMULA(#COLUMN_CELL), NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
                             )
                             .setItalic(true)
                             .setBold(true)
@@ -104,7 +115,7 @@ class SheetLayoutProjects extends SheetLayout {
                         order: 2,
                         configurer: builder => builder
                             .whenFormulaSatisfied(
-                                `=AND(NOT(ISBLANK(#COLUMN_CELL)), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
+                                `=AND(NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
                             )
                             .setBold(true)
                             .setFontColor('red'),
@@ -124,7 +135,7 @@ class SheetLayoutProjects extends SheetLayout {
                 arrayFormula: `
                     MAP(
                         ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
-                        LAMBDA(issue, IF(ISBLANK(issue), "", ${SHA256.name}(issue)))
+                        LAMBDA(issue, IF(issue = "", "", ${SHA256.name}(issue)))
                     )
                 `,
             },

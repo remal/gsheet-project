@@ -57,9 +57,129 @@ class DefaultFormulas extends AbstractIssueLogic {
         )
 
 
+        const teamColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.teamColumnName)
         const estimateColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName)
         const startColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.startColumnName)
         const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName)
+
+        addFormulas(startColumn, row => {
+            const teamFirstA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                GSheetProjectSettings.firstDataRow,
+                teamColumn,
+            ))
+            const estimateFirstA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                GSheetProjectSettings.firstDataRow,
+                estimateColumn,
+            ))
+            const endFirstA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                GSheetProjectSettings.firstDataRow,
+                endColumn,
+            ))
+
+            const teamA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, teamColumn))
+            const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn))
+
+            const resourcesLookup = `
+                VLOOKUP(
+                    ${teamA1Notation},
+                    ${GSheetProjectSettings.settingsTeamsTableRangeName},
+                    1
+                        + COLUMN(${GSheetProjectSettings.settingsTeamsTableResourcesRangeName})
+                        - COLUMN(${GSheetProjectSettings.settingsTeamsTableRangeName}),
+                    FALSE
+                )
+            `
+
+            const notEnoughPreviousLanes = `
+                COUNTIFS(
+                    OFFSET(
+                        ${teamFirstA1Notation},
+                        0,
+                        0,
+                        ROW() - ${GSheetProjectSettings.firstDataRow},
+                        1
+                    ),
+                    "=" & ${teamA1Notation},
+                    OFFSET(
+                        ${estimateFirstA1Notation},
+                        0,
+                        0,
+                        ROW() - ${GSheetProjectSettings.firstDataRow},
+                        1
+                    ),
+                    ">0"
+                ) < ${resourcesLookup}
+            `
+
+            const filter = `
+                FILTER(
+                    OFFSET(
+                        ${endFirstA1Notation},
+                        0,
+                        0,
+                        ROW() - ${GSheetProjectSettings.firstDataRow},
+                        1
+                    ),
+                    OFFSET(
+                        ${teamFirstA1Notation},
+                        0,
+                        0,
+                        ROW() - ${GSheetProjectSettings.firstDataRow},
+                        1
+                    ) = ${teamA1Notation},
+                    OFFSET(
+                        ${estimateFirstA1Notation},
+                        0,
+                        0,
+                        ROW() - ${GSheetProjectSettings.firstDataRow},
+                        1
+                    ) > 0
+                )
+            `
+
+            const lastEnd = `
+                MIN(
+                    SORTN(
+                        ${filter},
+                        ${resourcesLookup},
+                        0,
+                        1,
+                        FALSE
+                    )
+                )
+            `
+
+            const nextWorkdayOfQueryResult = `
+                WORKDAY(
+                    ${lastEnd},
+                    1
+                )
+            `
+
+            const firstDataRowIf = `
+                IF(
+                    OR(
+                        ROW() <= ${GSheetProjectSettings.firstDataRow},
+                        ${notEnoughPreviousLanes}
+                    ),
+                    ${GSheetProjectSettings.settingsScheduleStartRangeName},
+                    ${nextWorkdayOfQueryResult}
+                )
+            `
+
+            const notEnoughDataIf = `
+                IF(
+                    OR(
+                        ${teamA1Notation} = "",
+                        ${estimateA1Notation} = ""
+                    ),
+                    "",
+                    ${firstDataRowIf}
+                )
+            `
+
+            return `=${notEnoughDataIf}`
+        })
 
         addFormulas(endColumn, row => {
             const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn))
@@ -68,8 +188,8 @@ class DefaultFormulas extends AbstractIssueLogic {
             return `
                 =IF(
                     OR(
-                        ISBLANK(${startA1Notation}),
-                        ISBLANK(${estimateA1Notation})
+                        ${startA1Notation} = "",
+                        ${estimateA1Notation} = ""
                     ),
                     "",
                     WORKDAY(${startA1Notation}, ${estimateA1Notation} * (1 + ${bufferRangeName}))

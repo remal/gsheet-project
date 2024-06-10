@@ -77,6 +77,10 @@ class ProtectionLocks {
     }
 
     static release() {
+        if (!GSheetProjectSettings.lockColumns && !GSheetProjectSettings.lockRows) {
+            return
+        }
+
         Utils.timed(`${ProtectionLocks.name}: ${this.release.name}`, () => {
             this._allColumnsProtections.forEach(protection => protection.remove())
             this._allColumnsProtections.clear()
@@ -88,10 +92,14 @@ class ProtectionLocks {
                 Array.from(protections.values()).forEach(protection => protection.remove()),
             )
             this._rowsProtections.clear()
-        }, GSheetProjectSettings.lockColumns || GSheetProjectSettings.lockRows)
+        })
     }
 
     static releaseExpiredLocks() {
+        if (!GSheetProjectSettings.lockColumns && !GSheetProjectSettings.lockRows) {
+            return
+        }
+
         Utils.timed(`${ProtectionLocks.name}: ${this.releaseExpiredLocks.name}`, () => {
             const maxLockDurationMillis = 10 * 60 * 1000
             const minTimestamp = new Date().getTime() - maxLockDurationMillis
@@ -116,7 +124,7 @@ class ProtectionLocks {
                     }
                 }
             })
-        }, GSheetProjectSettings.lockColumns || GSheetProjectSettings.lockRows)
+        })
     }
 
 }

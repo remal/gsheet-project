@@ -20,15 +20,21 @@ class GSheetProjectSettings {
     static childIssuesRangeName: string = 'ChildIssues'
     static titleColumnName: string = "Title"
     static teamColumnName: string = "Team"
+    static teamsRangeName: string = "Teams"
     static estimateColumnName: string = "Estimate\n(days)"
+    static estimatesRangeName: string = "Estimates"
     static deadlineColumnName: string = "Deadline"
     static startColumnName: string = "Start"
     static endColumnName: string = "End"
+    static endsRangeName: string = "Ends"
     //static issueHashColumnName: string = "Issue Hash"
 
     static settingsSheetName: string = "Settings"
     static settingsScheduleStartRangeName: string = 'ScheduleStart'
     static settingsScheduleBufferRangeName: string = 'ScheduleBuffer'
+    static settingsTeamsTableRangeName: string = 'TeamsTable'
+    static settingsTeamsTableTeamRangeName: string = 'TeamsTableTeam'
+    static settingsTeamsTableResourcesRangeName: string = 'TeamsTableResources'
 
     static indent: number = 4
 

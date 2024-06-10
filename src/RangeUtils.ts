@@ -20,8 +20,8 @@ class RangeUtils {
 
     static getAbsoluteA1Notation(range: Range): string {
         return range.getA1Notation()
-            .replace(/[A-Z]+/, '$$$&')
-            .replace(/\d+/, '$$$&')
+            .replaceAll(/[A-Z]+/g, '$$$&')
+            .replaceAll(/\d+/g, '$$$&')
     }
 
     static getAbsoluteReferenceFormula(range: Range): string {

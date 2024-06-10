@@ -23,12 +23,16 @@ class Utils {
 
     static processFormula(formula: string): string {
         return formula
-            .replaceAll(/#SELF\b/g, 'INDIRECT(ADDRESS(ROW(), COLUMN()))')
+            .replaceAll(/#SELF\b/g, 'INDIRECT("RC", FALSE)')
             .split(/[\r\n]+/)
-            .map(line => line.trim())
+            .map(line => line.replace(/^\s+/, ''))
             .filter(line => line.length)
+            .map(line => line.replaceAll(/^([*/+-]+ )/g, ' $1'))
+            .map(line => line.replaceAll(/\s*\t\s*/g, ' '))
+            .map(line => line.replaceAll(/"\s*&""/g, '"'))
             .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
             .join('')
+            .trim()
     }
 
     static escapeFormulaString(string: string): string {
