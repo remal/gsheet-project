@@ -414,11 +414,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                     )
                 )
             `;
-            const nextWorkdayOfQueryResult = `
-                WORKDAY(
-                    ${lastEnd},
-                    1
-                )
+            const nextWorkdayLastEnd = `
+                WORKDAY(${lastEnd}, 1)
             `;
             const firstDataRowIf = `
                 IF(
@@ -427,7 +424,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ${notEnoughPreviousLanes}
                     ),
                     ${GSheetProjectSettings.settingsScheduleStartRangeName},
-                    ${nextWorkdayOfQueryResult}
+                    ${nextWorkdayLastEnd}
                 )
             `;
             const notEnoughDataIf = `
@@ -1107,7 +1104,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f8ded3d7445d6f675aa84cfcc2201dee89fda27f5b448e28b9cbda6af4641857:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}0591728292269044ce1aa6d6f10cb50ed88360ba662b5dd694de942208e5d04b:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1320,18 +1317,19 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.teamColumnName,
                 rangeName: GSheetProjectSettings.teamsRangeName,
+                //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
                 rangeName: GSheetProjectSettings.estimatesRangeName,
-                defaultFormat: '#,##0',
-                defaultHorizontalAlignment: 'center',
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(`=INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""`)
                     .setHelpText(`Estimate must be defined for a team`)
                     .build(),
+                defaultFormat: '#,##0',
+                defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.startColumnName,

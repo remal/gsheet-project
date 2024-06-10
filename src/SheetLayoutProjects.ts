@@ -73,14 +73,13 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.teamColumnName,
                 rangeName: GSheetProjectSettings.teamsRangeName,
+                //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
                 rangeName: GSheetProjectSettings.estimatesRangeName,
-                defaultFormat: '#,##0',
-                defaultHorizontalAlignment: 'center',
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(
                         `=INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""`,
@@ -89,6 +88,8 @@ class SheetLayoutProjects extends SheetLayout {
                         `Estimate must be defined for a team`,
                     )
                     .build(),
+                defaultFormat: '#,##0',
+                defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.startColumnName,

@@ -149,11 +149,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `
 
-            const nextWorkdayOfQueryResult = `
-                WORKDAY(
-                    ${lastEnd},
-                    1
-                )
+            const nextWorkdayLastEnd = `
+                WORKDAY(${lastEnd}, 1)
             `
 
             const firstDataRowIf = `
@@ -163,7 +160,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ${notEnoughPreviousLanes}
                     ),
                     ${GSheetProjectSettings.settingsScheduleStartRangeName},
-                    ${nextWorkdayOfQueryResult}
+                    ${nextWorkdayLastEnd}
                 )
             `
 
