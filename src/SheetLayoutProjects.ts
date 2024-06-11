@@ -79,7 +79,6 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
-                rangeName: GSheetProjectSettings.estimatesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(
                         `=INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""`,
@@ -98,7 +97,6 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.endColumnName,
-                rangeName: GSheetProjectSettings.endsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
@@ -110,7 +108,7 @@ class SheetLayoutProjects extends SheetLayout {
                             )
                             .setItalic(true)
                             .setBold(true)
-                            .setFontColor('red'),
+                            .setFontColor('#c00'),
                     },
                     {
                         order: 2,
@@ -119,7 +117,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 `=AND(NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
                             )
                             .setBold(true)
-                            .setFontColor('red'),
+                            .setFontColor('#f00'),
                     },
                 ],
             },

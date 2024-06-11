@@ -118,6 +118,20 @@ class Utils {
         array.splice(targetIndex, 0, ...moved)
     }
 
+    static hashCode(value: string | null | undefined): number {
+        if (!value?.length) {
+            return 0
+        }
+
+        let hash: number = 0
+        for (let i = 0; i < this.length; i++) {
+            const chr = value.charCodeAt(i)
+            hash = ((hash << 5) - hash) + chr
+            hash |= 0
+        }
+        return hash
+    }
+
     static merge<T extends Record<string, any>, P extends Partial<T>>(...objects: P[]): T {
         const result = {}
         for (const object of objects) {
@@ -213,8 +227,8 @@ class Utils {
         return typeof value === 'object' && !Array.isArray(value)
     }
 
-    static throwNotConfigured<T>(name: string): T {
-        throw new Error(`Not configured: ${name}`)
+    static throwNotImplemented<T>(...name: string[]): T {
+        throw new Error(`Not implemented: ${name.join(': ')}`)
     }
 
 }

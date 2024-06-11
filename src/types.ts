@@ -1,6 +1,3 @@
-type IssueId = string
-type Issue = Record<string, any>
-
 type Range = GoogleAppsScript.Spreadsheet.Range
 type RangeList = GoogleAppsScript.Spreadsheet.RangeList
 type Sheet = GoogleAppsScript.Spreadsheet.Sheet

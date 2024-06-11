@@ -104,33 +104,31 @@ GSheetProjectSettings.lockRows = false;
 GSheetProjectSettings.updateConditionalFormatRules = true;
 GSheetProjectSettings.reorderHierarchyAutomatically = false;
 //static restoreUndoneEnd: boolean = false
+GSheetProjectSettings.issuesRangeName = 'Issues';
+GSheetProjectSettings.childIssuesRangeName = 'ChildIssues';
+GSheetProjectSettings.teamsRangeName = "Teams";
+GSheetProjectSettings.settingsTeamsTableRangeName = 'TeamsTable';
+GSheetProjectSettings.settingsTeamsTableTeamRangeName = 'TeamsTableTeam';
+GSheetProjectSettings.settingsTeamsTableResourcesRangeName = 'TeamsTableResources';
+GSheetProjectSettings.issueTrackers = [];
 GSheetProjectSettings.sheetName = "Projects";
 GSheetProjectSettings.iconColumnName = "icon";
 //static doneColumnName: string = "Done"
 GSheetProjectSettings.milestoneColumnName = "Milestone";
 GSheetProjectSettings.typeColumnName = "Type";
 GSheetProjectSettings.issueColumnName = "Issue";
-GSheetProjectSettings.issuesRangeName = 'Issues';
 GSheetProjectSettings.childIssueColumnName = "Child\nIssue";
-GSheetProjectSettings.childIssuesRangeName = 'ChildIssues';
 GSheetProjectSettings.titleColumnName = "Title";
 GSheetProjectSettings.teamColumnName = "Team";
-GSheetProjectSettings.teamsRangeName = "Teams";
 GSheetProjectSettings.estimateColumnName = "Estimate\n(days)";
-GSheetProjectSettings.estimatesRangeName = "Estimates";
 GSheetProjectSettings.deadlineColumnName = "Deadline";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
-GSheetProjectSettings.endsRangeName = "Ends";
 //static issueHashColumnName: string = "Issue Hash"
 GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.settingsScheduleStartRangeName = 'ScheduleStart';
 GSheetProjectSettings.settingsScheduleBufferRangeName = 'ScheduleBuffer';
-GSheetProjectSettings.settingsTeamsTableRangeName = 'TeamsTable';
-GSheetProjectSettings.settingsTeamsTableTeamRangeName = 'TeamsTableTeam';
-GSheetProjectSettings.settingsTeamsTableResourcesRangeName = 'TeamsTableResources';
 GSheetProjectSettings.indent = 4;
-GSheetProjectSettings.taskTrackers = [];
 class AbstractIssueLogic {
     static _processRange(range) {
         if (![GSheetProjectSettings.issueColumnName, GSheetProjectSettings.titleColumnName].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
@@ -191,7 +189,8 @@ class CommonFormatter {
             order: 10000,
             configurer: builder => builder
                 .whenFormulaSatisfied('=ISFORMULA(A1)')
-                .setItalic(true),
+                .setItalic(true)
+                .setFontColor('#333'),
         });
     }
 }
@@ -794,6 +793,118 @@ class IssueHierarchyFormatter {
         }
     }
 }
+class IssueTracker {
+    supportIssue(issueId) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.supportIssue.name);
+    }
+    canonizeIssueId(issueId) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.canonizeIssueId.name);
+    }
+    getIssueLink(issueId) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.getIssueLink.name);
+    }
+    getIssuesLink(issueIds) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.getIssuesLink.name);
+    }
+    loadIssues(issueIds) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadIssues.name);
+    }
+    loadChildren(issueIds) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadChildren.name);
+    }
+    loadBlockers(issueIds) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadBlockers.name);
+    }
+    search(query) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.search.name);
+    }
+}
+class Issue {
+    get id() {
+        throw Utils.throwNotImplemented(this.constructor.name, 'id');
+    }
+    get title() {
+        throw Utils.throwNotImplemented(this.constructor.name, 'title');
+    }
+    get status() {
+        throw Utils.throwNotImplemented(this.constructor.name, 'status');
+    }
+    get open() {
+        throw Utils.throwNotImplemented(this.constructor.name, 'open');
+    }
+}
+class IssueTrackerExample extends IssueTracker {
+    supportIssue(issueId) {
+        return issueId.match(/^example\/\S+$/) != null;
+    }
+    canonizeIssueId(issueId) {
+        return issueId;
+    }
+    getIssueLink(issueId) {
+        const searchQuery = issueId.match(/^example\/search\/(.*)$/);
+        if (searchQuery != null) {
+            return `https://example.com/search/?query=${encodeURIComponent(searchQuery[1])}`;
+        }
+        return `https://example.com/issues/${encodeURIComponent(issueId)}`;
+    }
+    getIssuesLink(issueIds) {
+        return `https://example.com/search?query=id:(${encodeURIComponent(issueIds.join('|'))})`;
+    }
+    loadIssues(issueIds) {
+        const result = {};
+        issueIds
+            .filter(id => id === null || id === void 0 ? void 0 : id.length)
+            .filter(Utils.distinct())
+            .forEach(id => result[id] = new IssueExample(id));
+        return result;
+    }
+    loadChildren(issueIds) {
+        return issueIds
+            .filter(id => id === null || id === void 0 ? void 0 : id.length)
+            .filter(Utils.distinct())
+            .flatMap(id => {
+            const children = [];
+            const childrenCount = Math.abs(Utils.hashCode(id)) % 3;
+            for (let child = 1; child <= childrenCount; ++child) {
+                children.push(new IssueExample(`${id}-${child}`));
+            }
+            return children;
+        });
+    }
+    loadBlockers(issueIds) {
+        return [];
+    }
+    search(query) {
+        const children = [];
+        const queryHash = Math.abs(Utils.hashCode(query));
+        const childrenCount = queryHash % 3;
+        for (let child = 1; child <= childrenCount; ++child) {
+            children.push(new IssueExample(`${queryHash}-${child}`));
+        }
+        return children;
+    }
+}
+class IssueExample extends Issue {
+    constructor(id) {
+        super();
+        this._id = id;
+    }
+    get id() {
+        return this._id;
+    }
+    get title() {
+        return `Issue '${this.id}'`;
+    }
+    get status() {
+        return Utils.hashCode(this.id) % 2 === 0
+            ? 'open'
+            : 'closed';
+    }
+    get open() {
+        return this.status === 'open';
+    }
+}
+GSheetProjectSettings.issueTrackers.push(new IssueTrackerExample());
 class Lazy {
     constructor(supplier) {
         this._supplier = supplier;
@@ -1104,7 +1215,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}0591728292269044ce1aa6d6f10cb50ed88360ba662b5dd694de942208e5d04b:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}5aedc706106d9d179221907103f54720169dfeedd72c9ce7264ae138137ebb24:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1323,7 +1434,6 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
-                rangeName: GSheetProjectSettings.estimatesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(`=INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""`)
                     .setHelpText(`Estimate must be defined for a team`)
@@ -1338,7 +1448,6 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.endColumnName,
-                rangeName: GSheetProjectSettings.endsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
@@ -1348,14 +1457,14 @@ class SheetLayoutProjects extends SheetLayout {
                             .whenFormulaSatisfied(`=AND(ISFORMULA(#COLUMN_CELL), NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`)
                             .setItalic(true)
                             .setBold(true)
-                            .setFontColor('red'),
+                            .setFontColor('#c00'),
                     },
                     {
                         order: 2,
                         configurer: builder => builder
                             .whenFormulaSatisfied(`=AND(NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`)
                             .setBold(true)
-                            .setFontColor('red'),
+                            .setFontColor('#f00'),
                     },
                 ],
             },
@@ -1585,8 +1694,6 @@ class SheetUtils {
         return sheet.getRange(row, minColumn, 1, columns);
     }
 }
-class TaskTracker {
-}
 class Timer {
     constructor(name) {
         this._name = name;
@@ -1698,6 +1805,18 @@ class Utils {
         const moved = array.splice(fromIndex, count);
         array.splice(targetIndex, 0, ...moved);
     }
+    static hashCode(value) {
+        if (!(value === null || value === void 0 ? void 0 : value.length)) {
+            return 0;
+        }
+        let hash = 0;
+        for (let i = 0; i < this.length; i++) {
+            const chr = value.charCodeAt(i);
+            hash = ((hash << 5) - hash) + chr;
+            hash |= 0;
+        }
+        return hash;
+    }
     static merge(...objects) {
         const result = {};
         for (const object of objects) {
@@ -1777,7 +1896,7 @@ class Utils {
     static isRecord(value) {
         return typeof value === 'object' && !Array.isArray(value);
     }
-    static throwNotConfigured(name) {
-        throw new Error(`Not configured: ${name}`);
+    static throwNotImplemented(...name) {
+        throw new Error(`Not implemented: ${name.join(': ')}`);
     }
 }

@@ -30,7 +30,8 @@ class CommonFormatter {
                 order: 10_000,
                 configurer: builder => builder
                     .whenFormulaSatisfied('=ISFORMULA(A1)')
-                    .setItalic(true),
+                    .setItalic(true)
+                    .setFontColor('#333'),
             },
         )
     }
