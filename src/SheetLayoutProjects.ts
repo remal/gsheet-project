@@ -75,7 +75,7 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.teamsRangeName,
                 //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
                 defaultFormat: '',
-                defaultHorizontalAlignment: 'left',
+                defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,

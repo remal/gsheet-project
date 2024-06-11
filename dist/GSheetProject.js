@@ -170,6 +170,7 @@ class CommonFormatter {
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
             this.setMiddleVerticalAlign(sheet);
+            this.setClipWrapStrategy(sheet);
             this.highlightCellsWithFormula(sheet);
         });
     }
@@ -179,6 +180,13 @@ class CommonFormatter {
         }
         sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
             .setVerticalAlignment('middle');
+    }
+    static setClipWrapStrategy(sheet) {
+        if (Utils.isString(sheet)) {
+            sheet = SheetUtils.getSheetByName(sheet);
+        }
+        sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
+            .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
     }
     static highlightCellsWithFormula(sheet) {
         if (Utils.isString(sheet)) {
@@ -749,9 +757,12 @@ class IssueHierarchyFormatter {
                     if (!indexes.length) {
                         return;
                     }
-                    const notations = indexes.map(index => {
+                    const notations = indexes.flatMap(index => {
                         const row = GSheetProjectSettings.firstDataRow + index;
-                        return sheet.getRange(row, titlesColumn).getA1Notation();
+                        return [
+                            sheet.getRange(row, issuesColumn).getA1Notation(),
+                            sheet.getRange(row, titlesColumn).getA1Notation(),
+                        ];
                     });
                     const numberFormat = indent > 0
                         ? ' '.repeat(indent) + '@'
@@ -1215,7 +1226,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}5aedc706106d9d179221907103f54720169dfeedd72c9ce7264ae138137ebb24:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}f05cb701d5bba9af6933d508138659c4475a6bed588cb148c4b33331032bae7e:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1430,7 +1441,7 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.teamsRangeName,
                 //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
                 defaultFormat: '',
-                defaultHorizontalAlignment: 'left',
+                defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,

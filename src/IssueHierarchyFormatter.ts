@@ -251,9 +251,12 @@ class IssueHierarchyFormatter {
                         return
                     }
 
-                    const notations = indexes.map(index => {
+                    const notations = indexes.flatMap(index => {
                         const row = GSheetProjectSettings.firstDataRow + index
-                        return sheet.getRange(row, titlesColumn).getA1Notation()
+                        return [
+                            sheet.getRange(row, issuesColumn).getA1Notation(),
+                            sheet.getRange(row, titlesColumn).getA1Notation(),
+                        ]
                     })
                     const numberFormat = indent > 0
                         ? ' '.repeat(indent) + '@'
