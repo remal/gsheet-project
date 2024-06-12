@@ -214,7 +214,15 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
 
                 if (issueKeyQueries[issueKey]?.length) {
-                    return issueTracker.loadIssueKeySearchTitle(issueKey)
+                    return Utils.timed(
+                        [
+                            IssueDataDisplay.name,
+                            this.reloadIssueData.name,
+                            `row #${row}`,
+                            `loading search title for "${issueKey}" issue key`,
+                        ].join(': '),
+                        () => issueTracker.loadIssueKeySearchTitle(issueKey),
+                    )
                 }
 
                 return undefined

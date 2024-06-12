@@ -805,7 +805,12 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     return (_a = loadedIssues.find(issue => issue.id)) === null || _a === void 0 ? void 0 : _a.title;
                 }
                 if ((_b = issueKeyQueries[issueKey]) === null || _b === void 0 ? void 0 : _b.length) {
-                    return issueTracker.loadIssueKeySearchTitle(issueKey);
+                    return Utils.timed([
+                        IssueDataDisplay.name,
+                        this.reloadIssueData.name,
+                        `row #${row}`,
+                        `loading search title for "${issueKey}" issue key`,
+                    ].join(': '), () => issueTracker.loadIssueKeySearchTitle(issueKey));
                 }
                 return undefined;
             })
@@ -1658,7 +1663,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}e5d95cd16373be68f15c00a4c7793b9f2e77472a3b1552a9787e1e27402ec440:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}66728af16c370194fd38abbbd100b8404039e9527a8930d0b8bed31934955bd5:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
