@@ -245,30 +245,6 @@ class IssueHierarchyFormatter {
             const getIndexesWithChild = () => getIndexes()
                 .filter(index => childIssues[index]?.length)
 
-            { // set indent
-                const setIndent = (indexes: number[], indent: number) => {
-                    if (!indexes.length) {
-                        return
-                    }
-
-                    const notations = indexes.flatMap(index => {
-                        const row = GSheetProjectSettings.firstDataRow + index
-                        return [
-                            sheet.getRange(row, issuesColumn).getA1Notation(),
-                            sheet.getRange(row, titlesColumn).getA1Notation(),
-                        ]
-                    })
-                    const numberFormat = indent > 0
-                        ? ' '.repeat(indent) + '@'
-                        : '@'
-                    sheet.getRangeList(notations)
-                        .setNumberFormat(numberFormat)
-                        .setFontLine('none')
-                }
-                setIndent(getIndexesWithoutChild(), 0)
-                setIndent(getIndexesWithChild(), GSheetProjectSettings.indent)
-            }
-
             { // set formulas
                 const indexesWithoutChild = getIndexesWithoutChild()
                 const indexesWithChild = getIndexesWithChild()

@@ -1036,28 +1036,6 @@ class IssueHierarchyFormatter {
                 .filter(index => { var _a; return !((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length); });
             const getIndexesWithChild = () => getIndexes()
                 .filter(index => { var _a; return (_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length; });
-            { // set indent
-                const setIndent = (indexes, indent) => {
-                    if (!indexes.length) {
-                        return;
-                    }
-                    const notations = indexes.flatMap(index => {
-                        const row = GSheetProjectSettings.firstDataRow + index;
-                        return [
-                            sheet.getRange(row, issuesColumn).getA1Notation(),
-                            sheet.getRange(row, titlesColumn).getA1Notation(),
-                        ];
-                    });
-                    const numberFormat = indent > 0
-                        ? ' '.repeat(indent) + '@'
-                        : '@';
-                    sheet.getRangeList(notations)
-                        .setNumberFormat(numberFormat)
-                        .setFontLine('none');
-                };
-                setIndent(getIndexesWithoutChild(), 0);
-                setIndent(getIndexesWithChild(), GSheetProjectSettings.indent);
-            }
             { // set formulas
                 const indexesWithoutChild = getIndexesWithoutChild();
                 const indexesWithChild = getIndexesWithChild();
@@ -1663,7 +1641,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}92a13f106f1e1f93998ade9bde68fd8a8d3ee2b5ce799b489936bbf37a40c110:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}517336156069414e8605c8a05b24e35a433dae509566efe4dcec0a12bcdb57ca:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
