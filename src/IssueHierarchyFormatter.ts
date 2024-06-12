@@ -279,6 +279,7 @@ class IssueHierarchyFormatter {
 
                     sheet.getRange(firstRowWithChild, issuesColumn, indexesWithChild.length, 1)
                         .setFormula(getIssueFormula(issuesColumn))
+                        .setFontSize(GSheetProjectSettings.fontSize - 2)
 
                     indexesWithChild.forEach(index => {
                         const row = GSheetProjectSettings.firstDataRow + index

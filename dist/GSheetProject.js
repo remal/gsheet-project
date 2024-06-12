@@ -1076,7 +1076,8 @@ class IssueHierarchyFormatter {
                     const firstIndexWithChild = indexesWithChild[0];
                     const firstRowWithChild = GSheetProjectSettings.firstDataRow + firstIndexWithChild;
                     sheet.getRange(firstRowWithChild, issuesColumn, indexesWithChild.length, 1)
-                        .setFormula(getIssueFormula(issuesColumn));
+                        .setFormula(getIssueFormula(issuesColumn))
+                        .setFontSize(GSheetProjectSettings.fontSize - 2);
                     indexesWithChild.forEach(index => {
                         var _a, _b, _c, _d;
                         const row = GSheetProjectSettings.firstDataRow + index;
@@ -1683,7 +1684,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f0a2e5bf6d1ab20beaaff4e7966b26533672e071792e7a895ff73012bb63c38f:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}27d1b29784f1186c0bed06486fe269048ab189830cfaf43c36f7922408963c88:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
