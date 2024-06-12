@@ -42,10 +42,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             const row = range.getRow() + index
 
-            const cleanupColumns = () => {
+            const cleanupColumns = (withTitle: boolean = true) => {
                 const notations = [
                     [
-                        sheet.getRange(row, titleColumn),
+                        withTitle ? sheet.getRange(row, titleColumn) : null,
                         sheet.getRange(row, iconColumn),
                     ],
                     Object.keys(GSheetProjectSettings.booleanIssuesMetrics)
@@ -58,7 +58,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         .map(column => sheet.getRange(row, column!)),
                 ]
                     .flat()
-                    .map(range => range.getA1Notation())
+                    .filter(range => range != null)
+                    .map(range => range!.getA1Notation())
                 if (notations.length) {
                     sheet.getRangeList(notations).setValue('')
                 }
@@ -132,7 +133,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
 
             if (issueTracker == null) {
-                cleanupColumns()
+                cleanupColumns(false)
                 continue
             }
 

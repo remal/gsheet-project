@@ -652,10 +652,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 break;
             }
             const row = range.getRow() + index;
-            const cleanupColumns = () => {
+            const cleanupColumns = (withTitle = true) => {
                 const notations = [
                     [
-                        sheet.getRange(row, titleColumn),
+                        withTitle ? sheet.getRange(row, titleColumn) : null,
                         sheet.getRange(row, iconColumn),
                     ],
                     Object.keys(GSheetProjectSettings.booleanIssuesMetrics)
@@ -668,6 +668,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         .map(column => sheet.getRange(row, column)),
                 ]
                     .flat()
+                    .filter(range => range != null)
                     .map(range => range.getA1Notation());
                 if (notations.length) {
                     sheet.getRangeList(notations).setValue('');
@@ -733,7 +734,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
             }
             if (issueTracker == null) {
-                cleanupColumns();
+                cleanupColumns(false);
                 continue;
             }
             const allIssueLinks = allIssueKeys.map(issueKey => {
@@ -1641,7 +1642,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}517336156069414e8605c8a05b24e35a433dae509566efe4dcec0a12bcdb57ca:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}635f662f159558b5733ae96ae6f74006ff6f699f9af9ed9d8a2de707c128e6d6:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
