@@ -19,6 +19,10 @@ class GSheetProjectSettings {
     static settingsTeamsTableTeamRangeName: RangeName = 'TeamsTableTeam'
     static settingsTeamsTableResourcesRangeName: RangeName = 'TeamsTableResources'
 
+    static settingsMilestonesTableRangeName: RangeName = 'MilestonesTable'
+    static settingsMilestonesTableMilestoneRangeName: RangeName = 'MilestonesTableMilestone'
+    static settingsMilestonesTableDeadlineRangeName: RangeName = 'MilestonesTableDeadline'
+
 
     static issueTrackers: IssueTracker[] = []
     static issuesLoadTimeoutMillis: number = 5 * 60 * 1000
@@ -47,6 +51,7 @@ class GSheetProjectSettings {
     static settingsScheduleBufferRangeName: RangeName = 'ScheduleBuffer'
 
     static indent: number = 4
+    static fontSize: FontSize = 10
 
 
     static computeStringSettingsHash(): string {

@@ -10,7 +10,7 @@ class SheetLayoutProjects extends SheetLayout {
         return [
             {
                 name: GSheetProjectSettings.iconColumnName,
-                defaultFontSize: 1,
+                defaultTitleFontSize: 1,
                 defaultWidth: '#default-height',
                 defaultHorizontalAlignment: 'center',
             },

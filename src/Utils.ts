@@ -29,10 +29,21 @@ class Utils {
             .filter(line => line.length)
             .map(line => line.replaceAll(/^([*/+-]+ )/g, ' $1'))
             .map(line => line.replaceAll(/\s*\t\s*/g, ' '))
-            .map(line => line.replaceAll(/"\s*&""/g, '"'))
+            .map(line => line.replaceAll(/"\s*&\s*""/g, '"'))
+            .map(line => line.replaceAll(/"& "/g, '" & "'))
             .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
             .join('')
             .trim()
+    }
+
+    static addFormulaMarker(formula: string, marker: string): string {
+        formula = formula.replace(/^=/, '')
+        formula = `AND(${formula}, "GSPf"<>"${marker}")`
+        return '=' + formula
+    }
+
+    static extractFormulaMarker(formula: string): string | null {
+        return this.extractRegex(formula, /"GCPf"\s*<>\s*"([^"]+)"/, 1)
     }
 
     static escapeFormulaString(string: string): string {

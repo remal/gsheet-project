@@ -73,6 +73,8 @@ abstract class SheetLayout {
             ++lastColumn
             const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
                 .setValue(info.name)
+                .setFontSize(GSheetProjectSettings.fontSize + 1)
+
             ExecutionCache.resetCache()
 
             if (info.key?.length) {
@@ -80,8 +82,10 @@ abstract class SheetLayout {
                 columnByKey.set(info.key, {columnNumber, info})
             }
 
-            if (info.defaultFontSize) {
-                titleRange.setFontSize(info.defaultFontSize)
+            if (info.defaultTitleFontSize != null && info.defaultTitleFontSize > 0) {
+                titleRange.setFontSize(info.defaultTitleFontSize)
+            } else {
+                titleRange.setFontSize(GSheetProjectSettings.fontSize + 1)
             }
 
             if (Utils.isNumber(info.defaultWidth)) {
@@ -145,6 +149,9 @@ abstract class SheetLayout {
             if (info.rangeName?.length) {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range)
             }
+
+
+            range.setFontSize(GSheetProjectSettings.fontSize)
 
 
             const processFormula = (formula: string): string => {
@@ -224,7 +231,7 @@ interface ColumnInfo {
     rangeName?: RangeName
     dataValidation?: () => (DataValidation | null)
     conditionalFormats?: LayoutOrderedConditionalFormatRule[]
-    defaultFontSize?: number
+    defaultTitleFontSize?: number
     defaultWidth?: number | WidthString
     defaultFormat?: string
     defaultHorizontalAlignment?: HorizontalAlignment

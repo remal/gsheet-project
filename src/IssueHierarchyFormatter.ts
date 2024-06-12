@@ -1,5 +1,7 @@
 class IssueHierarchyFormatter {
 
+    static readonly FORMULA_MARKER = "hierarchy"
+
     static formatHierarchy(range: Range) {
         if (![GSheetProjectSettings.childIssueColumnName].some(columnName =>
             RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName),
@@ -188,12 +190,14 @@ class IssueHierarchyFormatter {
         const {
             issues,
             childIssues,
+            titles,
             milestones,
             types,
             deadlines,
         } = SheetUtils.getColumnsStringValues(sheet, {
             issues: issuesColumn,
             childIssues: childIssuesColumn,
+            titles: titlesColumn,
             milestones: milestonesColumn,
             types: typesColumn,
             deadlines: deadlinesColumn,
@@ -214,18 +218,30 @@ class IssueHierarchyFormatter {
 
 
         const {
+            titleFormulas,
             milestoneFormulas,
             typeFormulas,
             deadlineFormulas,
         } = SheetUtils.getColumnsFormulas(sheet, {
+            titleFormulas: titlesColumn,
             milestoneFormulas: milestonesColumn,
             typeFormulas: typesColumn,
             deadlineFormulas: deadlinesColumn,
         }, GSheetProjectSettings.firstDataRow)
 
+        titleFormulas.length = issues.length
         milestoneFormulas.length = issues.length
         typeFormulas.length = issues.length
         deadlineFormulas.length = issues.length
+
+        const isFormulaEmptyOrDefault = (formulas: string[], index: number): boolean => {
+            const formula = formulas[index]
+            if (!formula?.length) {
+                return true
+            }
+
+            return Utils.extractFormulaMarker(formula) === DefaultFormulas.FORMULA_MARKER
+        }
 
 
         for (const issue of notEmptyUniqueIssues) {
@@ -252,8 +268,14 @@ class IssueHierarchyFormatter {
                     const firstIndexWithoutChild = indexesWithoutChild[0]
                     const firstRowWithoutChild = GSheetProjectSettings.firstDataRow + firstIndexWithoutChild
 
-                    const getIssueFormula = (column: Column): string =>
-                        RangeUtils.getAbsoluteReferenceFormula(sheet.getRange(firstRowWithoutChild, column))
+                    const getIssueFormula = (column: Column): string => {
+                        let formula = RangeUtils.getAbsoluteReferenceFormula(sheet.getRange(
+                            firstRowWithoutChild,
+                            column,
+                        ))
+                        formula = Utils.addFormulaMarker(formula, this.FORMULA_MARKER)
+                        return formula
+                    }
 
                     const firstIndexWithChild = indexesWithChild[0]
                     const firstRowWithChild = GSheetProjectSettings.firstDataRow + firstIndexWithChild
@@ -263,15 +285,31 @@ class IssueHierarchyFormatter {
 
                     indexesWithChild.forEach(index => {
                         const row = GSheetProjectSettings.firstDataRow + index
-                        if (!milestones[index]?.length && !milestoneFormulas[index]?.length) {
+
+                        if (!titles[index]?.length && isFormulaEmptyOrDefault(titleFormulas, index)) {
+                            const firstTitleWithoutChildRange = sheet.getRange(firstRowWithoutChild, titlesColumn)
+                            const childIssueRange = sheet.getRange(row, childIssuesColumn)
+                            let formula = `
+                                =${RangeUtils.getAbsoluteReferenceFormula(firstTitleWithoutChildRange)}
+                                & " - "
+                                & ${RangeUtils.getAbsoluteReferenceFormula(childIssueRange)}
+                            `
+                            formula = Utils.addFormulaMarker(formula, this.FORMULA_MARKER)
+                            sheet.getRange(row, titlesColumn)
+                                .setFormula(formula)
+                        }
+
+                        if (!milestones[index]?.length && isFormulaEmptyOrDefault(milestoneFormulas, index)) {
                             sheet.getRange(row, milestonesColumn)
                                 .setFormula(getIssueFormula(milestonesColumn))
                         }
-                        if (!types[index]?.length && !typeFormulas[index]?.length) {
+
+                        if (!types[index]?.length && isFormulaEmptyOrDefault(typeFormulas, index)) {
                             sheet.getRange(row, typesColumn)
                                 .setFormula(getIssueFormula(typesColumn))
                         }
-                        if (!deadlines[index]?.length && !deadlineFormulas[index]?.length) {
+
+                        if (!deadlines[index]?.length && isFormulaEmptyOrDefault(deadlineFormulas, index)) {
                             sheet.getRange(row, deadlinesColumn)
                                 .setFormula(getIssueFormula(deadlinesColumn))
                         }

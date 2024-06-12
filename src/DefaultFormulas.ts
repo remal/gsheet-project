@@ -1,5 +1,7 @@
 class DefaultFormulas extends AbstractIssueLogic {
 
+    static readonly FORMULA_MARKER = "default"
+
     static insertDefaultFormulas(range: Range) {
         const processedRange = this._processRange(range)
         if (processedRange == null) {
@@ -13,6 +15,13 @@ class DefaultFormulas extends AbstractIssueLogic {
         const endRow = startRow + range.getNumRows() - 1
 
         const {issues, childIssues} = this._getIssueValues(range)
+
+        const milestoneColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName)
+        const teamColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.teamColumnName)
+        const estimateColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName)
+        const startColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.startColumnName)
+        const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName)
+        const deadlineColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName)
 
         const addFormulas = (
             column: Column,
@@ -44,18 +53,14 @@ class DefaultFormulas extends AbstractIssueLogic {
                             `column #${column}`,
                             `row #${row}`,
                         ].join(': '))
-                        const formula = Utils.processFormula(formulaGenerator(row))
+                        let formula = Utils.processFormula(formulaGenerator(row))
+                        formula = Utils.addFormulaMarker(formula, this.FORMULA_MARKER)
                         sheet.getRange(row, column).setFormula(formula)
                     }
                 }
             },
         )
 
-
-        const teamColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.teamColumnName)
-        const estimateColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName)
-        const startColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.startColumnName)
-        const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName)
 
         addFormulas(startColumn, row => {
             const teamFirstA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
@@ -185,6 +190,24 @@ class DefaultFormulas extends AbstractIssueLogic {
                     ),
                     "",
                     WORKDAY(${startA1Notation}, ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})))
+                )
+            `
+        })
+
+        addFormulas(deadlineColumn, row => {
+            const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, milestoneColumn))
+            return `
+                =IF(
+                    ${milestoneA1Notation} = "",
+                    "",
+                    VLOOKUP(
+                        ${milestoneA1Notation},
+                        ${GSheetProjectSettings.settingsMilestonesTableRangeName},
+                        1
+                            + COLUMN(${GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName})
+                            - COLUMN(${GSheetProjectSettings.settingsMilestonesTableRangeName}),
+                        FALSE
+                    )
                 )
             `
         })

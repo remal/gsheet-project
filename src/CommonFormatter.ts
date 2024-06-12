@@ -5,7 +5,6 @@ class CommonFormatter {
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
                 this.setMiddleVerticalAlign(sheet)
-                //this.setClipWrapStrategy(sheet)
                 this.highlightCellsWithFormula(sheet)
             })
     }
@@ -17,15 +16,6 @@ class CommonFormatter {
 
         sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
             .setVerticalAlignment('middle')
-    }
-
-    static setClipWrapStrategy(sheet: Sheet | SheetName) {
-        if (Utils.isString(sheet)) {
-            sheet = SheetUtils.getSheetByName(sheet)
-        }
-
-        sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
-            .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
     }
 
     static highlightCellsWithFormula(sheet: Sheet | SheetName) {
