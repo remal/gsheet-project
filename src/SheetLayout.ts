@@ -205,7 +205,7 @@ abstract class SheetLayout {
         const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion']
         if (Utils.isFunction(waitForAllDataExecutionsCompletion)) {
             try {
-                waitForAllDataExecutionsCompletion(10)
+                waitForAllDataExecutionsCompletion(5)
             } catch (e) {
                 console.warn(e)
             }

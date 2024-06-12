@@ -1632,7 +1632,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}2b8d444c5e3106f3c4336a332771428c58f3da3edc9b1610c34c73cd69ebb5c1:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}d4204612776216618f5de841faed8adb7ec3de0de29882125540197cf239068d:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1781,7 +1781,7 @@ class SheetLayout {
         const waitForAllDataExecutionsCompletion = SpreadsheetApp.getActiveSpreadsheet()['waitForAllDataExecutionsCompletion'];
         if (Utils.isFunction(waitForAllDataExecutionsCompletion)) {
             try {
-                waitForAllDataExecutionsCompletion(10);
+                waitForAllDataExecutionsCompletion(5);
             }
             catch (e) {
                 console.warn(e);
