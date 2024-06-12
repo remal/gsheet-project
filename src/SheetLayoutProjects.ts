@@ -71,6 +71,12 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'left',
             },
             {
+                name: GSheetProjectSettings.lastDataReloadColumnName,
+                hiddenByDefault: true,
+                defaultFormat: `yyyy-MM-dd HH:mm:ss.SSS`,
+                defaultHorizontalAlignment: 'left',
+            },
+            {
                 name: GSheetProjectSettings.teamColumnName,
                 rangeName: GSheetProjectSettings.teamsRangeName,
                 //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
@@ -104,7 +110,12 @@ class SheetLayoutProjects extends SheetLayout {
                         order: 1,
                         configurer: builder => builder
                             .whenFormulaSatisfied(
-                                `=AND(ISFORMULA(#COLUMN_CELL), NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
+                                `=AND(
+                                    ISFORMULA(#COLUMN_CELL),
+                                    #COLUMN_CELL <> "",
+                                    #COLUMN_CELL(deadline) <> "",
+                                    #COLUMN_CELL > #COLUMN_CELL(deadline)
+                                )`,
                             )
                             .setItalic(true)
                             .setBold(true)
@@ -114,7 +125,11 @@ class SheetLayoutProjects extends SheetLayout {
                         order: 2,
                         configurer: builder => builder
                             .whenFormulaSatisfied(
-                                `=AND(NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`,
+                                `=AND(
+                                    #COLUMN_CELL <> "",
+                                    #COLUMN_CELL(deadline) <> "",
+                                    #COLUMN_CELL > #COLUMN_CELL(deadline)
+                                )`,
                             )
                             .setBold(true)
                             .setFontColor('#f00'),

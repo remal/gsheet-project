@@ -1,44 +1,49 @@
 class GSheetProjectSettings {
 
-    static titleRow: number = 1
-    static firstDataRow: number = 2
+    static titleRow: Row = 1
+    static firstDataRow: Row = this.titleRow + 1
 
     static lockColumns: boolean = false
     static lockRows: boolean = false
     static updateConditionalFormatRules: boolean = true
     static reorderHierarchyAutomatically: boolean = false
+    static skipHiddenIssues: boolean = true
     //static restoreUndoneEnd: boolean = false
 
-    static issuesRangeName: string = 'Issues'
-    static childIssuesRangeName: string = 'ChildIssues'
-    static teamsRangeName: string = "Teams"
+    static issuesRangeName: RangeName = 'Issues'
+    static childIssuesRangeName: RangeName = 'ChildIssues'
+    static teamsRangeName: RangeName = "Teams"
 
-    static settingsTeamsTableRangeName: string = 'TeamsTable'
-    static settingsTeamsTableTeamRangeName: string = 'TeamsTableTeam'
-    static settingsTeamsTableResourcesRangeName: string = 'TeamsTableResources'
+    static settingsTeamsTableRangeName: RangeName = 'TeamsTable'
+    static settingsTeamsTableTeamRangeName: RangeName = 'TeamsTableTeam'
+    static settingsTeamsTableResourcesRangeName: RangeName = 'TeamsTableResources'
 
 
     static issueTrackers: IssueTracker[] = []
+    static issuesLoadTimeoutMillis: number = 5 * 60 * 1000
+    static booleanIssuesMetrics: Record<ColumnName, IssuesMetric<boolean>> = {}
+    static counterIssuesMetrics: Record<ColumnName, IssuesCounterMetric> = {}
 
 
-    static sheetName: string = "Projects"
-    static iconColumnName: string = "icon"
-    //static doneColumnName: string = "Done"
-    static milestoneColumnName: string = "Milestone"
-    static typeColumnName: string = "Type"
-    static issueColumnName: string = "Issue"
-    static childIssueColumnName: string = "Child\nIssue"
-    static titleColumnName: string = "Title"
-    static teamColumnName: string = "Team"
-    static estimateColumnName: string = "Estimate\n(days)"
-    static deadlineColumnName: string = "Deadline"
-    static startColumnName: string = "Start"
-    static endColumnName: string = "End"
-    //static issueHashColumnName: string = "Issue Hash"
+    static sheetName: SheetName = "Projects"
+    static iconColumnName: ColumnName = "icon"
+    //static doneColumnName: ColumnName = "Done"
+    static milestoneColumnName: ColumnName = "Milestone"
+    static typeColumnName: ColumnName = "Type"
+    static issueColumnName: ColumnName = "Issue"
+    static childIssueColumnName: ColumnName = "Child\nIssue"
+    static lastDataReloadColumnName: ColumnName = "Last\nReload"
+    static titleColumnName: ColumnName = "Title"
+    static teamColumnName: ColumnName = "Team"
+    static estimateColumnName: ColumnName = "Estimate\n(days)"
+    static deadlineColumnName: ColumnName = "Deadline"
+    static startColumnName: ColumnName = "Start"
+    static endColumnName: ColumnName = "End"
+    //static issueHashColumnName: ColumnName = "Issue Hash"
 
-    static settingsSheetName: string = "Settings"
-    static settingsScheduleStartRangeName: string = 'ScheduleStart'
-    static settingsScheduleBufferRangeName: string = 'ScheduleBuffer'
+    static settingsSheetName: SheetName = "Settings"
+    static settingsScheduleStartRangeName: RangeName = 'ScheduleStart'
+    static settingsScheduleBufferRangeName: RangeName = 'ScheduleBuffer'
 
     static indent: number = 4
 
@@ -46,9 +51,14 @@ class GSheetProjectSettings {
     static computeStringSettingsHash(): string {
         const hashableValues: Record<string, any> = {}
         for (const [key, value] of Object.entries(GSheetProjectSettings)) {
-            if (Utils.isString(value)) {
-                hashableValues[key] = value
+            if (value == null
+                || typeof value === 'function'
+                || typeof value === 'object'
+            ) {
+                continue
             }
+
+            hashableValues[key] = value
         }
 
         const json = JSON.stringify(hashableValues)

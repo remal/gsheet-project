@@ -67,7 +67,7 @@ class IssueHierarchyFormatter {
         const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct())
 
         Utils.trimArrayEndBy(issues, it => !it?.length)
-        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length)
+        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length - 1)
         childIssues.length = issues.length
 
         if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
@@ -206,7 +206,7 @@ class IssueHierarchyFormatter {
         }
 
         Utils.trimArrayEndBy(issues, it => !it?.length)
-        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length)
+        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length - 1)
         childIssues.length = issues.length
         milestones.length = issues.length
         types.length = issues.length
@@ -221,7 +221,7 @@ class IssueHierarchyFormatter {
             milestoneFormulas: milestonesColumn,
             typeFormulas: typesColumn,
             deadlineFormulas: deadlinesColumn,
-        }, GSheetProjectSettings.firstDataRow, GSheetProjectSettings.firstDataRow + issues.length)
+        }, GSheetProjectSettings.firstDataRow)
 
         milestoneFormulas.length = issues.length
         typeFormulas.length = issues.length
@@ -261,7 +261,9 @@ class IssueHierarchyFormatter {
                     const numberFormat = indent > 0
                         ? ' '.repeat(indent) + '@'
                         : '@'
-                    sheet.getRangeList(notations).setNumberFormat(numberFormat)
+                    sheet.getRangeList(notations)
+                        .setNumberFormat(numberFormat)
+                        .setFontLine('none')
                 }
                 setIndent(getIndexesWithoutChild(), 0)
                 setIndent(getIndexesWithChild(), GSheetProjectSettings.indent)
@@ -274,7 +276,7 @@ class IssueHierarchyFormatter {
                     const firstIndexWithoutChild = indexesWithoutChild[0]
                     const firstRowWithoutChild = GSheetProjectSettings.firstDataRow + firstIndexWithoutChild
 
-                    const getIssueFormula = (column: number): string =>
+                    const getIssueFormula = (column: Column): string =>
                         RangeUtils.getAbsoluteReferenceFormula(sheet.getRange(firstRowWithoutChild, column))
 
                     const firstIndexWithChild = indexesWithChild[0]

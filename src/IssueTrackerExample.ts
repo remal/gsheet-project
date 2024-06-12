@@ -1,75 +1,104 @@
 class IssueTrackerExample extends IssueTracker {
 
-    supportIssue(issueId: IssueId): boolean {
-        return issueId.match(/^example\/\S+$/) != null
+    issueIdToIssueKey(issueId: IssueId): IssueKey | null | undefined {
+        return `example/${issueId}`
     }
 
-    canonizeIssueId(issueId: IssueId): IssueId {
-        return issueId
+    extractIssueId(issueKey: IssueKey): IssueId | null | undefined {
+        return Utils.extractRegex(issueKey, /^example\/([\d.-]+)$/, 1)
     }
 
-    getIssueLink(issueId: IssueId): string | null | undefined {
-        const searchQuery = issueId.match(/^example\/search\/(.*)$/)
-        if (searchQuery != null) {
-            return `https://example.com/search/?query=${encodeURIComponent(searchQuery[1])}`
-        }
-
+    getUrlForIssueId(issueId: IssueId): string | null | undefined {
         return `https://example.com/issues/${encodeURIComponent(issueId)}`
     }
 
-    getIssuesLink(issueIds: IssueId[]): string | null | undefined {
-        return `https://example.com/search?query=id:(${encodeURIComponent(issueIds.join('|'))})`
+    getUrlForIssueIds(issueIds: IssueId[]): string | null | undefined {
+        if (!issueIds?.length) {
+            return null
+        }
+
+        return `https://example.com/search?q=id:(${encodeURIComponent(issueIds.join('|'))})`
     }
 
-    loadIssues(issueIds: IssueId[]): Record<IssueId, Issue | null | undefined> {
-        const result: Record<IssueId, Issue | null | undefined> = {}
-        issueIds
-            .filter(id => id?.length)
-            .filter(Utils.distinct())
-            .forEach(id => result[id] = new IssueExample(id))
-        return result
+    loadIssues(issueIds: IssueId[]): Issue[] {
+        if (!issueIds?.length) {
+            return []
+        }
+
+        return issueIds.map(id => new IssueExample(this, id))
     }
 
     loadChildren(issueIds: IssueId[]): Issue[] {
-        return issueIds
-            .filter(id => id?.length)
-            .filter(Utils.distinct())
-            .flatMap(id => {
-                const children: Issue[] = []
-                const childrenCount = Math.abs(Utils.hashCode(id)) % 3
-                for (let child = 1; child <= childrenCount; ++child) {
-                    children.push(new IssueExample(`${id}-${child}`))
-                }
-                return children
-            })
+        if (!issueIds?.length) {
+            return []
+        }
+
+        return issueIds.flatMap(id => {
+            let hash = parseInt(id)
+            if (isNaN(hash)) {
+                hash = Math.abs(Utils.hashCode(id))
+            }
+            return Array.from(Utils.range(0, hash % 3)).map(index =>
+                new IssueExample(this, `${id}-${index + 1}`),
+            )
+        })
     }
 
     loadBlockers(issueIds: IssueId[]): Issue[] {
-        return []
+        if (!issueIds?.length) {
+            return []
+        }
+
+        return issueIds.flatMap(id => {
+            let hash = parseInt(id)
+            if (isNaN(hash)) {
+                hash = Math.abs(Utils.hashCode(id))
+            }
+            return Array.from(Utils.range(0, hash % 2)).map(index =>
+                new IssueExample(this, `${id}-blocker-${index + 1}`),
+            )
+        })
     }
 
-    search(query: string): Issue[] {
-        const children: Issue[] = []
-        const queryHash = Math.abs(Utils.hashCode(query))
-        const childrenCount = queryHash % 3
-        for (let child = 1; child <= childrenCount; ++child) {
-            children.push(new IssueExample(`${queryHash}-${child}`))
+
+    extractSearchQuery(issueKey: IssueKey): IssueSearchQuery | null | undefined {
+        return Utils.extractRegex(issueKey, /^example\/search\/(.+)$/, 1)
+    }
+
+    searchQueryToIssueKey(query: IssueSearchQuery): IssueKey | null | undefined {
+        return `example/search/${query}`
+    }
+
+    getUrlForSearchQuery(query: IssueSearchQuery): string | null | undefined {
+        return `https://example.com/search?q=${encodeURIComponent(query)}`
+    }
+
+    search(query: IssueSearchQuery): Issue[] {
+        if (!query?.length) {
+            return []
         }
-        return children
+
+        const hash = Math.abs(Utils.hashCode(query))
+        return Array.from(Utils.range(0, hash % 3)).map(index =>
+            new IssueExample(this, `search-${hash}-${index + 1}`),
+        )
     }
 
 }
 
+GSheetProjectSettings.issueTrackers.push(new IssueTrackerExample())
+
+
 class IssueExample extends Issue {
 
-    private readonly _id: IssueId
+    private readonly _id: IssueKey
 
-    constructor(id: IssueId) {
-        super()
+    constructor(issueTracker: IssueTracker, id: IssueKey) {
+        super(issueTracker)
         this._id = id
     }
 
-    get id(): IssueId {
+    get id(): IssueKey {
         return this._id
     }
 
@@ -77,8 +106,16 @@ class IssueExample extends Issue {
         return `Issue '${this.id}'`
     }
 
+    get type(): string {
+        return 'task'
+    }
+
     get status(): IssueExampleStatus {
-        return Utils.hashCode(this.id) % 2 === 0
+        let hash = parseInt(this.id)
+        if (isNaN(hash)) {
+            hash = Math.abs(Utils.hashCode(this.id))
+        }
+        return hash % 3 !== 0
             ? 'open'
             : 'closed';
     }
@@ -87,8 +124,14 @@ class IssueExample extends Issue {
         return this.status === 'open'
     }
 
+    get assignee(): string {
+        let hash = parseInt(this.id)
+        if (isNaN(hash)) {
+            hash = Math.abs(Utils.hashCode(this.id))
+        }
+        return hash.toString()
+    }
+
 }
 
 type IssueExampleStatus = 'open' | 'closed'
-
-GSheetProjectSettings.issueTrackers.push(new IssueTrackerExample())

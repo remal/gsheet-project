@@ -1,7 +1,11 @@
 abstract class AbstractIssueLogic {
 
     protected static _processRange(range: Range): Range | null {
-        if (![GSheetProjectSettings.issueColumnName, GSheetProjectSettings.titleColumnName].some(columnName =>
+        if (![
+            GSheetProjectSettings.issueColumnName,
+            GSheetProjectSettings.childIssueColumnName,
+            GSheetProjectSettings.titleColumnName,
+        ].some(columnName =>
             RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName),
         )) {
             return null
@@ -18,29 +22,64 @@ abstract class AbstractIssueLogic {
         return range
     }
 
-    protected static _getIssueValues(range: Range): { issues: string[], childIssues: string[] } {
+    protected static _getIssueValues(range: Range): IssueColumnValues {
         const sheet = range.getSheet()
         const startRow = range.getRow()
         const endRow = startRow + range.getNumRows() - 1
-        return SheetUtils.getColumnsStringValues(sheet, {
+        const result = SheetUtils.getColumnsStringValues(sheet, {
             issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
             childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
         }, startRow, endRow)
+
+        Utils.trimArrayEndBy(result.issues, it => !it?.length)
+        result.childIssues.length = result.issues.length
+
+        return result
     }
 
-    protected static _getValues(range: Range, column: number): any[] {
+    protected static _getIssueValuesWithLastReloadDate(range: Range): IssueColumnValuesWithLastDataReload {
+        const sheet = range.getSheet()
+        const startRow = range.getRow()
+        const endRow = startRow + range.getNumRows() - 1
+        const result = SheetUtils.getColumnsValues(sheet, {
+            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
+            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
+            lastDataReload: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName),
+        }, startRow, endRow)
+
+        Utils.trimArrayEndBy(result.issues, it => !it?.toString()?.length)
+        result.childIssues.length = result.issues.length
+        result.lastDataReload.length = result.issues.length
+
+        return {
+            issues: result.issues.map(it => it?.toString()),
+            childIssues: result.childIssues.map(it => it?.toString()),
+            lastDataReload: result.lastDataReload.map(it => Utils.parseDate(it)),
+        }
+    }
+
+    protected static _getValues(range: Range, column: Column): any[] {
         return RangeUtils.toColumnRange(range, column)!.getValues()
             .map(it => it[0])
     }
 
-    protected static _getStringValues(range: Range, column: number): string[] {
+    protected static _getStringValues(range: Range, column: Column): string[] {
         return this._getValues(range, column).map(it => it.toString())
     }
 
-    protected static _getFormulas(range: Range, column: number): string[] {
+    protected static _getFormulas(range: Range, column: Column): Formula[] {
         return RangeUtils.toColumnRange(range, column)!.getFormulas()
             .map(it => it[0])
     }
 
 
+}
+
+interface IssueColumnValues {
+    issues: string[]
+    childIssues: string[]
+}
+
+interface IssueColumnValuesWithLastDataReload extends IssueColumnValues {
+    lastDataReload: (Date | null)[]
 }

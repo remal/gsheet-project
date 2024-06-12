@@ -1,6 +1,6 @@
 abstract class SheetLayout {
 
-    protected abstract get sheetName(): string
+    protected abstract get sheetName(): SheetName
 
     protected abstract get columns(): ReadonlyArray<ColumnInfo>
 
@@ -51,9 +51,9 @@ abstract class SheetLayout {
 
         ProtectionLocks.lockAllColumns(sheet)
 
-        const columnByKey = new Map<string, { columnNumber: number, info: ColumnInfo }>()
+        const columnByKey = new Map<string, { columnNumber: Column, info: ColumnInfo }>()
 
-        let lastColumn = sheet.getLastColumn()
+        let lastColumn = SheetUtils.getLastColumn(sheet)
         const maxRows = sheet.getMaxRows()
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]
@@ -73,6 +73,7 @@ abstract class SheetLayout {
             ++lastColumn
             const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
                 .setValue(info.name)
+            ExecutionCache.resetCache()
 
             if (info.key?.length) {
                 const columnNumber = lastColumn
@@ -108,6 +109,7 @@ abstract class SheetLayout {
 
             existingNormalizedNames.push(columnName)
         }
+        SheetUtils.setLastColumn(sheet, lastColumn)
 
         const existingFormulas = new Lazy(() =>
             sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn).getFormulas()[0],
@@ -216,9 +218,9 @@ type LayoutOrderedConditionalFormatRule = Omit<OrderedConditionalFormatRule, 'sc
 
 interface ColumnInfo {
     key?: string
-    name: string
+    name: ColumnName
     arrayFormula?: string
-    rangeName?: string
+    rangeName?: RangeName
     dataValidation?: () => (DataValidation | null)
     conditionalFormats?: LayoutOrderedConditionalFormatRule[]
     defaultFontSize?: number

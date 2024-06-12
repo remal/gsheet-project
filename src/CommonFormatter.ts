@@ -10,7 +10,7 @@ class CommonFormatter {
             })
     }
 
-    static setMiddleVerticalAlign(sheet: Sheet | string) {
+    static setMiddleVerticalAlign(sheet: Sheet | SheetName) {
         if (Utils.isString(sheet)) {
             sheet = SheetUtils.getSheetByName(sheet)
         }
@@ -19,7 +19,7 @@ class CommonFormatter {
             .setVerticalAlignment('middle')
     }
 
-    static setClipWrapStrategy(sheet: Sheet | string) {
+    static setClipWrapStrategy(sheet: Sheet | SheetName) {
         if (Utils.isString(sheet)) {
             sheet = SheetUtils.getSheetByName(sheet)
         }
@@ -28,7 +28,7 @@ class CommonFormatter {
             .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
     }
 
-    static highlightCellsWithFormula(sheet: Sheet | string) {
+    static highlightCellsWithFormula(sheet: Sheet | SheetName) {
         if (Utils.isString(sheet)) {
             sheet = SheetUtils.getSheetByName(sheet)
         }

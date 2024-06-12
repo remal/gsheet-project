@@ -39,6 +39,25 @@ class Utils {
         return string.replaceAll(/"/g, '""')
     }
 
+    static mapRecordValues<V, VR>(
+        record: Record<string, V>,
+        transformer: (value: V, key: string) => VR,
+    ): Record<string, VR> {
+        const result = {} as Record<string, VR>
+        Object.entries(record).forEach(([key, value]) => {
+            result[key] = transformer(value as V, key)
+        })
+        return result
+    }
+
+    static mapToRecord<V>(keys: string[], transformer: (value: string) => V): Record<string, V> {
+        const result = {} as Record<string, V>
+        keys.forEach(key => {
+            result[key] = transformer(key)
+        })
+        return result
+    }
+
     /**
      * See https://stackoverflow.com/a/44134328/3740528
      */
@@ -105,6 +124,16 @@ class Utils {
         }
     }
 
+    static arrayRemoveIf<T>(array: T[], predicate: (element: T) => boolean) {
+        for (let index = 0; index <= array.length; ++index) {
+            const element = array[index]
+            if (predicate(element)) {
+                array.splice(index, 1)
+                --index
+            }
+        }
+    }
+
     static moveArrayElements(array: any[], fromIndex: number, count: number, targetIndex: number) {
         if (fromIndex === targetIndex || count <= 0) {
             return
@@ -118,13 +147,37 @@ class Utils {
         array.splice(targetIndex, 0, ...moved)
     }
 
+    static parseDate(value: any): Date | null {
+        if (value == null) {
+            return null
+        } else if (this.isNumber(value)) {
+            return new Date(value)
+        } else if (Utils.isString(value)) {
+            try {
+                return new Date(Number.isNaN(value) ? value : parseFloat(value))
+            } catch (_) {
+                return null
+            }
+        } else if (this.isFunction(value.getTime)) {
+            return this.parseDate(value.getTime())
+        } else {
+            return null
+        }
+    }
+
+    static parseDateOrThrow(value: any): Date {
+        return this.parseDate(value) ?? (() => {
+            throw new Error(`Not a date: "${value}"`)
+        })()
+    }
+
     static hashCode(value: string | null | undefined): number {
         if (!value?.length) {
             return 0
         }
 
         let hash: number = 0
-        for (let i = 0; i < this.length; i++) {
+        for (let i = 0; i < value.length; ++i) {
             const chr = value.charCodeAt(i)
             hash = ((hash << 5) - hash) + chr
             hash |= 0
@@ -148,12 +201,38 @@ class Utils {
                 const currentValue = result[key]
                 if (this.isRecord(value) && this.isRecord(currentValue)) {
                     result[key] = this.merge(currentValue, value)
+                    continue
                 }
 
                 result[key] = value
             }
         }
         return result as any as T
+    }
+
+    static mergeInto<T extends Record<string, any>, P extends Partial<T>>(result: T, ...objects: P[]): T {
+        for (const object of objects) {
+            if (object == null) {
+                continue
+            }
+
+            for (const key of Object.keys(object)) {
+                const value = object[key] as any
+                if (value === undefined) {
+                    continue
+                }
+
+                const currentValue = result[key]
+                if (this.isRecord(value) && this.isRecord(currentValue)) {
+                    this.mergeInto(currentValue, value)
+                    continue
+                }
+
+                (result as any)[key] = value
+            }
+        }
+
+        return result
     }
 
     static arrayEquals<T>(array1: T[] | null | undefined, array2: T[] | null | undefined): boolean {
@@ -178,8 +257,8 @@ class Utils {
         return true
     }
 
-    static arrayOf<T>(length: number, initValue?: T): T[] {
-        const array = new Array<T>(length)
+    static arrayOf<T>(length?: number, initValue?: T): T[] {
+        const array = new Array<T>(length ?? 0)
         if (initValue !== undefined) {
             array.fill(initValue)
         }
@@ -217,6 +296,10 @@ class Utils {
 
     static isNumber(value: unknown): value is number {
         return typeof value === 'number'
+    }
+
+    static isBoolean(value: unknown): value is boolean {
+        return typeof value === 'boolean'
     }
 
     static isFunction(value: unknown): value is Function {

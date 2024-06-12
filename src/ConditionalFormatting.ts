@@ -49,7 +49,7 @@ class ConditionalFormatting {
         sheet.setConditionalFormatRules(rules)
     }
 
-    static removeConditionalFormatRulesByScope(sheet: Sheet | string, scopeToRemove: string) {
+    static removeConditionalFormatRulesByScope(sheet: Sheet | SheetName, scopeToRemove: string) {
         if (Utils.isString(sheet)) {
             sheet = SheetUtils.getSheetByName(sheet)
         }

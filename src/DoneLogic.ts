@@ -15,7 +15,7 @@ class DoneLogic extends AbstractIssueLogic {
 
         const {issues, childIssues} = this._getIssueValues(range)
 
-        const hasIssue = (row: number): boolean => {
+        const hasIssue = (row: Row): boolean => {
             const index = row - startRow
             return !!issues[index]?.length || !!childIssues[index]?.length
         }
@@ -58,19 +58,10 @@ class DoneLogic extends AbstractIssueLogic {
             const rowRange = sheet.getRange(`${row}:${row}`)
 
             if (doneValue === 'true') {
-                const endValue = endValues[index]
-                let endDate: Date
-                if (Utils.isString(endValue)) {
-                    endDate = new Date(Number.isNaN(endValue) ? endValue : parseFloat(endValue))
-                } else if (Utils.isNumber(endValue)) {
-                    endDate = new Date(endValue)
-                } else {
-                    try {
-                        endDate = new Date(endValue.toString())
-                    } catch (e) {
-                        console.warn(`Can't get date from ${endRange.getA1Notation()}`)
-                        continue
-                    }
+                const endDate = Utils.parseDate(endValues[index])
+                if (endDate == null) {
+                    console.warn(`Can't get date from ${endRange.getA1Notation()}`)
+                    continue
                 }
 
                 if (GSheetProjectSettings.restoreUndoneEnd) {

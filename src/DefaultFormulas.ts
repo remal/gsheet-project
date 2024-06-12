@@ -14,14 +14,9 @@ class DefaultFormulas extends AbstractIssueLogic {
 
         const {issues, childIssues} = this._getIssueValues(range)
 
-        Utils.trimArrayEndBy(issues, it => !it?.length)
-        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length)
-        range = RangeUtils.withMaxRow(range, GSheetProjectSettings.firstDataRow + issues.length)
-        childIssues.length = issues.length
-
         const addFormulas = (
-            column: number,
-            formulaGenerator: (row: number) => string,
+            column: Column,
+            formulaGenerator: (row: Row) => string,
         ) => Utils.timed(
             [
                 DefaultFormulas.name,
@@ -189,7 +184,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ${estimateA1Notation} = ""
                     ),
                     "",
-                    WORKDAY(${startA1Notation}, ${estimateA1Notation} * (1 + ${bufferRangeName}))
+                    WORKDAY(${startA1Notation}, ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})))
                 )
             `
         })

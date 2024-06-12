@@ -1,12 +1,12 @@
 class SheetUtils {
 
-    static findSheetByName(sheetName: string): Sheet | undefined {
+    static findSheetByName(sheetName: SheetName): Sheet | undefined {
         if (!sheetName?.length) {
             return undefined
         }
 
         const sheets = ExecutionCache.getOrCompute('sheets-by-name', () => {
-            const result = new Map<string, Sheet>()
+            const result = new Map<SheetName, Sheet>()
             for (const sheet of SpreadsheetApp.getActiveSpreadsheet().getSheets()) {
                 const name = Utils.normalizeName(sheet.getSheetName())
                 result.set(name, sheet)
@@ -24,7 +24,7 @@ class SheetUtils {
         })()
     }
 
-    static isGridSheet(sheet: Sheet | string | null | undefined): boolean {
+    static isGridSheet(sheet: Sheet | SheetName | null | undefined): boolean {
         if (Utils.isString(sheet)) {
             sheet = this.findSheetByName(sheet)
         }
@@ -35,22 +35,38 @@ class SheetUtils {
         return sheet.getType() === SpreadsheetApp.SheetType.GRID
     }
 
-    static getLastRow(sheet: Sheet | string): number {
+    static getLastRow(sheet: Sheet | SheetName): Row {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
         }
 
-        return ExecutionCache.getOrCompute(['last-row', sheet], () => sheet.getLastRow())
+        return ExecutionCache.getOrCompute(['last-row', sheet], () =>
+            Math.max(sheet.getLastRow(), 1),
+        )
     }
 
-    static setLastRow(sheet: Sheet | string, lastRow: number) {
-        ExecutionCache.put(['last-row', sheet], lastRow)
+    static setLastRow(sheet: Sheet | SheetName, lastRow: Row) {
+        ExecutionCache.put(['last-row', sheet], Math.max(lastRow, 1))
+    }
+
+    static getLastColumn(sheet: Sheet | SheetName): Column {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
+        return ExecutionCache.getOrCompute(['last-column', sheet], () =>
+            Math.max(sheet.getLastColumn(), 1),
+        )
+    }
+
+    static setLastColumn(sheet: Sheet | SheetName, lastColumn: Column) {
+        ExecutionCache.put(['last-column', sheet], lastColumn)
     }
 
     static findColumnByName(
-        sheet: Sheet | string | null | undefined,
-        columnName: string | null | undefined,
-    ): number | undefined {
+        sheet: Sheet | SheetName | null | undefined,
+        columnName: ColumnName | null | undefined,
+    ): Column | undefined {
         if (!columnName?.length) {
             return undefined
         }
@@ -65,8 +81,8 @@ class SheetUtils {
         ProtectionLocks.lockAllColumns(sheet)
 
         const columns = ExecutionCache.getOrCompute(['columns-by-name', sheet], () => {
-            const result = new Map<string, number>()
-            for (const col of Utils.range(GSheetProjectSettings.titleRow, sheet.getLastColumn())) {
+            const result = new Map<ColumnName, Column>()
+            for (const col of Utils.range(GSheetProjectSettings.titleRow, this.getLastColumn(sheet))) {
                 const name = Utils.normalizeName(sheet.getRange(1, col).getValue())
                 result.set(name, col)
             }
@@ -77,7 +93,7 @@ class SheetUtils {
         return columns.get(columnName)
     }
 
-    static getColumnByName(sheet: Sheet | string, columnName: string): number {
+    static getColumnByName(sheet: Sheet | SheetName, columnName: ColumnName): Column {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
         }
@@ -87,7 +103,7 @@ class SheetUtils {
         })()
     }
 
-    static getColumnRange(sheet: Sheet | string, column: string | number, minRow?: number): Range {
+    static getColumnRange(sheet: Sheet | SheetName, column: ColumnName | Column, minRow?: Row): Range {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
         }
@@ -108,9 +124,9 @@ class SheetUtils {
     }
 
     static getColumnsValues<
-        C extends Record<string, string | number>,
+        C extends Record<string, ColumnName | Column>,
         R extends Record<keyof C, any[]>
-    >(sheet: Sheet | string, columns: C, minRow?: number, maxRow?: number): R {
+    >(sheet: Sheet | SheetName, columns: C, minRow?: Row, maxRow?: Row): R {
         function getValues(range: Range): any[][] {
             return range.getValues()
         }
@@ -119,9 +135,9 @@ class SheetUtils {
     }
 
     static getColumnsStringValues<
-        C extends Record<string, string | number>,
+        C extends Record<string, ColumnName | Column>,
         R extends Record<keyof C, string[]>
-    >(sheet: Sheet | string, columns: C, minRow?: number, maxRow?: number): R {
+    >(sheet: Sheet | SheetName, columns: C, minRow?: Row, maxRow?: Row): R {
         function getValues(range: Range): any[][] {
             return range.getValues()
         }
@@ -134,10 +150,10 @@ class SheetUtils {
     }
 
     static getColumnsFormulas<
-        C extends Record<string, string | number>,
-        R extends Record<keyof C, string[]>
-    >(sheet: Sheet | string, columns: C, minRow?: number, maxRow?: number): R {
-        function getFormulas(range: Range): string[][] {
+        C extends Record<string, ColumnName | Column>,
+        R extends Record<keyof C, Formula[]>
+    >(sheet: Sheet | SheetName, columns: C, minRow?: Row, maxRow?: Row): R {
+        function getFormulas(range: Range): Formula[][] {
             return range.getFormulas()
         }
 
@@ -145,15 +161,15 @@ class SheetUtils {
     }
 
     private static _getColumnsProps<
-        C extends Record<string, string | number>,
+        C extends Record<string, ColumnName | Column>,
         V extends any,
         R extends Record<keyof C, V[]>
     >(
-        sheet: Sheet | string,
+        sheet: Sheet | SheetName,
         columns: C,
         getter: (range: Range) => V[][],
-        minRow: number | undefined,
-        maxRow: number | undefined,
+        minRow: Row | undefined,
+        maxRow: Row | undefined,
     ): R {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
@@ -175,12 +191,12 @@ class SheetUtils {
                     ? this.getColumnByName(sheet, value)
                     : value
                 return rec
-            }, {} as Record<string, number>)
+            }, {} as Record<string, Column>)
         const numbers = Object.values(columnToNumber).filter(Utils.distinct()).toSorted(Utils.numericAsc())
 
         const result = {} as R
         Object.keys(columns).forEach(key => (result as {})[key] = [])
-        if (minRow >= maxRow) {
+        if (minRow > maxRow) {
             return result
         }
 
@@ -228,7 +244,7 @@ class SheetUtils {
         return result
     }
 
-    static getRowRange(sheet: Sheet | string, row: number, minColumn?: number | string): Range {
+    static getRowRange(sheet: Sheet | SheetName, row: Row, minColumn?: ColumnName | Column): Range {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
         }
@@ -240,7 +256,7 @@ class SheetUtils {
             minColumn = 1
         }
 
-        const lastColumn = sheet.getLastColumn()
+        const lastColumn = this.getLastColumn(sheet)
         if (minColumn > lastColumn) {
             return sheet.getRange(row, minColumn)
         }

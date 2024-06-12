@@ -2,7 +2,7 @@ class ProtectionLocks {
 
     private static readonly _allColumnsProtections = new Map<number, Protection>()
     private static readonly _allRowsProtections = new Map<number, Protection>()
-    private static readonly _rowsProtections = new Map<number, Map<number, Protection>>()
+    private static readonly _rowsProtections = new Map<number, Map<Row, Protection>>()
 
     static lockAllColumns(sheet: Sheet) {
         if (!GSheetProjectSettings.lockColumns) {
@@ -42,12 +42,12 @@ class ProtectionLocks {
         })
     }
 
-    static lockRows(sheet: Sheet, rowsToLock: number) {
+    static lockRows(sheet: Sheet, rowToLock: Row) {
         if (!GSheetProjectSettings.lockRows) {
             return
         }
 
-        if (rowsToLock <= 0) {
+        if (rowToLock <= 0) {
             return
         }
 
@@ -62,15 +62,15 @@ class ProtectionLocks {
 
         const rowsProtections = this._rowsProtections.get(sheetId)!
         const maxLockedRow = Array.from(rowsProtections.keys()).reduce((prev, cur) => Math.max(prev, cur), 0)
-        if (maxLockedRow < rowsToLock) {
+        if (maxLockedRow < rowToLock) {
             Utils.timed(
-                `${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowsToLock}`,
+                `${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowToLock}`,
                 () => {
-                    const range = sheet.getRange(1, sheet.getMaxColumns(), rowsToLock, 1)
+                    const range = sheet.getRange(1, sheet.getMaxColumns(), rowToLock, 1)
                     const protection = range.protect()
-                        .setDescription(`lock|rows|${rowsToLock}|${new Date().getTime()}`)
+                        .setDescription(`lock|rows|${rowToLock}|${new Date().getTime()}`)
                         .setWarningOnly(true)
-                    rowsProtections.set(rowsToLock, protection)
+                    rowsProtections.set(rowToLock, protection)
                 },
             )
         }
@@ -110,17 +110,10 @@ class ProtectionLocks {
                         continue
                     }
 
-                    const dateString = description.split('|').slice(-1)[0]
-                    try {
-                        const date = Number.isNaN(dateString)
-                            ? new Date(dateString)
-                            : new Date(parseFloat(dateString))
-                        if (date.getTime() < minTimestamp) {
-                            console.warn(`Removing expired protection lock: ${description}`)
-                            protection.remove()
-                        }
-                    } catch (_) {
-                        // do nothing
+                    const date = Utils.parseDate(description.split('|').slice(-1)[0])
+                    if (date != null && date.getTime() < minTimestamp) {
+                        console.warn(`Removing expired protection lock: ${description}`)
+                        protection.remove()
                     }
                 }
             })

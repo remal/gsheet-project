@@ -1,91 +1,91 @@
-class GSheetProject {
+function refreshSelectedRows() {
+    const range = SpreadsheetApp.getActiveRange()
+    if (range == null) {
+        return
+    }
 
-    static reloadIssues() {
+    const sheet = range.getSheet()
+    if (!SheetUtils.isGridSheet(sheet)) {
+        return
+    }
+
+    EntryPoint.entryPoint(() => {
+        const rowsRange = sheet.getRange(
+            `${range.getRow()}:${range.getRow() + range.getNumRows() - 1}`,
+        )
+
+        onEditGSheetProject({
+            range: rowsRange,
+        })
+    })
+}
+
+function refreshAllRows() {
+    EntryPoint.entryPoint(() => {
+        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+            .filter(sheet => SheetUtils.isGridSheet(sheet))
+            .forEach(sheet => {
+                const rowsRange = sheet.getRange(
+                    `1:${SheetUtils.getLastRow(sheet)}`,
+                )
+
+                onEditGSheetProject({
+                    range: rowsRange,
+                })
+            })
+    })
+}
+
+function onOpenGSheetProject(event?: SheetsOnOpen) {
+    SpreadsheetApp.getUi()
+        .createMenu("GSheetProject")
+        .addItem("Refresh selected rows", refreshSelectedRows.name)
+        .addItem("Refresh all rows", refreshAllRows.name)
+        .addToUi()
+
+    EntryPoint.entryPoint(() => {
+        SheetLayouts.migrateIfNeeded()
+    })
+}
+
+function onChangeGSheetProject(event?: SheetsOnChange) {
+    function onInsert() {
         EntryPoint.entryPoint(() => {
+            CommonFormatter.applyCommonFormatsToAllSheets()
         })
     }
 
-    static migrate() {
+    function onRemove() {
         EntryPoint.entryPoint(() => {
             SheetLayouts.migrate()
         })
     }
 
-    static refreshEverything() {
-        EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateIfNeeded()
 
-            const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName)
-            const range = sheet.getRange(
-                GSheetProjectSettings.firstDataRow,
-                1,
-                Math.max(SheetUtils.getLastRow(sheet) - GSheetProjectSettings.firstDataRow + 1, 1),
-                sheet.getLastColumn(),
-            )
-            this._onEditRange(range)
-        })
+    const changeType = event?.changeType?.toString() ?? ''
+    if (['INSERT_ROW', 'INSERT_COLUMN'].includes(changeType)) {
+        onInsert()
+    } else if (['REMOVE_COLUMN'].includes(changeType)) {
+        onRemove()
+    }
+}
+
+function onEditGSheetProject(event?: Partial<Pick<SheetsOnEdit, 'range'>>) {
+    const range = event?.range
+    if (range == null) {
+        return
     }
 
-    static cleanup() {
-        EntryPoint.entryPoint(() => {
-            ProtectionLocks.releaseExpiredLocks()
-        })
-    }
+    EntryPoint.entryPoint(() => {
+        //Utils.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
+        Utils.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range))
+        Utils.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range))
+        Utils.timed(`Reload issue data`, () => IssueDataDisplay.reloadIssueData(range))
+    })
+}
 
-
-    static onOpen(event?: SheetsOnOpen) {
-        EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateIfNeeded()
-        })
-    }
-
-
-    static onChange(event?: SheetsOnChange) {
-        const changeType = event?.changeType?.toString()
-        if (changeType === 'INSERT_ROW') {
-            this._onInsertRow()
-        } else if (changeType === 'INSERT_COLUMN') {
-            this._onInsertColumn()
-        } else if (changeType === 'REMOVE_COLUMN') {
-            this._onRemoveColumn()
-        }
-    }
-
-    private static _onInsertRow() {
-        EntryPoint.entryPoint(() => {
-            CommonFormatter.applyCommonFormatsToAllSheets()
-        })
-    }
-
-    private static _onInsertColumn() {
-        EntryPoint.entryPoint(() => {
-            CommonFormatter.applyCommonFormatsToAllSheets()
-        })
-    }
-
-    private static _onRemoveColumn() {
-        this.migrate()
-    }
-
-
-    static onEdit(event?: SheetsOnEdit) {
-        this._onEditRange(event?.range)
-    }
-
-    static onFormSubmit(event: SheetsOnFormSubmit) {
-        this._onEditRange(event?.range)
-    }
-
-    private static _onEditRange(range?: Range) {
-        if (range == null) {
-            return
-        }
-
-        EntryPoint.entryPoint(() => {
-            //Utils.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
-            Utils.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range))
-            Utils.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range))
-        })
-    }
-
+function onFormSubmitGSheetProject(event?: SheetsOnFormSubmit) {
+    onEditGSheetProject({
+        range: event?.range,
+    })
 }

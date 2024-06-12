@@ -9,10 +9,12 @@ class SheetLayouts {
 
     static migrateIfNeeded() {
         this.instances.forEach(instance => instance.migrateIfNeeded())
+        CommonFormatter.applyCommonFormatsToAllSheets()
     }
 
     static migrate() {
         this.instances.forEach(instance => instance.migrate())
+        CommonFormatter.applyCommonFormatsToAllSheets()
     }
 
 }

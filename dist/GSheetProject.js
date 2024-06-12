@@ -14,95 +14,105 @@ function SHA256(value) {
         .map(num => (num.length === 1 ? '0' : '') + num)
         .join('');
 }
-class GSheetProject {
-    static reloadIssues() {
+function refreshSelectedRows() {
+    const range = SpreadsheetApp.getActiveRange();
+    if (range == null) {
+        return;
+    }
+    const sheet = range.getSheet();
+    if (!SheetUtils.isGridSheet(sheet)) {
+        return;
+    }
+    EntryPoint.entryPoint(() => {
+        const rowsRange = sheet.getRange(`${range.getRow()}:${range.getRow() + range.getNumRows() - 1}`);
+        onEditGSheetProject({
+            range: rowsRange,
+        });
+    });
+}
+function refreshAllRows() {
+    EntryPoint.entryPoint(() => {
+        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+            .filter(sheet => SheetUtils.isGridSheet(sheet))
+            .forEach(sheet => {
+            const rowsRange = sheet.getRange(`1:${SheetUtils.getLastRow(sheet)}`);
+            onEditGSheetProject({
+                range: rowsRange,
+            });
+        });
+    });
+}
+function onOpenGSheetProject(event) {
+    SpreadsheetApp.getUi()
+        .createMenu("GSheetProject")
+        .addItem("Refresh selected rows", refreshSelectedRows.name)
+        .addItem("Refresh all rows", refreshAllRows.name)
+        .addToUi();
+    EntryPoint.entryPoint(() => {
+        SheetLayouts.migrateIfNeeded();
+    });
+}
+function onChangeGSheetProject(event) {
+    var _a, _b;
+    function onInsert() {
         EntryPoint.entryPoint(() => {
+            CommonFormatter.applyCommonFormatsToAllSheets();
         });
     }
-    static migrate() {
+    function onRemove() {
         EntryPoint.entryPoint(() => {
             SheetLayouts.migrate();
         });
     }
-    static refreshEverything() {
-        EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateIfNeeded();
-            const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
-            const range = sheet.getRange(GSheetProjectSettings.firstDataRow, 1, Math.max(SheetUtils.getLastRow(sheet) - GSheetProjectSettings.firstDataRow + 1, 1), sheet.getLastColumn());
-            this._onEditRange(range);
-        });
+    const changeType = (_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '';
+    if (['INSERT_ROW', 'INSERT_COLUMN'].includes(changeType)) {
+        onInsert();
     }
-    static cleanup() {
-        EntryPoint.entryPoint(() => {
-            ProtectionLocks.releaseExpiredLocks();
-        });
-    }
-    static onOpen(event) {
-        EntryPoint.entryPoint(() => {
-            SheetLayouts.migrateIfNeeded();
-        });
-    }
-    static onChange(event) {
-        var _a;
-        const changeType = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString();
-        if (changeType === 'INSERT_ROW') {
-            this._onInsertRow();
-        }
-        else if (changeType === 'INSERT_COLUMN') {
-            this._onInsertColumn();
-        }
-        else if (changeType === 'REMOVE_COLUMN') {
-            this._onRemoveColumn();
-        }
-    }
-    static _onInsertRow() {
-        EntryPoint.entryPoint(() => {
-            CommonFormatter.applyCommonFormatsToAllSheets();
-        });
-    }
-    static _onInsertColumn() {
-        EntryPoint.entryPoint(() => {
-            CommonFormatter.applyCommonFormatsToAllSheets();
-        });
-    }
-    static _onRemoveColumn() {
-        this.migrate();
-    }
-    static onEdit(event) {
-        this._onEditRange(event === null || event === void 0 ? void 0 : event.range);
-    }
-    static onFormSubmit(event) {
-        this._onEditRange(event === null || event === void 0 ? void 0 : event.range);
-    }
-    static _onEditRange(range) {
-        if (range == null) {
-            return;
-        }
-        EntryPoint.entryPoint(() => {
-            //Utils.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
-            Utils.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range));
-            Utils.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range));
-        });
+    else if (['REMOVE_COLUMN'].includes(changeType)) {
+        onRemove();
     }
 }
+function onEditGSheetProject(event) {
+    const range = event === null || event === void 0 ? void 0 : event.range;
+    if (range == null) {
+        return;
+    }
+    EntryPoint.entryPoint(() => {
+        //Utils.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
+        Utils.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range));
+        Utils.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range));
+        Utils.timed(`Reload issue data`, () => IssueDataDisplay.reloadIssueData(range));
+    });
+}
+function onFormSubmitGSheetProject(event) {
+    onEditGSheetProject({
+        range: event === null || event === void 0 ? void 0 : event.range,
+    });
+}
+var _a;
 class GSheetProjectSettings {
     static computeStringSettingsHash() {
         const hashableValues = {};
-        for (const [key, value] of Object.entries(GSheetProjectSettings)) {
-            if (Utils.isString(value)) {
-                hashableValues[key] = value;
+        for (const [key, value] of Object.entries(_a)) {
+            if (value == null
+                || typeof value === 'function'
+                || typeof value === 'object') {
+                continue;
             }
+            hashableValues[key] = value;
         }
         const json = JSON.stringify(hashableValues);
         return SHA256(json);
     }
 }
+_a = GSheetProjectSettings;
 GSheetProjectSettings.titleRow = 1;
-GSheetProjectSettings.firstDataRow = 2;
+GSheetProjectSettings.firstDataRow = _a.titleRow + 1;
 GSheetProjectSettings.lockColumns = false;
 GSheetProjectSettings.lockRows = false;
 GSheetProjectSettings.updateConditionalFormatRules = true;
 GSheetProjectSettings.reorderHierarchyAutomatically = false;
+GSheetProjectSettings.skipHiddenIssues = true;
 //static restoreUndoneEnd: boolean = false
 GSheetProjectSettings.issuesRangeName = 'Issues';
 GSheetProjectSettings.childIssuesRangeName = 'ChildIssues';
@@ -111,27 +121,35 @@ GSheetProjectSettings.settingsTeamsTableRangeName = 'TeamsTable';
 GSheetProjectSettings.settingsTeamsTableTeamRangeName = 'TeamsTableTeam';
 GSheetProjectSettings.settingsTeamsTableResourcesRangeName = 'TeamsTableResources';
 GSheetProjectSettings.issueTrackers = [];
+GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
+GSheetProjectSettings.booleanIssuesMetrics = {};
+GSheetProjectSettings.counterIssuesMetrics = {};
 GSheetProjectSettings.sheetName = "Projects";
 GSheetProjectSettings.iconColumnName = "icon";
-//static doneColumnName: string = "Done"
+//static doneColumnName: ColumnName = "Done"
 GSheetProjectSettings.milestoneColumnName = "Milestone";
 GSheetProjectSettings.typeColumnName = "Type";
 GSheetProjectSettings.issueColumnName = "Issue";
 GSheetProjectSettings.childIssueColumnName = "Child\nIssue";
+GSheetProjectSettings.lastDataReloadColumnName = "Last\nReload";
 GSheetProjectSettings.titleColumnName = "Title";
 GSheetProjectSettings.teamColumnName = "Team";
 GSheetProjectSettings.estimateColumnName = "Estimate\n(days)";
 GSheetProjectSettings.deadlineColumnName = "Deadline";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
-//static issueHashColumnName: string = "Issue Hash"
+//static issueHashColumnName: ColumnName = "Issue Hash"
 GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.settingsScheduleStartRangeName = 'ScheduleStart';
 GSheetProjectSettings.settingsScheduleBufferRangeName = 'ScheduleBuffer';
 GSheetProjectSettings.indent = 4;
 class AbstractIssueLogic {
     static _processRange(range) {
-        if (![GSheetProjectSettings.issueColumnName, GSheetProjectSettings.titleColumnName].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
+        if (![
+            GSheetProjectSettings.issueColumnName,
+            GSheetProjectSettings.childIssueColumnName,
+            GSheetProjectSettings.titleColumnName,
+        ].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
             return null;
         }
         const sheet = range.getSheet();
@@ -147,10 +165,31 @@ class AbstractIssueLogic {
         const sheet = range.getSheet();
         const startRow = range.getRow();
         const endRow = startRow + range.getNumRows() - 1;
-        return SheetUtils.getColumnsStringValues(sheet, {
+        const result = SheetUtils.getColumnsStringValues(sheet, {
             issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
             childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
         }, startRow, endRow);
+        Utils.trimArrayEndBy(result.issues, it => !(it === null || it === void 0 ? void 0 : it.length));
+        result.childIssues.length = result.issues.length;
+        return result;
+    }
+    static _getIssueValuesWithLastReloadDate(range) {
+        const sheet = range.getSheet();
+        const startRow = range.getRow();
+        const endRow = startRow + range.getNumRows() - 1;
+        const result = SheetUtils.getColumnsValues(sheet, {
+            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
+            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
+            lastDataReload: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName),
+        }, startRow, endRow);
+        Utils.trimArrayEndBy(result.issues, it => { var _a; return !((_a = it === null || it === void 0 ? void 0 : it.toString()) === null || _a === void 0 ? void 0 : _a.length); });
+        result.childIssues.length = result.issues.length;
+        result.lastDataReload.length = result.issues.length;
+        return {
+            issues: result.issues.map(it => it === null || it === void 0 ? void 0 : it.toString()),
+            childIssues: result.childIssues.map(it => it === null || it === void 0 ? void 0 : it.toString()),
+            lastDataReload: result.lastDataReload.map(it => Utils.parseDate(it)),
+        };
     }
     static _getValues(range, column) {
         return RangeUtils.toColumnRange(range, column).getValues()
@@ -311,10 +350,6 @@ class DefaultFormulas extends AbstractIssueLogic {
         const startRow = range.getRow();
         const endRow = startRow + range.getNumRows() - 1;
         const { issues, childIssues } = this._getIssueValues(range);
-        Utils.trimArrayEndBy(issues, it => !(it === null || it === void 0 ? void 0 : it.length));
-        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length);
-        range = RangeUtils.withMaxRow(range, GSheetProjectSettings.firstDataRow + issues.length);
-        childIssues.length = issues.length;
         const addFormulas = (column, formulaGenerator) => Utils.timed([
             DefaultFormulas.name,
             sheet.getSheetName(),
@@ -457,7 +492,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ${estimateA1Notation} = ""
                     ),
                     "",
-                    WORKDAY(${startA1Notation}, ${estimateA1Notation} * (1 + ${bufferRangeName}))
+                    WORKDAY(${startA1Notation}, ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})))
                 )
             `;
         });
@@ -569,7 +604,224 @@ class ExecutionCache {
 ExecutionCache._data = new Map();
 class Images {
 }
-Images.loadingImageUrl = 'https://raw.githubusercontent.com/remal/misc/main/spinner.gif';
+Images.loadingImageUrl = 'https://raw.githubusercontent.com/remal/misc/main/spinner-100.gif';
+class IssueDataDisplay extends AbstractIssueLogic {
+    static reloadIssueData(range) {
+        var _a, _b;
+        const processedRange = this._processRange(range);
+        if (processedRange == null) {
+            return;
+        }
+        else {
+            range = processedRange;
+        }
+        const sheet = range.getSheet();
+        const iconColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.iconColumnName);
+        const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName);
+        const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName);
+        const lastDataReloadColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName);
+        const titleColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName);
+        const { issues, childIssues, lastDataReload } = this._getIssueValuesWithLastReloadDate(range);
+        const indexes = Array.from(Utils.range(0, issues.length - 1))
+            .toSorted((i1, i2) => {
+            const d1 = lastDataReload[i1];
+            const d2 = lastDataReload[i2];
+            if (d1 == null && d2 == null) {
+                return 0;
+            }
+            else if (d1 != null && d2 != null) {
+                return d1.getTime() - d2.getTime();
+            }
+            else if (d1 != null) {
+                return 1;
+            }
+            else {
+                return -1;
+            }
+        });
+        const start = Date.now();
+        for (const index of indexes) {
+            if (Date.now() - start >= GSheetProjectSettings.issuesLoadTimeoutMillis) {
+                const message = "Issues load timeout occurred";
+                console.warn(message);
+                //SpreadsheetApp.getActiveSpreadsheet().toast(message)
+                break;
+            }
+            const row = range.getRow() + index;
+            const cleanupColumns = () => {
+                const notations = [
+                    [
+                        sheet.getRange(row, titleColumn),
+                        sheet.getRange(row, iconColumn),
+                    ],
+                    Object.keys(GSheetProjectSettings.booleanIssuesMetrics)
+                        .map(columnName => SheetUtils.getColumnByName(sheet, columnName))
+                        .map(column => sheet.getRange(row, column)),
+                    Object.keys(GSheetProjectSettings.counterIssuesMetrics)
+                        .map(columnName => SheetUtils.getColumnByName(sheet, columnName))
+                        .map(column => sheet.getRange(row, column)),
+                ]
+                    .flat()
+                    .map(range => range.getA1Notation());
+                if (notations.length) {
+                    sheet.getRangeList(notations).setValue('');
+                }
+                sheet.getRange(row, lastDataReloadColumn).setValue(new Date());
+                //sheet.getRange(row, iconColumn).setFormula(``)
+            };
+            if (GSheetProjectSettings.skipHiddenIssues && sheet.isRowHiddenByUser(row)) { // a slow check
+                cleanupColumns();
+                continue;
+            }
+            sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`);
+            let currentIssueColumn;
+            let originalIssueKeysText;
+            if ((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length) {
+                currentIssueColumn = childIssueColumn;
+                originalIssueKeysText = childIssues[index];
+            }
+            else if ((_b = issues[index]) === null || _b === void 0 ? void 0 : _b.length) {
+                currentIssueColumn = issueColumn;
+                originalIssueKeysText = issues[index];
+            }
+            else {
+                cleanupColumns();
+                continue;
+            }
+            const allIssueKeys = originalIssueKeysText
+                .split(/[\r\n]+/)
+                .map(key => key.trim())
+                .filter(key => key.length)
+                .filter(Utils.distinct());
+            let issueTracker = null;
+            const issueKeys = Utils.arrayOf();
+            const issueKeyIds = {};
+            const issueKeyQueries = {};
+            for (let issueKey of allIssueKeys) {
+                if (issueTracker != null) {
+                    if (!issueTracker.supportsIssueKey(issueKey)) {
+                        continue;
+                    }
+                }
+                else {
+                    const keyTracker = GSheetProjectSettings.issueTrackers.find(it => it.supportsIssueKey(issueKey));
+                    if (keyTracker != null) {
+                        issueTracker = keyTracker;
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                issueKeys.push(issueKey);
+                const issueId = issueTracker.extractIssueId(issueKey);
+                if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
+                    issueKeyIds[issueKey] = issueId;
+                }
+                const searchQuery = issueTracker.extractSearchQuery(issueKey);
+                if (searchQuery === null || searchQuery === void 0 ? void 0 : searchQuery.length) {
+                    issueKeyQueries[issueKey] = searchQuery;
+                }
+            }
+            if (issueTracker == null) {
+                cleanupColumns();
+                continue;
+            }
+            const allIssueLinks = allIssueKeys.map(issueKey => {
+                if (issueKeys.includes(issueKey)) {
+                    const issueId = issueKeyIds[issueKey];
+                    if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
+                        return {
+                            title: issueTracker.canonizeIssueKey(issueKey),
+                            url: issueTracker.getUrlForIssueId(issueId),
+                        };
+                    }
+                    else {
+                        const searchQuery = issueKeyQueries[issueKey];
+                        if (searchQuery === null || searchQuery === void 0 ? void 0 : searchQuery.length) {
+                            return {
+                                title: issueTracker.canonizeIssueKey(issueKey),
+                                url: issueTracker.getUrlForSearchQuery(searchQuery),
+                            };
+                        }
+                    }
+                }
+                return {
+                    title: issueKey,
+                };
+            });
+            sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks));
+            const loadedIssues = LazyProxy.create(() => Utils.timed([
+                IssueDataDisplay.name,
+                this.reloadIssueData.name,
+                `row #${row}`,
+                `loading issues`,
+            ].join(': '), () => {
+                const issueIds = Object.values(issueKeyIds).filter(Utils.distinct());
+                return issueTracker.loadIssues(issueIds);
+            }));
+            const loadedChildIssues = LazyProxy.create(() => Utils.timed([
+                IssueDataDisplay.name,
+                this.reloadIssueData.name,
+                `row #${row}`,
+                `loading child issues`,
+            ].join(': '), () => {
+                const issueIds = loadedIssues.map(it => it.id);
+                return [
+                    issueTracker.loadChildren(issueIds),
+                    Object.values(issueKeyQueries)
+                        .filter(Utils.distinct())
+                        .flatMap(query => issueTracker.search(query)),
+                ]
+                    .flat()
+                    .filter(Utils.distinctBy(issue => issue.id))
+                    .filter(issue => !issueIds.includes(issue.id));
+            }));
+            const loadedBlockerIssues = LazyProxy.create(() => Utils.timed([
+                IssueDataDisplay.name,
+                this.reloadIssueData.name,
+                `row #${row}`,
+                `loading blocker issues`,
+            ].join(': '), () => {
+                const allIssueIds = [loadedIssues, loadedChildIssues]
+                    .flatMap(it => it.map(it => it.id))
+                    .filter(Utils.distinct());
+                return issueTracker.loadBlockers(allIssueIds)
+                    .filter(issue => !allIssueIds.includes(issue.id));
+            }));
+            const titles = loadedIssues
+                .map(it => it.title)
+                .filter(it => it === null || it === void 0 ? void 0 : it.length);
+            sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
+            for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.booleanIssuesMetrics)) {
+                const column = SheetUtils.getColumnByName(sheet, columnName);
+                const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues);
+                sheet.getRange(row, column).setValue(value ? "Yes" : '');
+            }
+            for (const [columnName, issuesCounterMetric] of Object.entries(GSheetProjectSettings.counterIssuesMetrics)) {
+                const column = SheetUtils.getColumnByName(sheet, columnName);
+                const foundIssues = issuesCounterMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues);
+                if (!foundIssues.length) {
+                    sheet.getRange(row, column).setValue('');
+                    continue;
+                }
+                const foundIssueIds = foundIssues.map(it => it.id)
+                    .filter(Utils.distinct());
+                const link = {
+                    title: foundIssues.length.toString(),
+                    url: issueTracker.getUrlForIssueIds(foundIssueIds),
+                };
+                sheet.getRange(row, column).setRichTextValue(RichTextUtils.createLinkValue(link));
+            }
+            sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '');
+            sheet.getRange(row, iconColumn).setFormula(``);
+        }
+    }
+    static reloadAllIssuesData() {
+        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
+        const range = sheet.getRange(1, 1, SheetUtils.getLastRow(sheet), SheetUtils.getLastColumn(sheet));
+        this.reloadIssueData(range);
+    }
+}
 class IssueHierarchyFormatter {
     static formatHierarchy(range) {
         if (![GSheetProjectSettings.childIssueColumnName].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
@@ -611,7 +863,7 @@ class IssueHierarchyFormatter {
         const notEmptyIssues = issues.filter(it => it === null || it === void 0 ? void 0 : it.length);
         const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct());
         Utils.trimArrayEndBy(issues, it => !(it === null || it === void 0 ? void 0 : it.length));
-        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length);
+        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length - 1);
         childIssues.length = issues.length;
         if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
             return GSheetProjectSettings.firstDataRow + issues.length;
@@ -726,7 +978,7 @@ class IssueHierarchyFormatter {
             return;
         }
         Utils.trimArrayEndBy(issues, it => !(it === null || it === void 0 ? void 0 : it.length));
-        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length);
+        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length - 1);
         childIssues.length = issues.length;
         milestones.length = issues.length;
         types.length = issues.length;
@@ -735,7 +987,7 @@ class IssueHierarchyFormatter {
             milestoneFormulas: milestonesColumn,
             typeFormulas: typesColumn,
             deadlineFormulas: deadlinesColumn,
-        }, GSheetProjectSettings.firstDataRow, GSheetProjectSettings.firstDataRow + issues.length);
+        }, GSheetProjectSettings.firstDataRow);
         milestoneFormulas.length = issues.length;
         typeFormulas.length = issues.length;
         deadlineFormulas.length = issues.length;
@@ -767,7 +1019,9 @@ class IssueHierarchyFormatter {
                     const numberFormat = indent > 0
                         ? ' '.repeat(indent) + '@'
                         : '@';
-                    sheet.getRangeList(notations).setNumberFormat(numberFormat);
+                    sheet.getRangeList(notations)
+                        .setNumberFormat(numberFormat)
+                        .setFontLine('none');
                 };
                 setIndent(getIndexesWithoutChild(), 0);
                 setIndent(getIndexesWithChild(), GSheetProjectSettings.indent);
@@ -805,37 +1059,92 @@ class IssueHierarchyFormatter {
     }
 }
 class IssueTracker {
-    supportIssue(issueId) {
-        throw Utils.throwNotImplemented(this.constructor.name, this.supportIssue.name);
+    supportsIssueKey(issueKey) {
+        return this.extractIssueId(issueKey) != null
+            || this.extractSearchQuery(issueKey) != null;
     }
-    canonizeIssueId(issueId) {
-        throw Utils.throwNotImplemented(this.constructor.name, this.canonizeIssueId.name);
+    canonizeIssueKey(issueKey) {
+        {
+            const issueId = this.extractIssueId(issueKey);
+            if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
+                const canonizedKey = this.issueIdToIssueKey(issueId);
+                if (canonizedKey === null || canonizedKey === void 0 ? void 0 : canonizedKey.length) {
+                    return canonizedKey;
+                }
+            }
+        }
+        {
+            const searchQuery = this.extractSearchQuery(issueKey);
+            if (searchQuery === null || searchQuery === void 0 ? void 0 : searchQuery.length) {
+                const canonizedKey = this.searchQueryToIssueKey(searchQuery);
+                if (canonizedKey === null || canonizedKey === void 0 ? void 0 : canonizedKey.length) {
+                    return canonizedKey;
+                }
+            }
+        }
+        return issueKey;
     }
-    getIssueLink(issueId) {
-        throw Utils.throwNotImplemented(this.constructor.name, this.getIssueLink.name);
+    extractIssueId(issueKey) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.extractIssueId.name);
     }
-    getIssuesLink(issueIds) {
-        throw Utils.throwNotImplemented(this.constructor.name, this.getIssuesLink.name);
+    issueIdToIssueKey(issueId) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.issueIdToIssueKey.name);
+    }
+    getUrlForIssueId(issueId) {
+        return this.getUrlForIssueIds([issueId]);
+    }
+    getUrlForIssueIds(issueIds) {
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+            return undefined;
+        }
+        throw Utils.throwNotImplemented(this.constructor.name, this.getUrlForIssueIds.name);
     }
     loadIssues(issueIds) {
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+            return [];
+        }
         throw Utils.throwNotImplemented(this.constructor.name, this.loadIssues.name);
     }
     loadChildren(issueIds) {
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+            return [];
+        }
         throw Utils.throwNotImplemented(this.constructor.name, this.loadChildren.name);
     }
     loadBlockers(issueIds) {
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+            return [];
+        }
         throw Utils.throwNotImplemented(this.constructor.name, this.loadBlockers.name);
     }
+    extractSearchQuery(issueKey) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.extractSearchQuery.name);
+    }
+    searchQueryToIssueKey(query) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.issueIdToIssueKey.name);
+    }
+    getUrlForSearchQuery(query) {
+        throw Utils.throwNotImplemented(this.constructor.name, this.getUrlForSearchQuery.name);
+    }
     search(query) {
+        if (!(query === null || query === void 0 ? void 0 : query.length)) {
+            return [];
+        }
         throw Utils.throwNotImplemented(this.constructor.name, this.search.name);
     }
 }
 class Issue {
+    constructor(issueTracker) {
+        this.issueTracker = issueTracker;
+    }
     get id() {
         throw Utils.throwNotImplemented(this.constructor.name, 'id');
     }
     get title() {
         throw Utils.throwNotImplemented(this.constructor.name, 'title');
+    }
+    get type() {
+        throw Utils.throwNotImplemented(this.constructor.name, 'type');
     }
     get status() {
         throw Utils.throwNotImplemented(this.constructor.name, 'status');
@@ -843,61 +1152,77 @@ class Issue {
     get open() {
         throw Utils.throwNotImplemented(this.constructor.name, 'open');
     }
+    get assignee() {
+        throw Utils.throwNotImplemented(this.constructor.name, 'assignee');
+    }
 }
 class IssueTrackerExample extends IssueTracker {
-    supportIssue(issueId) {
-        return issueId.match(/^example\/\S+$/) != null;
+    issueIdToIssueKey(issueId) {
+        return `example/${issueId}`;
     }
-    canonizeIssueId(issueId) {
-        return issueId;
+    extractIssueId(issueKey) {
+        return Utils.extractRegex(issueKey, /^example\/([\d.-]+)$/, 1);
     }
-    getIssueLink(issueId) {
-        const searchQuery = issueId.match(/^example\/search\/(.*)$/);
-        if (searchQuery != null) {
-            return `https://example.com/search/?query=${encodeURIComponent(searchQuery[1])}`;
-        }
+    getUrlForIssueId(issueId) {
         return `https://example.com/issues/${encodeURIComponent(issueId)}`;
     }
-    getIssuesLink(issueIds) {
-        return `https://example.com/search?query=id:(${encodeURIComponent(issueIds.join('|'))})`;
+    getUrlForIssueIds(issueIds) {
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+            return null;
+        }
+        return `https://example.com/search?q=id:(${encodeURIComponent(issueIds.join('|'))})`;
     }
     loadIssues(issueIds) {
-        const result = {};
-        issueIds
-            .filter(id => id === null || id === void 0 ? void 0 : id.length)
-            .filter(Utils.distinct())
-            .forEach(id => result[id] = new IssueExample(id));
-        return result;
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+            return [];
+        }
+        return issueIds.map(id => new IssueExample(this, id));
     }
     loadChildren(issueIds) {
-        return issueIds
-            .filter(id => id === null || id === void 0 ? void 0 : id.length)
-            .filter(Utils.distinct())
-            .flatMap(id => {
-            const children = [];
-            const childrenCount = Math.abs(Utils.hashCode(id)) % 3;
-            for (let child = 1; child <= childrenCount; ++child) {
-                children.push(new IssueExample(`${id}-${child}`));
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+            return [];
+        }
+        return issueIds.flatMap(id => {
+            let hash = parseInt(id);
+            if (isNaN(hash)) {
+                hash = Math.abs(Utils.hashCode(id));
             }
-            return children;
+            return Array.from(Utils.range(0, hash % 3)).map(index => new IssueExample(this, `${id}-${index + 1}`));
         });
     }
     loadBlockers(issueIds) {
-        return [];
+        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+            return [];
+        }
+        return issueIds.flatMap(id => {
+            let hash = parseInt(id);
+            if (isNaN(hash)) {
+                hash = Math.abs(Utils.hashCode(id));
+            }
+            return Array.from(Utils.range(0, hash % 2)).map(index => new IssueExample(this, `${id}-blocker-${index + 1}`));
+        });
+    }
+    extractSearchQuery(issueKey) {
+        return Utils.extractRegex(issueKey, /^example\/search\/(.+)$/, 1);
+    }
+    searchQueryToIssueKey(query) {
+        return `example/search/${query}`;
+    }
+    getUrlForSearchQuery(query) {
+        return `https://example.com/search?q=${encodeURIComponent(query)}`;
     }
     search(query) {
-        const children = [];
-        const queryHash = Math.abs(Utils.hashCode(query));
-        const childrenCount = queryHash % 3;
-        for (let child = 1; child <= childrenCount; ++child) {
-            children.push(new IssueExample(`${queryHash}-${child}`));
+        if (!(query === null || query === void 0 ? void 0 : query.length)) {
+            return [];
         }
-        return children;
+        const hash = Math.abs(Utils.hashCode(query));
+        return Array.from(Utils.range(0, hash % 3)).map(index => new IssueExample(this, `search-${hash}-${index + 1}`));
     }
 }
+GSheetProjectSettings.issueTrackers.push(new IssueTrackerExample());
 class IssueExample extends Issue {
-    constructor(id) {
-        super();
+    constructor(issueTracker, id) {
+        super(issueTracker);
         this._id = id;
     }
     get id() {
@@ -906,16 +1231,29 @@ class IssueExample extends Issue {
     get title() {
         return `Issue '${this.id}'`;
     }
+    get type() {
+        return 'task';
+    }
     get status() {
-        return Utils.hashCode(this.id) % 2 === 0
+        let hash = parseInt(this.id);
+        if (isNaN(hash)) {
+            hash = Math.abs(Utils.hashCode(this.id));
+        }
+        return hash % 3 !== 0
             ? 'open'
             : 'closed';
     }
     get open() {
         return this.status === 'open';
     }
+    get assignee() {
+        let hash = parseInt(this.id);
+        if (isNaN(hash)) {
+            hash = Math.abs(Utils.hashCode(this.id));
+        }
+        return hash.toString();
+    }
 }
-GSheetProjectSettings.issueTrackers.push(new IssueTrackerExample());
 class Lazy {
     constructor(supplier) {
         this._supplier = supplier;
@@ -926,6 +1264,66 @@ class Lazy {
             this._supplier = undefined;
         }
         return this._value;
+    }
+}
+class LazyProxy {
+    static create(supplier) {
+        const lazy = new Lazy(supplier);
+        const proxy = new Proxy({}, {
+            apply(_, thisArg, argArray) {
+                const instance = lazy.get();
+                return Reflect.apply(instance, thisArg, argArray);
+            },
+            construct(_, argArray, newTarget) {
+                const instance = lazy.get();
+                return Reflect.construct(instance, argArray, newTarget);
+            },
+            defineProperty(_, property, attributes) {
+                const instance = lazy.get();
+                return Reflect.defineProperty(instance, property, attributes);
+            },
+            deleteProperty(_, property) {
+                const instance = lazy.get();
+                return Reflect.deleteProperty(instance, property);
+            },
+            get(_, property) {
+                const instance = lazy.get();
+                return Reflect.get(instance, property, instance);
+            },
+            getOwnPropertyDescriptor(_, property) {
+                const instance = lazy.get();
+                return Reflect.getOwnPropertyDescriptor(instance, property);
+            },
+            getPrototypeOf(_) {
+                const instance = lazy.get();
+                return Reflect.getPrototypeOf(instance);
+            },
+            has(_, property) {
+                const instance = lazy.get();
+                return Reflect.has(instance, property);
+            },
+            isExtensible(_) {
+                const instance = lazy.get();
+                return Reflect.isExtensible(instance);
+            },
+            ownKeys(_) {
+                const instance = lazy.get();
+                return Reflect.ownKeys(instance);
+            },
+            preventExtensions(_) {
+                const instance = lazy.get();
+                return Reflect.preventExtensions(instance);
+            },
+            set(_, property, newValue) {
+                const instance = lazy.get();
+                return Reflect.set(instance, property, newValue, instance);
+            },
+            setPrototypeOf(_, value) {
+                const instance = lazy.get();
+                return Reflect.setPrototypeOf(instance, value);
+            },
+        });
+        return proxy;
     }
 }
 class NamedRangeUtils {
@@ -981,11 +1379,11 @@ class ProtectionLocks {
             this._allRowsProtections.set(sheetId, protection);
         });
     }
-    static lockRows(sheet, rowsToLock) {
+    static lockRows(sheet, rowToLock) {
         if (!GSheetProjectSettings.lockRows) {
             return;
         }
-        if (rowsToLock <= 0) {
+        if (rowToLock <= 0) {
             return;
         }
         const sheetId = sheet.getSheetId();
@@ -997,13 +1395,13 @@ class ProtectionLocks {
         }
         const rowsProtections = this._rowsProtections.get(sheetId);
         const maxLockedRow = Array.from(rowsProtections.keys()).reduce((prev, cur) => Math.max(prev, cur), 0);
-        if (maxLockedRow < rowsToLock) {
-            Utils.timed(`${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowsToLock}`, () => {
-                const range = sheet.getRange(1, sheet.getMaxColumns(), rowsToLock, 1);
+        if (maxLockedRow < rowToLock) {
+            Utils.timed(`${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowToLock}`, () => {
+                const range = sheet.getRange(1, sheet.getMaxColumns(), rowToLock, 1);
                 const protection = range.protect()
-                    .setDescription(`lock|rows|${rowsToLock}|${new Date().getTime()}`)
+                    .setDescription(`lock|rows|${rowToLock}|${new Date().getTime()}`)
                     .setWarningOnly(true);
-                rowsProtections.set(rowsToLock, protection);
+                rowsProtections.set(rowToLock, protection);
             });
         }
     }
@@ -1033,18 +1431,10 @@ class ProtectionLocks {
                     if (!description.startsWith('lock|')) {
                         continue;
                     }
-                    const dateString = description.split('|').slice(-1)[0];
-                    try {
-                        const date = Number.isNaN(dateString)
-                            ? new Date(dateString)
-                            : new Date(parseFloat(dateString));
-                        if (date.getTime() < minTimestamp) {
-                            console.warn(`Removing expired protection lock: ${description}`);
-                            protection.remove();
-                        }
-                    }
-                    catch (_) {
-                        // do nothing
+                    const date = Utils.parseDate(description.split('|').slice(-1)[0]);
+                    if (date != null && date.getTime() < minTimestamp) {
+                        console.warn(`Removing expired protection lock: ${description}`);
+                        protection.remove();
                     }
                 }
             });
@@ -1088,7 +1478,8 @@ class RangeUtils {
         return range.offset(0, column - range.getColumn(), range.getNumRows(), 1);
     }
     static withMinRow(range, minRow) {
-        const rowDiff = minRow - range.getRow();
+        const startRow = range.getRow();
+        const rowDiff = minRow - startRow;
         if (rowDiff <= 0) {
             return range;
         }
@@ -1188,26 +1579,37 @@ class RangeUtils {
     }
 }
 class RichTextUtils {
+    static createLinkValue(link) {
+        return this.createLinksValue([link]);
+    }
     static createLinksValue(links) {
         let text = '';
         const linksWithOffsets = [];
         links.forEach(link => {
-            var _a;
+            var _a, _b;
+            const title = ((_a = link.title) === null || _a === void 0 ? void 0 : _a.length)
+                ? link.title
+                : link.url;
+            if (!(title === null || title === void 0 ? void 0 : title.length)) {
+                return;
+            }
             if (text.length) {
                 text += '\n';
             }
-            if (!((_a = link.title) === null || _a === void 0 ? void 0 : _a.length)) {
-                link.title = link.url;
+            if ((_b = link.url) === null || _b === void 0 ? void 0 : _b.length) {
+                linksWithOffsets.push({
+                    url: link.url,
+                    start: text.length,
+                    end: text.length + title.length,
+                });
             }
-            linksWithOffsets.push({
-                url: link.url,
-                start: text.length,
-                end: text.length + link.title.length,
-            });
-            text += link.title;
+            text += title;
         });
         const builder = SpreadsheetApp.newRichTextValue().setText(text);
         linksWithOffsets.forEach(link => builder.setLinkUrl(link.start, link.end, link.url));
+        builder.setTextStyle(SpreadsheetApp.newTextStyle()
+            .setUnderline(false)
+            .build());
         return builder.build();
     }
 }
@@ -1226,7 +1628,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f05cb701d5bba9af6933d508138659c4475a6bed588cb148c4b33331032bae7e:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}437c48228a14ab81a8899880efa3c6f0efeb00ae766e8369ba57aaba6c6bb2e3:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1247,7 +1649,7 @@ class SheetLayout {
         }
         ProtectionLocks.lockAllColumns(sheet);
         const columnByKey = new Map();
-        let lastColumn = sheet.getLastColumn();
+        let lastColumn = SheetUtils.getLastColumn(sheet);
         const maxRows = sheet.getMaxRows();
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]
@@ -1266,6 +1668,7 @@ class SheetLayout {
             ++lastColumn;
             const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
                 .setValue(info.name);
+            ExecutionCache.resetCache();
             if ((_b = info.key) === null || _b === void 0 ? void 0 : _b.length) {
                 const columnNumber = lastColumn;
                 columnByKey.set(info.key, { columnNumber, info });
@@ -1296,6 +1699,7 @@ class SheetLayout {
             }
             existingNormalizedNames.push(columnName);
         }
+        SheetUtils.setLastColumn(sheet, lastColumn);
         const existingFormulas = new Lazy(() => sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn).getFormulas()[0]);
         for (const [columnName, info] of columns.entries()) {
             const index = existingNormalizedNames.indexOf(columnName);
@@ -1437,6 +1841,12 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'left',
             },
             {
+                name: GSheetProjectSettings.lastDataReloadColumnName,
+                hiddenByDefault: true,
+                defaultFormat: `yyyy-MM-dd HH:mm:ss.SSS`,
+                defaultHorizontalAlignment: 'left',
+            },
+            {
                 name: GSheetProjectSettings.teamColumnName,
                 rangeName: GSheetProjectSettings.teamsRangeName,
                 //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
@@ -1465,7 +1875,12 @@ class SheetLayoutProjects extends SheetLayout {
                     {
                         order: 1,
                         configurer: builder => builder
-                            .whenFormulaSatisfied(`=AND(ISFORMULA(#COLUMN_CELL), NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`)
+                            .whenFormulaSatisfied(`=AND(
+                                    ISFORMULA(#COLUMN_CELL),
+                                    #COLUMN_CELL <> "",
+                                    #COLUMN_CELL(deadline) <> "",
+                                    #COLUMN_CELL > #COLUMN_CELL(deadline)
+                                )`)
                             .setItalic(true)
                             .setBold(true)
                             .setFontColor('#c00'),
@@ -1473,7 +1888,11 @@ class SheetLayoutProjects extends SheetLayout {
                     {
                         order: 2,
                         configurer: builder => builder
-                            .whenFormulaSatisfied(`=AND(NOT(#COLUMN_CELL = ""), #COLUMN_CELL > #COLUMN_CELL(deadline))`)
+                            .whenFormulaSatisfied(`=AND(
+                                    #COLUMN_CELL <> "",
+                                    #COLUMN_CELL(deadline) <> "",
+                                    #COLUMN_CELL > #COLUMN_CELL(deadline)
+                                )`)
                             .setBold(true)
                             .setFontColor('#f00'),
                     },
@@ -1499,9 +1918,11 @@ class SheetLayouts {
     }
     static migrateIfNeeded() {
         this.instances.forEach(instance => instance.migrateIfNeeded());
+        CommonFormatter.applyCommonFormatsToAllSheets();
     }
     static migrate() {
         this.instances.forEach(instance => instance.migrate());
+        CommonFormatter.applyCommonFormatsToAllSheets();
     }
 }
 class SheetLayoutSettings extends SheetLayout {
@@ -1548,10 +1969,19 @@ class SheetUtils {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet);
         }
-        return ExecutionCache.getOrCompute(['last-row', sheet], () => sheet.getLastRow());
+        return ExecutionCache.getOrCompute(['last-row', sheet], () => Math.max(sheet.getLastRow(), 1));
     }
     static setLastRow(sheet, lastRow) {
-        ExecutionCache.put(['last-row', sheet], lastRow);
+        ExecutionCache.put(['last-row', sheet], Math.max(lastRow, 1));
+    }
+    static getLastColumn(sheet) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        return ExecutionCache.getOrCompute(['last-column', sheet], () => Math.max(sheet.getLastColumn(), 1));
+    }
+    static setLastColumn(sheet, lastColumn) {
+        ExecutionCache.put(['last-column', sheet], lastColumn);
     }
     static findColumnByName(sheet, columnName) {
         if (!(columnName === null || columnName === void 0 ? void 0 : columnName.length)) {
@@ -1566,7 +1996,7 @@ class SheetUtils {
         ProtectionLocks.lockAllColumns(sheet);
         const columns = ExecutionCache.getOrCompute(['columns-by-name', sheet], () => {
             const result = new Map();
-            for (const col of Utils.range(GSheetProjectSettings.titleRow, sheet.getLastColumn())) {
+            for (const col of Utils.range(GSheetProjectSettings.titleRow, this.getLastColumn(sheet))) {
                 const name = Utils.normalizeName(sheet.getRange(1, col).getValue());
                 result.set(name, col);
             }
@@ -1647,7 +2077,7 @@ class SheetUtils {
         const numbers = Object.values(columnToNumber).filter(Utils.distinct()).toSorted(Utils.numericAsc());
         const result = {};
         Object.keys(columns).forEach(key => result[key] = []);
-        if (minRow >= maxRow) {
+        if (minRow > maxRow) {
             return result;
         }
         Utils.timed([
@@ -1697,7 +2127,7 @@ class SheetUtils {
         else if (minColumn < 1) {
             minColumn = 1;
         }
-        const lastColumn = sheet.getLastColumn();
+        const lastColumn = this.getLastColumn(sheet);
         if (minColumn > lastColumn) {
             return sheet.getRange(row, minColumn);
         }
@@ -1748,6 +2178,20 @@ class Utils {
     }
     static escapeFormulaString(string) {
         return string.replaceAll(/"/g, '""');
+    }
+    static mapRecordValues(record, transformer) {
+        const result = {};
+        Object.entries(record).forEach(([key, value]) => {
+            result[key] = transformer(value, key);
+        });
+        return result;
+    }
+    static mapToRecord(keys, transformer) {
+        const result = {};
+        keys.forEach(key => {
+            result[key] = transformer(key);
+        });
+        return result;
     }
     /**
      * See https://stackoverflow.com/a/44134328/3740528
@@ -1806,6 +2250,15 @@ class Utils {
             }
         }
     }
+    static arrayRemoveIf(array, predicate) {
+        for (let index = 0; index <= array.length; ++index) {
+            const element = array[index];
+            if (predicate(element)) {
+                array.splice(index, 1);
+                --index;
+            }
+        }
+    }
     static moveArrayElements(array, fromIndex, count, targetIndex) {
         if (fromIndex === targetIndex || count <= 0) {
             return;
@@ -1816,12 +2269,40 @@ class Utils {
         const moved = array.splice(fromIndex, count);
         array.splice(targetIndex, 0, ...moved);
     }
+    static parseDate(value) {
+        if (value == null) {
+            return null;
+        }
+        else if (this.isNumber(value)) {
+            return new Date(value);
+        }
+        else if (Utils.isString(value)) {
+            try {
+                return new Date(Number.isNaN(value) ? value : parseFloat(value));
+            }
+            catch (_) {
+                return null;
+            }
+        }
+        else if (this.isFunction(value.getTime)) {
+            return this.parseDate(value.getTime());
+        }
+        else {
+            return null;
+        }
+    }
+    static parseDateOrThrow(value) {
+        var _a;
+        return (_a = this.parseDate(value)) !== null && _a !== void 0 ? _a : (() => {
+            throw new Error(`Not a date: "${value}"`);
+        })();
+    }
     static hashCode(value) {
         if (!(value === null || value === void 0 ? void 0 : value.length)) {
             return 0;
         }
         let hash = 0;
-        for (let i = 0; i < this.length; i++) {
+        for (let i = 0; i < value.length; ++i) {
             const chr = value.charCodeAt(i);
             hash = ((hash << 5) - hash) + chr;
             hash |= 0;
@@ -1842,6 +2323,27 @@ class Utils {
                 const currentValue = result[key];
                 if (this.isRecord(value) && this.isRecord(currentValue)) {
                     result[key] = this.merge(currentValue, value);
+                    continue;
+                }
+                result[key] = value;
+            }
+        }
+        return result;
+    }
+    static mergeInto(result, ...objects) {
+        for (const object of objects) {
+            if (object == null) {
+                continue;
+            }
+            for (const key of Object.keys(object)) {
+                const value = object[key];
+                if (value === undefined) {
+                    continue;
+                }
+                const currentValue = result[key];
+                if (this.isRecord(value) && this.isRecord(currentValue)) {
+                    this.mergeInto(currentValue, value);
+                    continue;
                 }
                 result[key] = value;
             }
@@ -1868,7 +2370,7 @@ class Utils {
         return true;
     }
     static arrayOf(length, initValue) {
-        const array = new Array(length);
+        const array = new Array(length !== null && length !== void 0 ? length : 0);
         if (initValue !== undefined) {
             array.fill(initValue);
         }
@@ -1900,6 +2402,9 @@ class Utils {
     }
     static isNumber(value) {
         return typeof value === 'number';
+    }
+    static isBoolean(value) {
+        return typeof value === 'boolean';
     }
     static isFunction(value) {
         return typeof value === 'function';

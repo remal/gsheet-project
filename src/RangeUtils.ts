@@ -2,7 +2,7 @@ class RangeUtils {
 
     static isRangeSheet(
         range: Range | null | undefined,
-        sheet: Sheet | string | null | undefined,
+        sheet: Sheet | SheetName | null | undefined,
     ): boolean {
         if (range == null) {
             return false
@@ -30,7 +30,7 @@ class RangeUtils {
 
     static toColumnRange(
         range: Range | null | undefined,
-        column: number | string | null | undefined,
+        column: ColumnName | Column | null | undefined,
     ): Range | undefined {
         if (range == null || column == null) {
             return undefined
@@ -51,8 +51,9 @@ class RangeUtils {
         )
     }
 
-    static withMinRow(range: Range, minRow: number): Range {
-        const rowDiff = minRow - range.getRow()
+    static withMinRow(range: Range, minRow: Row): Range {
+        const startRow = range.getRow()
+        const rowDiff = minRow - startRow
         if (rowDiff <= 0) {
             return range
         }
@@ -65,12 +66,13 @@ class RangeUtils {
         )
     }
 
-    static withMaxRow(range: Range, maxRow: number): Range {
+    static withMaxRow(range: Range, maxRow: Row): Range {
         const startRow = range.getRow()
         const endRow = startRow + range.getNumRows() - 1
         if (maxRow >= endRow) {
             return range
         }
+
         return range.offset(
             0,
             0,
@@ -79,7 +81,7 @@ class RangeUtils {
         )
     }
 
-    static withMinMaxRows(range: Range, minRow: number, maxRow: number): Range {
+    static withMinMaxRows(range: Range, minRow: Row, maxRow: Row): Range {
         range = this.withMinRow(range, minRow)
         range = this.withMaxRow(range, maxRow)
         return range
@@ -87,7 +89,7 @@ class RangeUtils {
 
     static doesRangeHaveColumn(
         range: Range | null | undefined,
-        column: number | string | null | undefined,
+        column: ColumnName | Column | null | undefined,
     ): boolean {
         if (range == null) {
             return false
@@ -107,15 +109,15 @@ class RangeUtils {
 
     static doesRangeHaveSheetColumn(
         range: Range | null | undefined,
-        sheet: Sheet | string | null | undefined,
-        column: number | string | null | undefined,
+        sheet: Sheet | SheetName | null | undefined,
+        column: ColumnName | Column | null | undefined,
     ): boolean {
         return this.isRangeSheet(range, sheet) && this.doesRangeHaveColumn(range, column)
     }
 
     static doesRangeIntersectsWithNamedRange(
         range: Range | null | undefined,
-        namedRange: NamedRange | string | null | undefined,
+        namedRange: NamedRange | RangeName | null | undefined,
     ): boolean {
         if (range == null || namedRange == null) {
             return false
