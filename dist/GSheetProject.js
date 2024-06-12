@@ -674,7 +674,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     sheet.getRangeList(notations).setValue('');
                 }
                 sheet.getRange(row, lastDataReloadColumn).setValue(new Date());
-                //sheet.getRange(row, iconColumn).setFormula(``)
             };
             if (GSheetProjectSettings.skipHiddenIssues && sheet.isRowHiddenByUser(row)) { // a slow check
                 cleanupColumns();
@@ -1648,7 +1647,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}9e2ac1f466ee53c994bcaeee8a0f69b1777d242f8d46353be56bbc8c124049a3:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}2bbaad056b340589a360641c4948928a35be3e756cda96be3d3b22197bb8dbb6:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

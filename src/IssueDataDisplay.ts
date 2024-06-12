@@ -64,7 +64,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
 
                 sheet.getRange(row, lastDataReloadColumn).setValue(new Date())
-                //sheet.getRange(row, iconColumn).setFormula(``)
             }
 
             if (GSheetProjectSettings.skipHiddenIssues && sheet.isRowHiddenByUser(row)) { // a slow check
