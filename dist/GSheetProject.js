@@ -660,10 +660,12 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         sheet.getRange(row, iconColumn),
                     ],
                     Object.keys(GSheetProjectSettings.booleanIssuesMetrics)
-                        .map(columnName => SheetUtils.getColumnByName(sheet, columnName))
+                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName))
+                        .filter(column => column != null)
                         .map(column => sheet.getRange(row, column)),
                     Object.keys(GSheetProjectSettings.counterIssuesMetrics)
-                        .map(columnName => SheetUtils.getColumnByName(sheet, columnName))
+                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName))
+                        .filter(column => column != null)
                         .map(column => sheet.getRange(row, column)),
                 ]
                     .flat()
@@ -803,12 +805,18 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 .filter(it => it === null || it === void 0 ? void 0 : it.length);
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
             for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.booleanIssuesMetrics)) {
-                const column = SheetUtils.getColumnByName(sheet, columnName);
+                const column = SheetUtils.findColumnByName(sheet, columnName);
+                if (column == null) {
+                    continue;
+                }
                 const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues);
                 sheet.getRange(row, column).setValue(value ? "Yes" : '');
             }
             for (const [columnName, issuesCounterMetric] of Object.entries(GSheetProjectSettings.counterIssuesMetrics)) {
-                const column = SheetUtils.getColumnByName(sheet, columnName);
+                const column = SheetUtils.findColumnByName(sheet, columnName);
+                if (column == null) {
+                    continue;
+                }
                 const foundIssues = issuesCounterMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues);
                 if (!foundIssues.length) {
                     sheet.getRange(row, column).setValue('');
@@ -1638,7 +1646,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f6aabc24b4b9a8418e7504e50af5c51009626a24b384b0c078fe4bea3e1d320e:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}d8f0d93bc6caf374b0e4a0b3cd14936ede7a4939e4f1434aee61b9f0b740cfa5:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

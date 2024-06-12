@@ -49,11 +49,13 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         sheet.getRange(row, iconColumn),
                     ],
                     Object.keys(GSheetProjectSettings.booleanIssuesMetrics)
-                        .map(columnName => SheetUtils.getColumnByName(sheet, columnName))
-                        .map(column => sheet.getRange(row, column)),
+                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName))
+                        .filter(column => column != null)
+                        .map(column => sheet.getRange(row, column!)),
                     Object.keys(GSheetProjectSettings.counterIssuesMetrics)
-                        .map(columnName => SheetUtils.getColumnByName(sheet, columnName))
-                        .map(column => sheet.getRange(row, column)),
+                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName))
+                        .filter(column => column != null)
+                        .map(column => sheet.getRange(row, column!)),
                 ]
                     .flat()
                     .map(range => range.getA1Notation())
@@ -213,7 +215,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
 
             for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.booleanIssuesMetrics)) {
-                const column = SheetUtils.getColumnByName(sheet, columnName)
+                const column = SheetUtils.findColumnByName(sheet, columnName)
+                if (column == null) {
+                    continue
+                }
                 const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues)
                 sheet.getRange(row, column).setValue(
                     value ? "Yes" : '',
@@ -222,7 +227,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
 
             for (const [columnName, issuesCounterMetric] of Object.entries(GSheetProjectSettings.counterIssuesMetrics)) {
-                const column = SheetUtils.getColumnByName(sheet, columnName)
+                const column = SheetUtils.findColumnByName(sheet, columnName)
+                if (column == null) {
+                    continue
+                }
                 const foundIssues = issuesCounterMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues)
                 if (!foundIssues.length) {
                     sheet.getRange(row, column).setValue('')
