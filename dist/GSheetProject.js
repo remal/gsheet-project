@@ -1632,7 +1632,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}d4204612776216618f5de841faed8adb7ec3de0de29882125540197cf239068d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}9c1aa0722122589dc6e7fcc45a1d175608ffef6bde4729f3a6fe17de239b8f41:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1772,7 +1772,7 @@ class SheetLayout {
                 ConditionalFormatting.addConditionalFormatRule(range, fullRule);
             });
         }
-        sheet.getRange(1, 1, lastColumn, 1)
+        sheet.getRange('1:1')
             .setHorizontalAlignment('center')
             .setFontWeight('bold')
             .setNumberFormat('');

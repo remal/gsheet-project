@@ -194,7 +194,7 @@ abstract class SheetLayout {
             })
         }
 
-        sheet.getRange(1, 1, lastColumn, 1)
+        sheet.getRange('1:1')
             .setHorizontalAlignment('center')
             .setFontWeight('bold')
             .setNumberFormat('')
