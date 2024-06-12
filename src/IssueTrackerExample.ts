@@ -1,11 +1,11 @@
 class IssueTrackerExample extends IssueTracker {
 
-    issueIdToIssueKey(issueId: IssueId): IssueKey | null | undefined {
-        return `example/${issueId}`
-    }
-
     extractIssueId(issueKey: IssueKey): IssueId | null | undefined {
         return Utils.extractRegex(issueKey, /^example\/([\d.-]+)$/, 1)
+    }
+
+    issueIdToIssueKey(issueId: IssueId): IssueKey | null | undefined {
+        return `example/${issueId}`
     }
 
     getUrlForIssueId(issueId: IssueId): string | null | undefined {

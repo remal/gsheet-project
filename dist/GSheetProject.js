@@ -1192,11 +1192,11 @@ class Issue {
     }
 }
 class IssueTrackerExample extends IssueTracker {
-    issueIdToIssueKey(issueId) {
-        return `example/${issueId}`;
-    }
     extractIssueId(issueKey) {
         return Utils.extractRegex(issueKey, /^example\/([\d.-]+)$/, 1);
+    }
+    issueIdToIssueKey(issueId) {
+        return `example/${issueId}`;
     }
     getUrlForIssueId(issueId) {
         return `https://example.com/issues/${encodeURIComponent(issueId)}`;
@@ -1663,7 +1663,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}ab311f5f296699d0bfcf6046f373bc54a4da300c3f8c241ad0b06e2770da1fcc:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}92a13f106f1e1f93998ade9bde68fd8a8d3ee2b5ce799b489936bbf37a40c110:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
