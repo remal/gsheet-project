@@ -91,6 +91,10 @@ abstract class IssueTracker {
         throw Utils.throwNotImplemented(this.constructor.name, this.getUrlForSearchQuery.name)
     }
 
+    loadIssueKeySearchTitle(issueKey: IssueKey): string | null | undefined {
+        return this.extractSearchQuery(issueKey)
+    }
+
     search(query: IssueSearchQuery): Issue[] {
         if (!query?.length) {
             return []

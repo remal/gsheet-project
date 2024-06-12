@@ -207,9 +207,21 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }))
 
 
-            const titles = loadedIssues
-                .map(it => it.title?.trim())
-                .filter(it => it?.length)
+            const titles = issueKeys.map(issueKey => {
+                const issueId = issueKeyIds[issueKey]
+                if (issueId?.length) {
+                    return loadedIssues.find(issue => issue.id)?.title
+                }
+
+                if (issueKeyQueries[issueKey]?.length) {
+                    return issueTracker.loadIssueKeySearchTitle(issueKey)
+                }
+
+                return undefined
+            })
+                .map(title => title?.trim())
+                .filter(title => title?.length)
+                .map(title => title!)
             if (titles.length) {
                 sheet.getRange(row, titleColumn).setValue(titles.join('\n'))
             }

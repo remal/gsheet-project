@@ -798,9 +798,20 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return issueTracker.loadBlockers(allIssueIds)
                     .filter(issue => !allIssueIds.includes(issue.id));
             }));
-            const titles = loadedIssues
-                .map(it => { var _a; return (_a = it.title) === null || _a === void 0 ? void 0 : _a.trim(); })
-                .filter(it => it === null || it === void 0 ? void 0 : it.length);
+            const titles = issueKeys.map(issueKey => {
+                var _a, _b;
+                const issueId = issueKeyIds[issueKey];
+                if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
+                    return (_a = loadedIssues.find(issue => issue.id)) === null || _a === void 0 ? void 0 : _a.title;
+                }
+                if ((_b = issueKeyQueries[issueKey]) === null || _b === void 0 ? void 0 : _b.length) {
+                    return issueTracker.loadIssueKeySearchTitle(issueKey);
+                }
+                return undefined;
+            })
+                .map(title => title === null || title === void 0 ? void 0 : title.trim())
+                .filter(title => title === null || title === void 0 ? void 0 : title.length)
+                .map(title => title);
             if (titles.length) {
                 sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
             }
@@ -1143,6 +1154,9 @@ class IssueTracker {
     }
     getUrlForSearchQuery(query) {
         throw Utils.throwNotImplemented(this.constructor.name, this.getUrlForSearchQuery.name);
+    }
+    loadIssueKeySearchTitle(issueKey) {
+        return this.extractSearchQuery(issueKey);
     }
     search(query) {
         if (!(query === null || query === void 0 ? void 0 : query.length)) {
@@ -1646,7 +1660,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}8c49568a32dfbe7e7bdc239b4b2151bc1c52a3f08425380314a428fd5ac35f88:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}ce4260e85b49b3bcac08644bcd4a48a6609ce6141d8b941f07e7cc431171c72d:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
