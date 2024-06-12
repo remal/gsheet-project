@@ -153,7 +153,6 @@ class AbstractIssueLogic {
         if (![
             GSheetProjectSettings.issueColumnName,
             GSheetProjectSettings.childIssueColumnName,
-            GSheetProjectSettings.titleColumnName,
         ].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
             return null;
         }
@@ -1647,7 +1646,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}2bbaad056b340589a360641c4948928a35be3e756cda96be3d3b22197bb8dbb6:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}8c49568a32dfbe7e7bdc239b4b2151bc1c52a3f08425380314a428fd5ac35f88:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
