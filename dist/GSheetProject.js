@@ -812,9 +812,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 .map(title => title === null || title === void 0 ? void 0 : title.trim())
                 .filter(title => title === null || title === void 0 ? void 0 : title.length)
                 .map(title => title);
-            if (titles.length) {
-                sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
-            }
+            sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
             for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.booleanIssuesMetrics)) {
                 const column = SheetUtils.findColumnByName(sheet, columnName);
                 if (column == null) {
@@ -1660,7 +1658,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}ce4260e85b49b3bcac08644bcd4a48a6609ce6141d8b941f07e7cc431171c72d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}e5d95cd16373be68f15c00a4c7793b9f2e77472a3b1552a9787e1e27402ec440:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

@@ -222,9 +222,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 .map(title => title?.trim())
                 .filter(title => title?.length)
                 .map(title => title!)
-            if (titles.length) {
-                sheet.getRange(row, titleColumn).setValue(titles.join('\n'))
-            }
+            sheet.getRange(row, titleColumn).setValue(titles.join('\n'))
 
 
             for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.booleanIssuesMetrics)) {
