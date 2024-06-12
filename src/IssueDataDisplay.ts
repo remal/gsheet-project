@@ -70,7 +70,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 continue
             }
 
-            sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`)
+            if (GSheetProjectSettings.useLoadingImage) {
+                sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`)
+            } else {
+                sheet.getRange(row, iconColumn).setValue('...')
+            }
 
 
             let currentIssueColumn: Column
@@ -236,7 +240,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
 
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '')
-            sheet.getRange(row, iconColumn).setFormula(``)
+            sheet.getRange(row, iconColumn).setValue('')
         }
     }
 

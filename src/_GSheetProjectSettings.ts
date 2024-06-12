@@ -7,6 +7,7 @@ class GSheetProjectSettings {
     static lockRows: boolean = false
     static updateConditionalFormatRules: boolean = true
     static reorderHierarchyAutomatically: boolean = false
+    static useLoadingImage: boolean = false
     static skipHiddenIssues: boolean = true
     //static restoreUndoneEnd: boolean = false
 
