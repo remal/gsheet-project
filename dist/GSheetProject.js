@@ -1071,9 +1071,7 @@ class IssueHierarchyFormatter {
                     const firstIndexWithoutChild = indexesWithoutChild[0];
                     const firstRowWithoutChild = GSheetProjectSettings.firstDataRow + firstIndexWithoutChild;
                     const getIssueFormula = (column) => {
-                        let formula = RangeUtils.getAbsoluteReferenceFormula(sheet.getRange(firstRowWithoutChild, column));
-                        formula = Utils.addFormulaMarker(formula, this.FORMULA_MARKER);
-                        return formula;
+                        return RangeUtils.getAbsoluteReferenceFormula(sheet.getRange(firstRowWithoutChild, column));
                     };
                     const firstIndexWithChild = indexesWithChild[0];
                     const firstRowWithChild = GSheetProjectSettings.firstDataRow + firstIndexWithChild;
@@ -1085,12 +1083,11 @@ class IssueHierarchyFormatter {
                         if (!((_a = titles[index]) === null || _a === void 0 ? void 0 : _a.length) && isFormulaEmptyOrDefault(titleFormulas, index)) {
                             const firstTitleWithoutChildRange = sheet.getRange(firstRowWithoutChild, titlesColumn);
                             const childIssueRange = sheet.getRange(row, childIssuesColumn);
-                            let formula = `
+                            const formula = `
                                 =${RangeUtils.getAbsoluteReferenceFormula(firstTitleWithoutChildRange)}
                                 & " - "
                                 & ${RangeUtils.getAbsoluteReferenceFormula(childIssueRange)}
                             `;
-                            formula = Utils.addFormulaMarker(formula, this.FORMULA_MARKER);
                             sheet.getRange(row, titlesColumn)
                                 .setFormula(formula);
                         }
@@ -1686,7 +1683,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}e58e6d6b4c251750be670bfad3269b3a131c3784f65770e52f3d5f173288b7d6:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}a69381571681cd55fc91811a4cd30efae8ed303872c9eec87bb481c39457cec6:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
