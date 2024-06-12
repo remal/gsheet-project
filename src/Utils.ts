@@ -45,7 +45,7 @@ class Utils {
     ): Record<string, VR> {
         const result = {} as Record<string, VR>
         Object.entries(record).forEach(([key, value]) => {
-            result[key] = transformer(value as V, key)
+            result[key] = transformer(value, key)
         })
         return result
     }
