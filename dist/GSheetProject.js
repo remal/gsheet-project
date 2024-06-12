@@ -14,7 +14,7 @@ function SHA256(value) {
         .map(num => (num.length === 1 ? '0' : '') + num)
         .join('');
 }
-function refreshSelectedRows() {
+function refreshSelectedRowsOfGSheetProject() {
     const range = SpreadsheetApp.getActiveRange();
     if (range == null) {
         return;
@@ -30,7 +30,7 @@ function refreshSelectedRows() {
         });
     });
 }
-function refreshAllRows() {
+function refreshAllRowsOfGSheetProject() {
     EntryPoint.entryPoint(() => {
         SpreadsheetApp.getActiveSpreadsheet().getSheets()
             .filter(sheet => SheetUtils.isGridSheet(sheet))
@@ -42,11 +42,17 @@ function refreshAllRows() {
         });
     });
 }
+function applyDefaultStylesOfGSheetProject() {
+    EntryPoint.entryPoint(() => {
+        SheetLayouts.migrate();
+    });
+}
 function onOpenGSheetProject(event) {
     SpreadsheetApp.getUi()
         .createMenu("GSheetProject")
-        .addItem("Refresh selected rows", refreshSelectedRows.name)
-        .addItem("Refresh all rows", refreshAllRows.name)
+        .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
+        .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
+        .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi();
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded();
@@ -60,9 +66,7 @@ function onChangeGSheetProject(event) {
         });
     }
     function onRemove() {
-        EntryPoint.entryPoint(() => {
-            SheetLayouts.migrate();
-        });
+        applyDefaultStylesOfGSheetProject();
     }
     const changeType = (_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '';
     if (['INSERT_ROW', 'INSERT_COLUMN'].includes(changeType)) {
@@ -1628,7 +1632,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}437c48228a14ab81a8899880efa3c6f0efeb00ae766e8369ba57aaba6c6bb2e3:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}2b8d444c5e3106f3c4336a332771428c58f3da3edc9b1610c34c73cd69ebb5c1:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

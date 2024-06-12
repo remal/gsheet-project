@@ -1,4 +1,4 @@
-function refreshSelectedRows() {
+function refreshSelectedRowsOfGSheetProject() {
     const range = SpreadsheetApp.getActiveRange()
     if (range == null) {
         return
@@ -20,7 +20,7 @@ function refreshSelectedRows() {
     })
 }
 
-function refreshAllRows() {
+function refreshAllRowsOfGSheetProject() {
     EntryPoint.entryPoint(() => {
         SpreadsheetApp.getActiveSpreadsheet().getSheets()
             .filter(sheet => SheetUtils.isGridSheet(sheet))
@@ -36,11 +36,18 @@ function refreshAllRows() {
     })
 }
 
+function applyDefaultStylesOfGSheetProject() {
+    EntryPoint.entryPoint(() => {
+        SheetLayouts.migrate()
+    })
+}
+
 function onOpenGSheetProject(event?: SheetsOnOpen) {
     SpreadsheetApp.getUi()
         .createMenu("GSheetProject")
-        .addItem("Refresh selected rows", refreshSelectedRows.name)
-        .addItem("Refresh all rows", refreshAllRows.name)
+        .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
+        .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
+        .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi()
 
     EntryPoint.entryPoint(() => {
@@ -56,9 +63,7 @@ function onChangeGSheetProject(event?: SheetsOnChange) {
     }
 
     function onRemove() {
-        EntryPoint.entryPoint(() => {
-            SheetLayouts.migrate()
-        })
+        applyDefaultStylesOfGSheetProject()
     }
 
 
