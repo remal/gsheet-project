@@ -1,7 +1,5 @@
 class IssueHierarchyFormatter {
 
-    static readonly FORMULA_MARKER = "hierarchy"
-
     static formatHierarchy(range: Range) {
         if (![GSheetProjectSettings.childIssueColumnName].some(columnName =>
             RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName),
@@ -234,13 +232,15 @@ class IssueHierarchyFormatter {
         typeFormulas.length = issues.length
         deadlineFormulas.length = issues.length
 
-        const isFormulaEmptyOrDefault = (formulas: string[], index: number): boolean => {
+        const isEmptyCell = (values: string[], formulas: string[], index: number): boolean => {
             const formula = formulas[index]
-            if (!formula?.length) {
+            const formulaMarkers = Utils.extractFormulaMarkers(formula)
+            if (formulaMarkers.includes(DefaultFormulas.FORMULA_MARKER)) {
                 return true
             }
 
-            return Utils.extractFormulaMarker(formula) === DefaultFormulas.FORMULA_MARKER
+            const value = values[index]
+            return !value?.length && !formula?.length
         }
 
 
@@ -284,29 +284,31 @@ class IssueHierarchyFormatter {
                     indexesWithChild.forEach(index => {
                         const row = GSheetProjectSettings.firstDataRow + index
 
-                        if (!titles[index]?.length && isFormulaEmptyOrDefault(titleFormulas, index)) {
-                            const firstTitleWithoutChildRange = sheet.getRange(firstRowWithoutChild, titlesColumn)
-                            const childIssueRange = sheet.getRange(row, childIssuesColumn)
+                        if (isEmptyCell(titles, titleFormulas, index)) {
+                            const firstTitleWithoutChildNotation = RangeUtils.getAbsoluteA1Notation(
+                                sheet.getRange(firstRowWithoutChild, titlesColumn),
+                            )
+                            const childIssueNotation = RangeUtils.getAbsoluteA1Notation(
+                                sheet.getRange(row, childIssuesColumn),
+                            )
                             const formula = Utils.processFormula(`
-                                =${RangeUtils.getAbsoluteA1Notation(firstTitleWithoutChildRange)}
-                                & " - "
-                                & ${RangeUtils.getAbsoluteA1Notation(childIssueRange)}
+                                =${firstTitleWithoutChildNotation} & " - " & ${childIssueNotation}
                             `)
                             sheet.getRange(row, titlesColumn)
                                 .setFormula(formula)
                         }
 
-                        if (!milestones[index]?.length && isFormulaEmptyOrDefault(milestoneFormulas, index)) {
+                        if (isEmptyCell(milestones, milestoneFormulas, index)) {
                             sheet.getRange(row, milestonesColumn)
                                 .setFormula(getIssueFormula(milestonesColumn))
                         }
 
-                        if (!types[index]?.length && isFormulaEmptyOrDefault(typeFormulas, index)) {
+                        if (isEmptyCell(types, typeFormulas, index)) {
                             sheet.getRange(row, typesColumn)
                                 .setFormula(getIssueFormula(typesColumn))
                         }
 
-                        if (!deadlines[index]?.length && isFormulaEmptyOrDefault(deadlineFormulas, index)) {
+                        if (isEmptyCell(deadlines, deadlineFormulas, index)) {
                             sheet.getRange(row, deadlinesColumn)
                                 .setFormula(getIssueFormula(deadlinesColumn))
                         }

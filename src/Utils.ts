@@ -42,8 +42,18 @@ class Utils {
         return '=' + formula
     }
 
-    static extractFormulaMarker(formula: string): string | null {
-        return this.extractRegex(formula, /"GCPf"\s*<>\s*"([^"]+)"/, 1)
+    static extractFormulaMarkers(formula: string | null | undefined): string[] {
+        if (!formula?.length) {
+            return []
+        }
+
+        const markers = this.arrayOf<string>()
+        const regex = /"GSPf"\s*<>\s*"([^"]+)"/g
+        let match: RegExpExecArray | null
+        while ((match = regex.exec(formula)) !== null) {
+            markers.push(match[1])
+        }
+        return markers
     }
 
     static escapeFormulaString(string: string): string {

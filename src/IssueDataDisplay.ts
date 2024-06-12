@@ -75,7 +75,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
             if (GSheetProjectSettings.useLoadingImage) {
                 sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`)
             } else {
-                sheet.getRange(row, iconColumn).setValue('...')
+                //sheet.getRange(row, iconColumn).setValue('\uD83D\uDD03')
+                sheet.getRange(row, iconColumn).setValue('\u2B6E')
             }
 
 
