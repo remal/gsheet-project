@@ -48,15 +48,15 @@ function applyDefaultStylesOfGSheetProject() {
     });
 }
 function onOpenGSheetProject(event) {
+    EntryPoint.entryPoint(() => {
+        SheetLayouts.migrateIfNeeded();
+    });
     SpreadsheetApp.getUi()
         .createMenu("GSheetProject")
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi();
-    EntryPoint.entryPoint(() => {
-        SheetLayouts.migrateIfNeeded();
-    });
 }
 function onChangeGSheetProject(event) {
     var _a, _b;
@@ -1663,7 +1663,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}66728af16c370194fd38abbbd100b8404039e9527a8930d0b8bed31934955bd5:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}2003c1f572bb8073aac998cf33622386ef8c399de90a543df34ae925bd61c1c1:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

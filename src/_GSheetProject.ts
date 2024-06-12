@@ -43,16 +43,16 @@ function applyDefaultStylesOfGSheetProject() {
 }
 
 function onOpenGSheetProject(event?: SheetsOnOpen) {
+    EntryPoint.entryPoint(() => {
+        SheetLayouts.migrateIfNeeded()
+    })
+
     SpreadsheetApp.getUi()
         .createMenu("GSheetProject")
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi()
-
-    EntryPoint.entryPoint(() => {
-        SheetLayouts.migrateIfNeeded()
-    })
 }
 
 function onChangeGSheetProject(event?: SheetsOnChange) {
