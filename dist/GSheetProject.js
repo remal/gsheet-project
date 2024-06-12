@@ -1083,11 +1083,11 @@ class IssueHierarchyFormatter {
                         if (!((_a = titles[index]) === null || _a === void 0 ? void 0 : _a.length) && isFormulaEmptyOrDefault(titleFormulas, index)) {
                             const firstTitleWithoutChildRange = sheet.getRange(firstRowWithoutChild, titlesColumn);
                             const childIssueRange = sheet.getRange(row, childIssuesColumn);
-                            const formula = `
+                            const formula = Utils.processFormula(`
                                 =${RangeUtils.getAbsoluteA1Notation(firstTitleWithoutChildRange)}
                                 & " - "
                                 & ${RangeUtils.getAbsoluteA1Notation(childIssueRange)}
-                            `;
+                            `);
                             sheet.getRange(row, titlesColumn)
                                 .setFormula(formula);
                         }
@@ -1683,7 +1683,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}45bdd03f2a48317867377e2a850ef3a21df871767cbac62524d260849f51cd12:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}f0a2e5bf6d1ab20beaaff4e7966b26533672e071792e7a895ff73012bb63c38f:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

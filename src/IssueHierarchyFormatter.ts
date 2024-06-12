@@ -286,11 +286,11 @@ class IssueHierarchyFormatter {
                         if (!titles[index]?.length && isFormulaEmptyOrDefault(titleFormulas, index)) {
                             const firstTitleWithoutChildRange = sheet.getRange(firstRowWithoutChild, titlesColumn)
                             const childIssueRange = sheet.getRange(row, childIssuesColumn)
-                            const formula = `
+                            const formula = Utils.processFormula(`
                                 =${RangeUtils.getAbsoluteA1Notation(firstTitleWithoutChildRange)}
                                 & " - "
                                 & ${RangeUtils.getAbsoluteA1Notation(childIssueRange)}
-                            `
+                            `)
                             sheet.getRange(row, titlesColumn)
                                 .setFormula(formula)
                         }
