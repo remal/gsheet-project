@@ -197,6 +197,7 @@ abstract class SheetLayout {
         sheet.getRange('1:1')
             .setHorizontalAlignment('center')
             .setFontWeight('bold')
+            .setFontLine('none')
             .setNumberFormat('')
 
         DocumentFlags.set(this._documentFlag)

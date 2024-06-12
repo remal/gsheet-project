@@ -1632,7 +1632,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}9c1aa0722122589dc6e7fcc45a1d175608ffef6bde4729f3a6fe17de239b8f41:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}6901c312d7570b927fb5cc15b3bff79201922161315207ce4d8145ac80a8f9bd:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1775,6 +1775,7 @@ class SheetLayout {
         sheet.getRange('1:1')
             .setHorizontalAlignment('center')
             .setFontWeight('bold')
+            .setFontLine('none')
             .setNumberFormat('');
         DocumentFlags.set(this._documentFlag);
         DocumentFlags.cleanupByPrefix(this._documentFlagPrefix);
