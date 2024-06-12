@@ -72,11 +72,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 continue
             }
 
-            if (GSheetProjectSettings.useLoadingImage) {
-                sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`)
+            if (GSheetProjectSettings.loadingText?.length) {
+                sheet.getRange(row, iconColumn).setValue(GSheetProjectSettings.loadingText)
             } else {
-                //sheet.getRange(row, iconColumn).setValue('\uD83D\uDD03')
-                sheet.getRange(row, iconColumn).setValue('\u2B6E')
+                sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`)
             }
 
 
@@ -201,11 +200,12 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `row #${row}`,
                 `loading blocker issues`,
             ].join(': '), () => {
+                const issueIds = loadedIssues.map(it => it.id)
                 const allIssueIds = [loadedIssues, loadedChildIssues]
                     .flatMap(it => it.map(it => it.id))
                     .filter(Utils.distinct())
                 return issueTracker.loadBlockers(allIssueIds)
-                    .filter(issue => !allIssueIds.includes(issue.id))
+                    .filter(issue => !issueIds.includes(issue.id))
             }))
 
 

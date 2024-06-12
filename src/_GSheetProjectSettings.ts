@@ -7,7 +7,6 @@ class GSheetProjectSettings {
     static lockRows: boolean = false
     static updateConditionalFormatRules: boolean = true
     static reorderHierarchyAutomatically: boolean = false
-    static useLoadingImage: boolean = false
     static skipHiddenIssues: boolean = true
     //static restoreUndoneEnd: boolean = false
 
@@ -50,6 +49,7 @@ class GSheetProjectSettings {
     static settingsScheduleStartRangeName: RangeName = 'ScheduleStart'
     static settingsScheduleBufferRangeName: RangeName = 'ScheduleBuffer'
 
+    static loadingText: string | undefined | null = '\u2B6E' // alternative: '\uD83D\uDD03'
     static indent: number = 4
     static fontSize: FontSize = 10
 

@@ -116,7 +116,6 @@ GSheetProjectSettings.lockColumns = false;
 GSheetProjectSettings.lockRows = false;
 GSheetProjectSettings.updateConditionalFormatRules = true;
 GSheetProjectSettings.reorderHierarchyAutomatically = false;
-GSheetProjectSettings.useLoadingImage = false;
 GSheetProjectSettings.skipHiddenIssues = true;
 //static restoreUndoneEnd: boolean = false
 GSheetProjectSettings.issuesRangeName = 'Issues';
@@ -150,6 +149,7 @@ GSheetProjectSettings.endColumnName = "End";
 GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.settingsScheduleStartRangeName = 'ScheduleStart';
 GSheetProjectSettings.settingsScheduleBufferRangeName = 'ScheduleBuffer';
+GSheetProjectSettings.loadingText = '\u2B6E'; // alternative: '\uD83D\uDD03'
 GSheetProjectSettings.indent = 4;
 GSheetProjectSettings.fontSize = 10;
 class AbstractIssueLogic {
@@ -628,7 +628,7 @@ class Images {
 Images.loadingImageUrl = 'https://raw.githubusercontent.com/remal/misc/main/spinner-100.gif';
 class IssueDataDisplay extends AbstractIssueLogic {
     static reloadIssueData(range) {
-        var _a, _b;
+        var _a, _b, _c;
         const processedRange = this._processRange(range);
         if (processedRange == null) {
             return;
@@ -696,20 +696,19 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 cleanupColumns();
                 continue;
             }
-            if (GSheetProjectSettings.useLoadingImage) {
-                sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`);
+            if ((_a = GSheetProjectSettings.loadingText) === null || _a === void 0 ? void 0 : _a.length) {
+                sheet.getRange(row, iconColumn).setValue(GSheetProjectSettings.loadingText);
             }
             else {
-                //sheet.getRange(row, iconColumn).setValue('\uD83D\uDD03')
-                sheet.getRange(row, iconColumn).setValue('\u2B6E');
+                sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`);
             }
             let currentIssueColumn;
             let originalIssueKeysText;
-            if ((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length) {
+            if ((_b = childIssues[index]) === null || _b === void 0 ? void 0 : _b.length) {
                 currentIssueColumn = childIssueColumn;
                 originalIssueKeysText = childIssues[index];
             }
-            else if ((_b = issues[index]) === null || _b === void 0 ? void 0 : _b.length) {
+            else if ((_c = issues[index]) === null || _c === void 0 ? void 0 : _c.length) {
                 currentIssueColumn = issueColumn;
                 originalIssueKeysText = issues[index];
             }
@@ -811,11 +810,12 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `row #${row}`,
                 `loading blocker issues`,
             ].join(': '), () => {
+                const issueIds = loadedIssues.map(it => it.id);
                 const allIssueIds = [loadedIssues, loadedChildIssues]
                     .flatMap(it => it.map(it => it.id))
                     .filter(Utils.distinct());
                 return issueTracker.loadBlockers(allIssueIds)
-                    .filter(issue => !allIssueIds.includes(issue.id));
+                    .filter(issue => !issueIds.includes(issue.id));
             }));
             const titles = issueKeys.map(issueKey => {
                 var _a, _b;
@@ -1683,7 +1683,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}129575815b5bf6bfdfc8ff4c8381eebc01586cb0915b2cfb28a5b22b6a7712af:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}16974ab4c9f81ff2d35062f73fdcaeab63faeda85a618c0b98b35c03a8175fe2:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
