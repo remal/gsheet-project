@@ -269,10 +269,9 @@ class IssueHierarchyFormatter {
                     const firstRowWithoutChild = GSheetProjectSettings.firstDataRow + firstIndexWithoutChild
 
                     const getIssueFormula = (column: Column): string => {
-                        return RangeUtils.getAbsoluteReferenceFormula(sheet.getRange(
-                            firstRowWithoutChild,
-                            column,
-                        ))
+                        return RangeUtils.getAbsoluteReferenceFormula(
+                            sheet.getRange(firstRowWithoutChild, column),
+                        )
                     }
 
                     const firstIndexWithChild = indexesWithChild[0]
@@ -288,9 +287,9 @@ class IssueHierarchyFormatter {
                             const firstTitleWithoutChildRange = sheet.getRange(firstRowWithoutChild, titlesColumn)
                             const childIssueRange = sheet.getRange(row, childIssuesColumn)
                             const formula = `
-                                =${RangeUtils.getAbsoluteReferenceFormula(firstTitleWithoutChildRange)}
+                                =${RangeUtils.getAbsoluteA1Notation(firstTitleWithoutChildRange)}
                                 & " - "
-                                & ${RangeUtils.getAbsoluteReferenceFormula(childIssueRange)}
+                                & ${RangeUtils.getAbsoluteA1Notation(childIssueRange)}
                             `
                             sheet.getRange(row, titlesColumn)
                                 .setFormula(formula)

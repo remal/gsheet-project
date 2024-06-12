@@ -1084,9 +1084,9 @@ class IssueHierarchyFormatter {
                             const firstTitleWithoutChildRange = sheet.getRange(firstRowWithoutChild, titlesColumn);
                             const childIssueRange = sheet.getRange(row, childIssuesColumn);
                             const formula = `
-                                =${RangeUtils.getAbsoluteReferenceFormula(firstTitleWithoutChildRange)}
+                                =${RangeUtils.getAbsoluteA1Notation(firstTitleWithoutChildRange)}
                                 & " - "
-                                & ${RangeUtils.getAbsoluteReferenceFormula(childIssueRange)}
+                                & ${RangeUtils.getAbsoluteA1Notation(childIssueRange)}
                             `;
                             sheet.getRange(row, titlesColumn)
                                 .setFormula(formula);
@@ -1683,7 +1683,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}a69381571681cd55fc91811a4cd30efae8ed303872c9eec87bb481c39457cec6:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}45bdd03f2a48317867377e2a850ef3a21df871767cbac62524d260849f51cd12:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
