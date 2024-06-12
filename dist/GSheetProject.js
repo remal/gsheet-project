@@ -1686,7 +1686,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}bad80979fe9c7c2963c3da740be253f486c8e09a035451cfe31269ff5407c286:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}e58e6d6b4c251750be670bfad3269b3a131c3784f65770e52f3d5f173288b7d6:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2243,7 +2243,7 @@ class Utils {
     }
     static addFormulaMarker(formula, marker) {
         formula = formula.replace(/^=/, '');
-        formula = `AND(${formula}, "GSPf"<>"${marker}")`;
+        formula = `IF("GSPf"<>"${marker}", ${formula}, "")`;
         return '=' + formula;
     }
     static extractFormulaMarker(formula) {

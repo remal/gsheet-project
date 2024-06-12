@@ -38,7 +38,7 @@ class Utils {
 
     static addFormulaMarker(formula: string, marker: string): string {
         formula = formula.replace(/^=/, '')
-        formula = `AND(${formula}, "GSPf"<>"${marker}")`
+        formula = `IF("GSPf"<>"${marker}", ${formula}, "")`
         return '=' + formula
     }
 
