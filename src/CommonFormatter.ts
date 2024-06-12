@@ -5,7 +5,7 @@ class CommonFormatter {
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
                 this.setMiddleVerticalAlign(sheet)
-                this.setClipWrapStrategy(sheet)
+                //this.setClipWrapStrategy(sheet)
                 this.highlightCellsWithFormula(sheet)
             })
     }

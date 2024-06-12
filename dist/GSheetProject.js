@@ -213,7 +213,7 @@ class CommonFormatter {
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
             this.setMiddleVerticalAlign(sheet);
-            this.setClipWrapStrategy(sheet);
+            //this.setClipWrapStrategy(sheet)
             this.highlightCellsWithFormula(sheet);
         });
     }
@@ -1663,7 +1663,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}2003c1f572bb8073aac998cf33622386ef8c399de90a543df34ae925bd61c1c1:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}ab311f5f296699d0bfcf6046f373bc54a4da300c3f8c241ad0b06e2770da1fcc:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
