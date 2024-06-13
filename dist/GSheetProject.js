@@ -1689,7 +1689,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}6371d57d08f7ca909f8c707d9725121b8a13eea1a4924fbfb35d9b1e61c6aaee:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}2e0ab99f0cb940efe6cd6b1590fe862282ebeced9e9d92f3a41324521de70562:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1874,13 +1874,12 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.issueColumnName,
                 rangeName: GSheetProjectSettings.issuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`=OR(
-                            ${GSheetProjectSettings.childIssuesRangeName} <> "",
-                            COUNTIFS(
-                                ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
-                                ${GSheetProjectSettings.childIssuesRangeName}, "="
-                            ) <= 1
-                        )`)
+                    .requireFormulaSatisfied(`
+                        =COUNTIFS(
+                            ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
+                            ${GSheetProjectSettings.childIssuesRangeName}, "="
+                        ) <= 1
+                    `)
                     .setHelpText(`Multiple rows with the same ${GSheetProjectSettings.issueColumnName}`
                     + ` without ${GSheetProjectSettings.childIssueColumnName}`)
                     .build(),
@@ -1891,7 +1890,9 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.childIssueColumnName,
                 rangeName: GSheetProjectSettings.childIssuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`=COUNTIF(${GSheetProjectSettings.issuesRangeName}, "=" & #SELF) = 0`)
+                    .requireFormulaSatisfied(`
+                        =COUNTIF(${GSheetProjectSettings.issuesRangeName}, "=" & #SELF) = 0
+                    `)
                     .setHelpText(`Only one level of hierarchy is supported`)
                     .build(),
                 defaultFormat: '',
@@ -1918,7 +1919,9 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.estimateColumnName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`=INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""`)
+                    .requireFormulaSatisfied(`
+                        =INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""
+                    `)
                     .setHelpText(`Estimate must be defined for a team`)
                     .build(),
                 defaultFormat: '#,##0',

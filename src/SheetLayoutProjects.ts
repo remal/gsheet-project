@@ -34,15 +34,12 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.issueColumnName,
                 rangeName: GSheetProjectSettings.issuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(
-                        `=OR(
-                            ${GSheetProjectSettings.childIssuesRangeName} <> "",
-                            COUNTIFS(
-                                ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
-                                ${GSheetProjectSettings.childIssuesRangeName}, "="
-                            ) <= 1
-                        )`,
-                    )
+                    .requireFormulaSatisfied(`
+                        =COUNTIFS(
+                            ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
+                            ${GSheetProjectSettings.childIssuesRangeName}, "="
+                        ) <= 1
+                    `)
                     .setHelpText(
                         `Multiple rows with the same ${GSheetProjectSettings.issueColumnName}`
                         + ` without ${GSheetProjectSettings.childIssueColumnName}`,
@@ -55,9 +52,9 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.childIssueColumnName,
                 rangeName: GSheetProjectSettings.childIssuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(
-                        `=COUNTIF(${GSheetProjectSettings.issuesRangeName}, "=" & #SELF) = 0`,
-                    )
+                    .requireFormulaSatisfied(`
+                        =COUNTIF(${GSheetProjectSettings.issuesRangeName}, "=" & #SELF) = 0
+                    `)
                     .setHelpText(
                         `Only one level of hierarchy is supported`,
                     )
@@ -86,9 +83,9 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.estimateColumnName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(
-                        `=INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""`,
-                    )
+                    .requireFormulaSatisfied(`
+                        =INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""
+                    `)
                     .setHelpText(
                         `Estimate must be defined for a team`,
                     )
