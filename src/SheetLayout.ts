@@ -174,8 +174,8 @@ abstract class SheetLayout {
                         .requireFormulaSatisfied(formula)
                         .build()
                 }
+                range.setDataValidation(dataValidation)
             }
-            range.setDataValidation(dataValidation)
 
             info.conditionalFormats?.forEach(rule => {
                 const originalConfigurer = rule.configurer

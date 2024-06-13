@@ -1689,7 +1689,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}bf1a1b8b61e2fe49931a7a2c8ba21dae3a738471369fb92c3b6a3c4ca926e527:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}6371d57d08f7ca909f8c707d9725121b8a13eea1a4924fbfb35d9b1e61c6aaee:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1810,8 +1810,8 @@ class SheetLayout {
                         .requireFormulaSatisfied(formula)
                         .build();
                 }
+                range.setDataValidation(dataValidation);
             }
-            range.setDataValidation(dataValidation);
             (_f = info.conditionalFormats) === null || _f === void 0 ? void 0 : _f.forEach(rule => {
                 const originalConfigurer = rule.configurer;
                 rule.configurer = builder => {
