@@ -189,7 +189,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ${estimateA1Notation} = ""
                     ),
                     "",
-                    WORKDAY(${startA1Notation}, ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})))
+                    WORKDAY(
+                        ${startA1Notation},
+                        MAX(ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})) - 1, 0)
+                    )
                 )
             `
         })

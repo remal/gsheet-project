@@ -501,7 +501,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ${estimateA1Notation} = ""
                     ),
                     "",
-                    WORKDAY(${startA1Notation}, ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})))
+                    WORKDAY(
+                        ${startA1Notation},
+                        MAX(ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})) - 1, 0)
+                    )
                 )
             `;
         });
@@ -1689,7 +1692,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}2e0ab99f0cb940efe6cd6b1590fe862282ebeced9e9d92f3a41324521de70562:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}f53bb929bd24da325318f569f55e048a1bb08072d206b6be36aa42b8e7273b04:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
