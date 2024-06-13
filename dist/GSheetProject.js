@@ -47,6 +47,11 @@ function applyDefaultStylesOfGSheetProject() {
         SheetLayouts.migrate();
     });
 }
+function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
+    EntryPoint.entryPoint(() => {
+        IssueHierarchyFormatter.reorderAllIssuesAccordingToHierarchy();
+    });
+}
 function onOpenGSheetProject(event) {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded();
@@ -55,6 +60,7 @@ function onOpenGSheetProject(event) {
         .createMenu("GSheetProject")
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
+        .addItem("Reorder rows according to hierarchy", reorderAllIssuesAccordingToHierarchyInGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi();
 }
@@ -1683,7 +1689,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}16974ab4c9f81ff2d35062f73fdcaeab63faeda85a618c0b98b35c03a8175fe2:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}bf1a1b8b61e2fe49931a7a2c8ba21dae3a738471369fb92c3b6a3c4ca926e527:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

@@ -42,6 +42,12 @@ function applyDefaultStylesOfGSheetProject() {
     })
 }
 
+function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
+    EntryPoint.entryPoint(() => {
+        IssueHierarchyFormatter.reorderAllIssuesAccordingToHierarchy()
+    })
+}
+
 function onOpenGSheetProject(event?: SheetsOnOpen) {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded()
@@ -51,6 +57,7 @@ function onOpenGSheetProject(event?: SheetsOnOpen) {
         .createMenu("GSheetProject")
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
+        .addItem("Reorder rows according to hierarchy", reorderAllIssuesAccordingToHierarchyInGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi()
 }
