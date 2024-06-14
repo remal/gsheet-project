@@ -619,13 +619,13 @@ class ExecutionCache {
     }
     static _getStringKey(key) {
         return JSON.stringify(key, (_, value) => {
-            if (Utils.isFunction(value.getUniqueId)) {
+            if (Utils.isFunction(value === null || value === void 0 ? void 0 : value.getUniqueId)) {
                 return value.getUniqueId();
             }
-            else if (Utils.isFunction(value.getSheetId)) {
+            else if (Utils.isFunction(value === null || value === void 0 ? void 0 : value.getSheetId)) {
                 return value.getSheetId();
             }
-            else if (Utils.isFunction(value.getId)) {
+            else if (Utils.isFunction(value === null || value === void 0 ? void 0 : value.getId)) {
                 return value.getId();
             }
             return value;
@@ -1698,7 +1698,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}e69d8c3834e0378fcc28a8864e8f22102fa04c8a3df1df11507c544a07622442:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}26c41ab169930d61414cfaebd06c82b6ab0f209e4cb161da8b3e5bc185d8e282:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

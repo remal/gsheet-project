@@ -35,11 +35,11 @@ class ExecutionCache {
 
     private static _getStringKey(key: any): string {
         return JSON.stringify(key, (_, value) => {
-            if (Utils.isFunction(value.getUniqueId)) {
+            if (Utils.isFunction(value?.getUniqueId)) {
                 return value.getUniqueId()
-            } else if (Utils.isFunction(value.getSheetId)) {
+            } else if (Utils.isFunction(value?.getSheetId)) {
                 return value.getSheetId()
-            } else if (Utils.isFunction(value.getId)) {
+            } else if (Utils.isFunction(value?.getId)) {
                 return value.getId()
             }
             return value
