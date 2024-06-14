@@ -14,6 +14,9 @@ class GSheetProjectSettings {
     static childIssuesRangeName: RangeName = 'ChildIssues'
     static teamsRangeName: RangeName = "Teams"
 
+    static settingsScheduleStartRangeName: RangeName = 'ScheduleStart'
+    static settingsScheduleBufferRangeName: RangeName = 'ScheduleBuffer'
+
     static settingsTeamsTableRangeName: RangeName = 'TeamsTable'
     static settingsTeamsTableTeamRangeName: RangeName = 'TeamsTableTeam'
     static settingsTeamsTableResourcesRangeName: RangeName = 'TeamsTableResources'
@@ -21,6 +24,8 @@ class GSheetProjectSettings {
     static settingsMilestonesTableRangeName: RangeName = 'MilestonesTable'
     static settingsMilestonesTableMilestoneRangeName: RangeName = 'MilestonesTableMilestone'
     static settingsMilestonesTableDeadlineRangeName: RangeName = 'MilestonesTableDeadline'
+
+    static publicHolidaysRangeName: RangeName = 'PublicHolidays'
 
 
     static issueTrackers: IssueTracker[] = []
@@ -46,8 +51,6 @@ class GSheetProjectSettings {
     //static issueHashColumnName: ColumnName = "Issue Hash"
 
     static settingsSheetName: SheetName = "Settings"
-    static settingsScheduleStartRangeName: RangeName = 'ScheduleStart'
-    static settingsScheduleBufferRangeName: RangeName = 'ScheduleBuffer'
 
     static loadingText: string | undefined | null = '\u2B6E' // alternative: '\uD83D\uDD03'
     static indent: number = 4

@@ -20,4 +20,8 @@ class NamedRangeUtils {
         })()
     }
 
+    static getNamedRangeColumn(rangeName: string): Column {
+        return this.getNamedRange(rangeName).getRange().getColumn()
+    }
+
 }

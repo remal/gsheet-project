@@ -9,11 +9,38 @@ class SheetLayouts {
 
     static migrateIfNeeded() {
         this.instances.forEach(instance => instance.migrateIfNeeded())
-        CommonFormatter.applyCommonFormatsToAllSheets()
+        this.applyAfterMigrationSteps()
     }
 
     static migrate() {
         this.instances.forEach(instance => instance.migrate())
+        this.applyAfterMigrationSteps()
+    }
+
+    static applyAfterMigrationSteps() {
+        const rangeNames = [
+            GSheetProjectSettings.issuesRangeName,
+            GSheetProjectSettings.childIssuesRangeName,
+            GSheetProjectSettings.teamsRangeName,
+
+            GSheetProjectSettings.settingsScheduleStartRangeName,
+            GSheetProjectSettings.settingsScheduleBufferRangeName,
+
+            GSheetProjectSettings.settingsTeamsTableRangeName,
+            GSheetProjectSettings.settingsTeamsTableTeamRangeName,
+            GSheetProjectSettings.settingsTeamsTableResourcesRangeName,
+
+            GSheetProjectSettings.settingsMilestonesTableRangeName,
+            GSheetProjectSettings.settingsMilestonesTableMilestoneRangeName,
+            GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName,
+
+            GSheetProjectSettings.publicHolidaysRangeName,
+        ]
+        const missingRangeNames = rangeNames.filter(name => NamedRangeUtils.findNamedRange(name) == null)
+        if (missingRangeNames.length) {
+            throw new Error(`Missing named range(s): '${missingRangeNames.join("', '")}'`)
+        }
+
         CommonFormatter.applyCommonFormatsToAllSheets()
     }
 

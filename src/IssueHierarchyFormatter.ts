@@ -234,8 +234,7 @@ class IssueHierarchyFormatter {
 
         const isEmptyCell = (values: string[], formulas: string[], index: number): boolean => {
             const formula = formulas[index]
-            const formulaMarkers = Utils.extractFormulaMarkers(formula)
-            if (formulaMarkers.includes(DefaultFormulas.FORMULA_MARKER)) {
+            if (DefaultFormulas.isDefaultFormula(formula)) {
                 return true
             }
 

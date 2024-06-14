@@ -1,6 +1,10 @@
 class DefaultFormulas extends AbstractIssueLogic {
 
-    static readonly FORMULA_MARKER = "default"
+    private static readonly DEFAULT_FORMULA_MARKER = "default"
+
+    static isDefaultFormula(formula: string | null | undefined): boolean {
+        return Utils.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER)
+    }
 
     static insertDefaultFormulas(range: Range) {
         const processedRange = this._processRange(range)
@@ -54,7 +58,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                             `row #${row}`,
                         ].join(': '))
                         let formula = Utils.processFormula(formulaGenerator(row))
-                        formula = Utils.addFormulaMarker(formula, this.FORMULA_MARKER)
+                        formula = Utils.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER)
                         sheet.getRange(row, column).setFormula(formula)
                     }
                 }
@@ -63,21 +67,20 @@ class DefaultFormulas extends AbstractIssueLogic {
 
 
         addFormulas(startColumn, row => {
-            const teamFirstA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
-                GSheetProjectSettings.firstDataRow,
+            const teamTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                GSheetProjectSettings.titleRow,
                 teamColumn,
             ))
-            const estimateFirstA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
-                GSheetProjectSettings.firstDataRow,
+            const estimateTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                GSheetProjectSettings.titleRow,
                 estimateColumn,
             ))
-            const endFirstA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
-                GSheetProjectSettings.firstDataRow,
+            const endTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                GSheetProjectSettings.titleRow,
                 endColumn,
             ))
 
             const teamA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, teamColumn))
-            const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn))
 
             const resourcesLookup = `
                 VLOOKUP(
@@ -93,16 +96,16 @@ class DefaultFormulas extends AbstractIssueLogic {
             const notEnoughPreviousLanes = `
                 COUNTIFS(
                     OFFSET(
-                        ${teamFirstA1Notation},
-                        0,
+                        ${teamTitleA1Notation},
+                        ${GSheetProjectSettings.firstDataRow - GSheetProjectSettings.titleRow},
                         0,
                         ROW() - ${GSheetProjectSettings.firstDataRow},
                         1
                     ),
                     "=" & ${teamA1Notation},
                     OFFSET(
-                        ${estimateFirstA1Notation},
-                        0,
+                        ${estimateTitleA1Notation},
+                        ${GSheetProjectSettings.firstDataRow - GSheetProjectSettings.titleRow},
                         0,
                         ROW() - ${GSheetProjectSettings.firstDataRow},
                         1
@@ -114,22 +117,22 @@ class DefaultFormulas extends AbstractIssueLogic {
             const filter = `
                 FILTER(
                     OFFSET(
-                        ${endFirstA1Notation},
-                        0,
+                        ${endTitleA1Notation},
+                        ${GSheetProjectSettings.firstDataRow - GSheetProjectSettings.titleRow},
                         0,
                         ROW() - ${GSheetProjectSettings.firstDataRow},
                         1
                     ),
                     OFFSET(
-                        ${teamFirstA1Notation},
-                        0,
+                        ${teamTitleA1Notation},
+                        ${GSheetProjectSettings.firstDataRow - GSheetProjectSettings.titleRow},
                         0,
                         ROW() - ${GSheetProjectSettings.firstDataRow},
                         1
                     ) = ${teamA1Notation},
                     OFFSET(
-                        ${estimateFirstA1Notation},
-                        0,
+                        ${estimateTitleA1Notation},
+                        ${GSheetProjectSettings.firstDataRow - GSheetProjectSettings.titleRow},
                         0,
                         ROW() - ${GSheetProjectSettings.firstDataRow},
                         1
@@ -150,7 +153,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             `
 
             const nextWorkdayLastEnd = `
-                WORKDAY(${lastEnd}, 1)
+                WORKDAY(${lastEnd}, 1, ${GSheetProjectSettings.publicHolidaysRangeName})
             `
 
             const firstDataRowIf = `
@@ -166,10 +169,7 @@ class DefaultFormulas extends AbstractIssueLogic {
 
             const notEnoughDataIf = `
                 IF(
-                    OR(
-                        ${teamA1Notation} = "",
-                        ${estimateA1Notation} = ""
-                    ),
+                    ${teamA1Notation} = "",
                     "",
                     ${firstDataRowIf}
                 )
@@ -191,7 +191,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                     "",
                     WORKDAY(
                         ${startA1Notation},
-                        MAX(ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})) - 1, 0)
+                        MAX(ROUND(${estimateA1Notation} * (1 + ${bufferRangeName})) - 1, 0),
+                        ${GSheetProjectSettings.publicHolidaysRangeName}
                     )
                 )
             `

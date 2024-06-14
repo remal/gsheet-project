@@ -240,7 +240,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 if (column == null) {
                     continue
                 }
-                const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues)
+                const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, row)
                 sheet.getRange(row, column).setValue(
                     value ? "Yes" : '',
                 )
@@ -252,7 +252,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 if (column == null) {
                     continue
                 }
-                const foundIssues = issuesCounterMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues)
+                const foundIssues = issuesCounterMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, row)
                 if (!foundIssues.length) {
                     sheet.getRange(row, column).setValue('')
                     continue
