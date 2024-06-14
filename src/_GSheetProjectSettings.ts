@@ -12,6 +12,7 @@ class GSheetProjectSettings {
 
     static issuesRangeName: RangeName = 'Issues'
     static childIssuesRangeName: RangeName = 'ChildIssues'
+    static titlesRangeName: RangeName = "Titles"
     static teamsRangeName: RangeName = "Teams"
     static estimatesRangeName: RangeName = "Estimates"
     static startsRangeName: RangeName = "Starts"

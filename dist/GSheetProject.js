@@ -126,6 +126,7 @@ GSheetProjectSettings.skipHiddenIssues = true;
 //static restoreUndoneEnd: boolean = false
 GSheetProjectSettings.issuesRangeName = 'Issues';
 GSheetProjectSettings.childIssuesRangeName = 'ChildIssues';
+GSheetProjectSettings.titlesRangeName = "Titles";
 GSheetProjectSettings.teamsRangeName = "Teams";
 GSheetProjectSettings.estimatesRangeName = "Estimates";
 GSheetProjectSettings.startsRangeName = "Starts";
@@ -1737,7 +1738,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}4854e0096b1160f7fb1bac7bcd2f047c47e695b8b43351d16d7eff9c212a8e13:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}50c29a03f174cbcd6a69b91ea56cc2eb3d70c325f0d42dc05667755ddf4fb4e0:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1948,6 +1949,7 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.titleColumnName,
+                rangeName: GSheetProjectSettings.titlesRangeName,
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
@@ -2044,6 +2046,7 @@ class SheetLayouts {
         const rangeNames = [
             GSheetProjectSettings.issuesRangeName,
             GSheetProjectSettings.childIssuesRangeName,
+            GSheetProjectSettings.titlesRangeName,
             GSheetProjectSettings.teamsRangeName,
             GSheetProjectSettings.estimatesRangeName,
             GSheetProjectSettings.startsRangeName,

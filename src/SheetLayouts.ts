@@ -21,6 +21,7 @@ class SheetLayouts {
         const rangeNames = [
             GSheetProjectSettings.issuesRangeName,
             GSheetProjectSettings.childIssuesRangeName,
+            GSheetProjectSettings.titlesRangeName,
             GSheetProjectSettings.teamsRangeName,
             GSheetProjectSettings.estimatesRangeName,
             GSheetProjectSettings.startsRangeName,

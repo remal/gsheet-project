@@ -64,6 +64,7 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.titleColumnName,
+                rangeName: GSheetProjectSettings.titlesRangeName,
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
