@@ -87,6 +87,9 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return
             }
 
+            const isOriginalIssueKeysTextChanged = () =>
+                sheet.getRange(row, currentIssueColumn).getValue() !== originalIssueKeysText
+
             const allIssueKeys = originalIssueKeysText
                 .split(/[\r\n]+/)
                 .map(key => key.trim())
@@ -158,8 +161,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
             })
 
-            const newIssueKeysRichTextValue = RichTextUtils.createLinksValue(allIssueLinks)
-            sheet.getRange(row, currentIssueColumn).setRichTextValue(newIssueKeysRichTextValue)
+            if (isOriginalIssueKeysTextChanged()) {
+                return
+            }
+
+            sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks))
 
 
             const loadedIssues: Issue[] = LazyProxy.create(() => Observability.timed([

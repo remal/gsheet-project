@@ -723,6 +723,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 cleanupColumns();
                 return;
             }
+            const isOriginalIssueKeysTextChanged = () => sheet.getRange(row, currentIssueColumn).getValue() !== originalIssueKeysText;
             const allIssueKeys = originalIssueKeysText
                 .split(/[\r\n]+/)
                 .map(key => key.trim())
@@ -784,8 +785,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     title: issueKey,
                 };
             });
-            const newIssueKeysRichTextValue = RichTextUtils.createLinksValue(allIssueLinks);
-            sheet.getRange(row, currentIssueColumn).setRichTextValue(newIssueKeysRichTextValue);
+            if (isOriginalIssueKeysTextChanged()) {
+                return;
+            }
+            sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks));
             const loadedIssues = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
@@ -1732,7 +1735,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}4d361d2d314ebb9483705805bdbd874cc65eb8aad4080a83bef4bca69ed887d2:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}37c494a4588f0376fd1e0db9acc5cc8e6bfb0f7192362daabd68f1586488a73f:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
