@@ -89,7 +89,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
 
             const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn)
-            const isOriginalIssueKeysTextChanged = () => originalIssueKeysRange.getValue() !== originalIssueKeysText
+            const isOriginalIssueKeysTextChanged = () => {
+                const currentValue = originalIssueKeysRange.getValue().toString()
+                return currentValue !== originalIssueKeysText
+            }
 
 
             const allIssueKeys = originalIssueKeysText

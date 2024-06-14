@@ -729,7 +729,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return;
             }
             const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn);
-            const isOriginalIssueKeysTextChanged = () => originalIssueKeysRange.getValue() !== originalIssueKeysText;
+            const isOriginalIssueKeysTextChanged = () => {
+                const currentValue = originalIssueKeysRange.getValue().toString();
+                return currentValue !== originalIssueKeysText;
+            };
             const allIssueKeys = originalIssueKeysText
                 .split(/[\r\n]+/)
                 .map(key => key.trim())
@@ -1742,7 +1745,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}03270ab2e9c274d885108282658f6d77e4d0bd5825046c2fc094fa1f970fd6bc:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}3a3d83d9ba637a86923f1e157b11e9aec707246287c35bcfaaab21b6f07996df:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
