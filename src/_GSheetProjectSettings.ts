@@ -4,7 +4,7 @@ class GSheetProjectSettings {
     static firstDataRow: Row = this.titleRow + 1
 
     static lockColumns: boolean = false
-    static lockRows: boolean = false
+    static lockRows: boolean = true
     static updateConditionalFormatRules: boolean = true
     static reorderHierarchyAutomatically: boolean = false
     static skipHiddenIssues: boolean = true

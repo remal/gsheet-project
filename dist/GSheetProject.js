@@ -119,7 +119,7 @@ _a = GSheetProjectSettings;
 GSheetProjectSettings.titleRow = 1;
 GSheetProjectSettings.firstDataRow = _a.titleRow + 1;
 GSheetProjectSettings.lockColumns = false;
-GSheetProjectSettings.lockRows = false;
+GSheetProjectSettings.lockRows = true;
 GSheetProjectSettings.updateConditionalFormatRules = true;
 GSheetProjectSettings.reorderHierarchyAutomatically = false;
 GSheetProjectSettings.skipHiddenIssues = true;
@@ -674,6 +674,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
         const processIndex = (index) => {
             var _a, _b, _c;
             const row = range.getRow() + index;
+            ProtectionLocks.lockRows(sheet, row);
             const cleanupColumns = (withTitle = true) => {
                 const notations = [
                     [
@@ -707,6 +708,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             else {
                 sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`);
             }
+            SpreadsheetApp.flush();
             let currentIssueColumn;
             let originalIssueKeysText;
             if ((_b = childIssues[index]) === null || _b === void 0 ? void 0 : _b.length) {
@@ -782,7 +784,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     title: issueKey,
                 };
             });
-            sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks));
+            const newIssueKeysRichTextValue = RichTextUtils.createLinksValue(allIssueLinks);
+            sheet.getRange(row, currentIssueColumn).setRichTextValue(newIssueKeysRichTextValue);
             const loadedIssues = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
@@ -870,6 +873,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '');
             sheet.getRange(row, iconColumn).setValue('');
+            SpreadsheetApp.flush();
         };
         const start = Date.now();
         for (const index of indexes) {
@@ -877,11 +881,13 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 Observability.reportWarning("Issues load timeout occurred");
                 break;
             }
+            const row = range.getRow() + index;
             try {
-                processIndex(index);
+                Observability.timed(`loading issue data for row #${row}`, () => {
+                    processIndex(index);
+                });
             }
             catch (e) {
-                const row = range.getRow() + index;
                 Observability.reportError(`Error loading issue data for row #${row}: ${e}`);
             }
         }
@@ -1726,7 +1732,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}4dcdaa158047a4ddf3cdb3b578e58bee6fe6c55bf3045318e9fd87c4cd5ef8b9:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}4d361d2d314ebb9483705805bdbd874cc65eb8aad4080a83bef4bca69ed887d2:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

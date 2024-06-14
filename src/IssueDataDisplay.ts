@@ -34,6 +34,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
         const processIndex = (index: number) => {
             const row = range.getRow() + index
+            ProtectionLocks.lockRows(sheet, row)
 
             const cleanupColumns = (withTitle: boolean = true) => {
                 const notations = [
@@ -70,6 +71,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             } else {
                 sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`)
             }
+            SpreadsheetApp.flush()
 
 
             let currentIssueColumn: Column
@@ -156,7 +158,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
             })
 
-            sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks))
+            const newIssueKeysRichTextValue = RichTextUtils.createLinksValue(allIssueLinks)
+            sheet.getRange(row, currentIssueColumn).setRichTextValue(newIssueKeysRichTextValue)
 
 
             const loadedIssues: Issue[] = LazyProxy.create(() => Observability.timed([
@@ -275,6 +278,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '')
             sheet.getRange(row, iconColumn).setValue('')
+            SpreadsheetApp.flush()
         }
 
 
@@ -285,11 +289,14 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 break
             }
 
+            const row = range.getRow() + index
+
             try {
-                processIndex(index)
+                Observability.timed(`loading issue data for row #${row}`, () => {
+                    processIndex(index)
+                })
 
             } catch (e) {
-                const row = range.getRow() + index
                 Observability.reportError(`Error loading issue data for row #${row}: ${e}`)
             }
         }
