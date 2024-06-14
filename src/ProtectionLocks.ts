@@ -14,7 +14,7 @@ class ProtectionLocks {
             return
         }
 
-        Utils.timed(`${ProtectionLocks.name}: ${this.lockAllColumns.name}: ${sheet.getSheetName()}`, () => {
+        Observability.timed(`${ProtectionLocks.name}: ${this.lockAllColumns.name}: ${sheet.getSheetName()}`, () => {
             const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns())
             const protection = range.protect()
                 .setDescription(`lock|columns|all|${new Date().getTime()}`)
@@ -33,7 +33,7 @@ class ProtectionLocks {
             return
         }
 
-        Utils.timed(`${ProtectionLocks.name}: ${this.lockAllRows.name}: ${sheet.getSheetName()}`, () => {
+        Observability.timed(`${ProtectionLocks.name}: ${this.lockAllRows.name}: ${sheet.getSheetName()}`, () => {
             const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1)
             const protection = range.protect()
                 .setDescription(`lock|rows|all|${new Date().getTime()}`)
@@ -63,7 +63,7 @@ class ProtectionLocks {
         const rowsProtections = this._rowsProtections.get(sheetId)!
         const maxLockedRow = Array.from(rowsProtections.keys()).reduce((prev, cur) => Math.max(prev, cur), 0)
         if (maxLockedRow < rowToLock) {
-            Utils.timed(
+            Observability.timed(
                 `${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowToLock}`,
                 () => {
                     const range = sheet.getRange(1, sheet.getMaxColumns(), rowToLock, 1)
@@ -81,7 +81,7 @@ class ProtectionLocks {
             return
         }
 
-        Utils.timed(`${ProtectionLocks.name}: ${this.release.name}`, () => {
+        Observability.timed(`${ProtectionLocks.name}: ${this.release.name}`, () => {
             this._allColumnsProtections.forEach(protection => protection.remove())
             this._allColumnsProtections.clear()
 
@@ -100,7 +100,7 @@ class ProtectionLocks {
             return
         }
 
-        Utils.timed(`${ProtectionLocks.name}: ${this.releaseExpiredLocks.name}`, () => {
+        Observability.timed(`${ProtectionLocks.name}: ${this.releaseExpiredLocks.name}`, () => {
             const maxLockDurationMillis = 10 * 60 * 1000
             const minTimestamp = new Date().getTime() - maxLockDurationMillis
             SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(sheet => {

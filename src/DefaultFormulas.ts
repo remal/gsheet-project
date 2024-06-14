@@ -30,7 +30,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const addFormulas = (
             column: Column,
             formulaGenerator: (row: Row) => string,
-        ) => Utils.timed(
+        ) => Observability.timed(
             [
                 DefaultFormulas.name,
                 sheet.getSheetName(),

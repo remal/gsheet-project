@@ -88,10 +88,10 @@ function onEditGSheetProject(event) {
         return;
     }
     EntryPoint.entryPoint(() => {
-        //Utils.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
-        Utils.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range));
-        Utils.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range));
-        Utils.timed(`Reload issue data`, () => IssueDataDisplay.reloadIssueData(range));
+        //Observability.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
+        Observability.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range));
+        Observability.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range));
+        Observability.timed(`Reload issue data`, () => IssueDataDisplay.reloadIssueData(range));
     });
 }
 function onFormSubmitGSheetProject(event) {
@@ -369,7 +369,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const startColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.startColumnName);
         const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName);
         const deadlineColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName);
-        const addFormulas = (column, formulaGenerator) => Utils.timed([
+        const addFormulas = (column, formulaGenerator) => Observability.timed([
             DefaultFormulas.name,
             sheet.getSheetName(),
             addFormulas.name,
@@ -580,8 +580,7 @@ class EntryPoint {
             return action();
         }
         catch (e) {
-            console.error(e);
-            SpreadsheetApp.getActiveSpreadsheet().toast(e.toString(), "Automation error");
+            Observability.reportError(e);
             throw e;
         }
         finally {
@@ -641,7 +640,6 @@ class Images {
 Images.loadingImageUrl = 'https://raw.githubusercontent.com/remal/misc/main/spinner-100.gif';
 class IssueDataDisplay extends AbstractIssueLogic {
     static reloadIssueData(range) {
-        var _a, _b, _c;
         const processedRange = this._processRange(range);
         if (processedRange == null) {
             return;
@@ -673,14 +671,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return -1;
             }
         });
-        const start = Date.now();
-        for (const index of indexes) {
-            if (Date.now() - start >= GSheetProjectSettings.issuesLoadTimeoutMillis) {
-                const message = "Issues load timeout occurred";
-                console.warn(message);
-                //SpreadsheetApp.getActiveSpreadsheet().toast(message)
-                break;
-            }
+        const processIndex = (index) => {
+            var _a, _b, _c;
             const row = range.getRow() + index;
             const cleanupColumns = (withTitle = true) => {
                 const notations = [
@@ -707,7 +699,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             };
             if (GSheetProjectSettings.skipHiddenIssues && sheet.isRowHiddenByUser(row)) { // a slow check
                 cleanupColumns();
-                continue;
+                return;
             }
             if ((_a = GSheetProjectSettings.loadingText) === null || _a === void 0 ? void 0 : _a.length) {
                 sheet.getRange(row, iconColumn).setValue(GSheetProjectSettings.loadingText);
@@ -727,7 +719,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             else {
                 cleanupColumns();
-                continue;
+                return;
             }
             const allIssueKeys = originalIssueKeysText
                 .split(/[\r\n]+/)
@@ -765,7 +757,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             if (issueTracker == null) {
                 cleanupColumns(false);
-                continue;
+                return;
             }
             const allIssueLinks = allIssueKeys.map(issueKey => {
                 if (issueKeys.includes(issueKey)) {
@@ -791,7 +783,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 };
             });
             sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks));
-            const loadedIssues = LazyProxy.create(() => Utils.timed([
+            const loadedIssues = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
                 `row #${row}`,
@@ -800,7 +792,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 const issueIds = Object.values(issueKeyIds).filter(Utils.distinct());
                 return issueTracker.loadIssues(issueIds);
             }));
-            const loadedChildIssues = LazyProxy.create(() => Utils.timed([
+            const loadedChildIssues = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
                 `row #${row}`,
@@ -817,7 +809,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     .filter(Utils.distinctBy(issue => issue.id))
                     .filter(issue => !issueIds.includes(issue.id));
             }));
-            const loadedBlockerIssues = LazyProxy.create(() => Utils.timed([
+            const loadedBlockerIssues = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
                 `row #${row}`,
@@ -837,7 +829,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     return (_a = loadedIssues.find(issue => issue.id)) === null || _a === void 0 ? void 0 : _a.title;
                 }
                 if ((_b = issueKeyQueries[issueKey]) === null || _b === void 0 ? void 0 : _b.length) {
-                    return Utils.timed([
+                    return Observability.timed([
                         IssueDataDisplay.name,
                         this.reloadIssueData.name,
                         `row #${row}`,
@@ -878,6 +870,20 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '');
             sheet.getRange(row, iconColumn).setValue('');
+        };
+        const start = Date.now();
+        for (const index of indexes) {
+            if (Date.now() - start >= GSheetProjectSettings.issuesLoadTimeoutMillis) {
+                Observability.reportWarning("Issues load timeout occurred");
+                break;
+            }
+            try {
+                processIndex(index);
+            }
+            catch (e) {
+                const row = range.getRow() + index;
+                Observability.reportError(`Error loading issue data for row #${row}: ${e}`);
+            }
         }
     }
     static reloadAllIssuesData() {
@@ -897,7 +903,7 @@ class IssueHierarchyFormatter {
         }
         const sheet = issuesRange.getSheet();
         issuesRange = RangeUtils.withMinMaxRows(issuesRange, GSheetProjectSettings.firstDataRow, SheetUtils.getLastRow(sheet));
-        const issues = Utils.timed(`${IssueHierarchyFormatter.name}: getting issues`, () => issuesRange.getValues()
+        const issues = Observability.timed(`${IssueHierarchyFormatter.name}: getting issues`, () => issuesRange.getValues()
             .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); })
             .filter(it => it === null || it === void 0 ? void 0 : it.length)
             .filter(Utils.distinct()));
@@ -905,9 +911,9 @@ class IssueHierarchyFormatter {
             return;
         }
         if (GSheetProjectSettings.reorderHierarchyAutomatically) {
-            Utils.timed(`${IssueHierarchyFormatter.name}: ${this.reorderIssuesAccordingToHierarchy.name}`, () => this.reorderIssuesAccordingToHierarchy(issues));
+            Observability.timed(`${IssueHierarchyFormatter.name}: ${this.reorderIssuesAccordingToHierarchy.name}`, () => this.reorderIssuesAccordingToHierarchy(issues));
         }
-        Utils.timed(`${IssueHierarchyFormatter.name}: ${this.formatHierarchyIssues.name}`, () => this.formatHierarchyIssues(issues));
+        Observability.timed(`${IssueHierarchyFormatter.name}: ${this.formatHierarchyIssues.name}`, () => this.formatHierarchyIssues(issues));
     }
     static reorderAllIssuesAccordingToHierarchy() {
         this.reorderIssuesAccordingToHierarchy(undefined);
@@ -1416,6 +1422,28 @@ class NamedRangeUtils {
         return this.getNamedRange(rangeName).getRange().getColumn();
     }
 }
+class Observability {
+    static reportError(message) {
+        var _a;
+        console.error(message);
+        SpreadsheetApp.getActiveSpreadsheet().toast((_a = message === null || message === void 0 ? void 0 : message.toString()) !== null && _a !== void 0 ? _a : '', "Automation error");
+    }
+    static reportWarning(message) {
+        console.error(message);
+    }
+    static timed(timerLabel, action, enabled) {
+        if (enabled === false) {
+            return action();
+        }
+        console.time(timerLabel);
+        try {
+            return action();
+        }
+        finally {
+            console.timeEnd(timerLabel);
+        }
+    }
+}
 class ProtectionLocks {
     static lockAllColumns(sheet) {
         if (!GSheetProjectSettings.lockColumns) {
@@ -1425,7 +1453,7 @@ class ProtectionLocks {
         if (this._allColumnsProtections.has(sheetId)) {
             return;
         }
-        Utils.timed(`${ProtectionLocks.name}: ${this.lockAllColumns.name}: ${sheet.getSheetName()}`, () => {
+        Observability.timed(`${ProtectionLocks.name}: ${this.lockAllColumns.name}: ${sheet.getSheetName()}`, () => {
             const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
             const protection = range.protect()
                 .setDescription(`lock|columns|all|${new Date().getTime()}`)
@@ -1441,7 +1469,7 @@ class ProtectionLocks {
         if (this._allRowsProtections.has(sheetId)) {
             return;
         }
-        Utils.timed(`${ProtectionLocks.name}: ${this.lockAllRows.name}: ${sheet.getSheetName()}`, () => {
+        Observability.timed(`${ProtectionLocks.name}: ${this.lockAllRows.name}: ${sheet.getSheetName()}`, () => {
             const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1);
             const protection = range.protect()
                 .setDescription(`lock|rows|all|${new Date().getTime()}`)
@@ -1466,7 +1494,7 @@ class ProtectionLocks {
         const rowsProtections = this._rowsProtections.get(sheetId);
         const maxLockedRow = Array.from(rowsProtections.keys()).reduce((prev, cur) => Math.max(prev, cur), 0);
         if (maxLockedRow < rowToLock) {
-            Utils.timed(`${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowToLock}`, () => {
+            Observability.timed(`${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowToLock}`, () => {
                 const range = sheet.getRange(1, sheet.getMaxColumns(), rowToLock, 1);
                 const protection = range.protect()
                     .setDescription(`lock|rows|${rowToLock}|${new Date().getTime()}`)
@@ -1479,7 +1507,7 @@ class ProtectionLocks {
         if (!GSheetProjectSettings.lockColumns && !GSheetProjectSettings.lockRows) {
             return;
         }
-        Utils.timed(`${ProtectionLocks.name}: ${this.release.name}`, () => {
+        Observability.timed(`${ProtectionLocks.name}: ${this.release.name}`, () => {
             this._allColumnsProtections.forEach(protection => protection.remove());
             this._allColumnsProtections.clear();
             this._allRowsProtections.forEach(protection => protection.remove());
@@ -1492,7 +1520,7 @@ class ProtectionLocks {
         if (!GSheetProjectSettings.lockColumns && !GSheetProjectSettings.lockRows) {
             return;
         }
-        Utils.timed(`${ProtectionLocks.name}: ${this.releaseExpiredLocks.name}`, () => {
+        Observability.timed(`${ProtectionLocks.name}: ${this.releaseExpiredLocks.name}`, () => {
             const maxLockDurationMillis = 10 * 60 * 1000;
             const minTimestamp = new Date().getTime() - maxLockDurationMillis;
             SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(sheet => {
@@ -1698,7 +1726,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}26c41ab169930d61414cfaebd06c82b6ab0f209e4cb161da8b3e5bc185d8e282:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}4dcdaa158047a4ddf3cdb3b578e58bee6fe6c55bf3045318e9fd87c4cd5ef8b9:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2181,7 +2209,7 @@ class SheetUtils {
         if (minRow > maxRow) {
             return result;
         }
-        Utils.timed([
+        Observability.timed([
             SheetUtils.name,
             this._getColumnsProps.name,
             sheet.getSheetName(),
@@ -2234,15 +2262,6 @@ class SheetUtils {
         }
         const columns = lastColumn - minColumn + 1;
         return sheet.getRange(row, minColumn, 1, columns);
-    }
-}
-class Timer {
-    constructor(name) {
-        this._name = name;
-        this._start = Date.now();
-    }
-    log() {
-        console.log(`${this._name}: ${Date.now() - this._start}ms`);
     }
 }
 
@@ -2503,18 +2522,6 @@ class Utils {
     }
     static numericDesc() {
         return (n1, n2) => n2 - n1;
-    }
-    static timed(timerLabel, action, enabled) {
-        if (enabled === false) {
-            return action();
-        }
-        console.time(timerLabel);
-        try {
-            return action();
-        }
-        finally {
-            console.timeEnd(timerLabel);
-        }
     }
     static isString(value) {
         return typeof value === 'string';

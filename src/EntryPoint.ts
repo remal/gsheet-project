@@ -13,8 +13,7 @@ class EntryPoint {
             return action()
 
         } catch (e) {
-            console.error(e)
-            SpreadsheetApp.getActiveSpreadsheet().toast(e.toString(), "Automation error")
+            Observability.reportError(e)
             throw e
 
         } finally {

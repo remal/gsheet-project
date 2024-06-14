@@ -89,10 +89,10 @@ function onEditGSheetProject(event?: Partial<Pick<SheetsOnEdit, 'range'>>) {
     }
 
     EntryPoint.entryPoint(() => {
-        //Utils.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
-        Utils.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range))
-        Utils.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range))
-        Utils.timed(`Reload issue data`, () => IssueDataDisplay.reloadIssueData(range))
+        //Observability.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
+        Observability.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range))
+        Observability.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range))
+        Observability.timed(`Reload issue data`, () => IssueDataDisplay.reloadIssueData(range))
     })
 }
 

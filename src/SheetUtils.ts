@@ -200,7 +200,7 @@ class SheetUtils {
             return result
         }
 
-        Utils.timed(
+        Observability.timed(
             [
                 SheetUtils.name,
                 this._getColumnsProps.name,

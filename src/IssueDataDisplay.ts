@@ -31,15 +31,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
             })
 
-        const start = Date.now()
-        for (const index of indexes) {
-            if (Date.now() - start >= GSheetProjectSettings.issuesLoadTimeoutMillis) {
-                const message = "Issues load timeout occurred"
-                console.warn(message)
-                //SpreadsheetApp.getActiveSpreadsheet().toast(message)
-                break
-            }
 
+        const processIndex = (index: number) => {
             const row = range.getRow() + index
 
             const cleanupColumns = (withTitle: boolean = true) => {
@@ -69,7 +62,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             if (GSheetProjectSettings.skipHiddenIssues && sheet.isRowHiddenByUser(row)) { // a slow check
                 cleanupColumns()
-                continue
+                return
             }
 
             if (GSheetProjectSettings.loadingText?.length) {
@@ -89,7 +82,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 originalIssueKeysText = issues[index]
             } else {
                 cleanupColumns()
-                continue
+                return
             }
 
             const allIssueKeys = originalIssueKeysText
@@ -134,7 +127,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             if (issueTracker == null) {
                 cleanupColumns(false)
-                continue
+                return
             }
 
 
@@ -166,7 +159,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks))
 
 
-            const loadedIssues: Issue[] = LazyProxy.create(() => Utils.timed([
+            const loadedIssues: Issue[] = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
                 `row #${row}`,
@@ -176,7 +169,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return issueTracker.loadIssues(issueIds)
             }))
 
-            const loadedChildIssues: Issue[] = LazyProxy.create(() => Utils.timed([
+            const loadedChildIssues: Issue[] = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
                 `row #${row}`,
@@ -194,7 +187,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     .filter(issue => !issueIds.includes(issue.id))
             }))
 
-            const loadedBlockerIssues: Issue[] = LazyProxy.create(() => Utils.timed([
+            const loadedBlockerIssues: Issue[] = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
                 `row #${row}`,
@@ -216,7 +209,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
 
                 if (issueKeyQueries[issueKey]?.length) {
-                    return Utils.timed(
+                    return Observability.timed(
                         [
                             IssueDataDisplay.name,
                             this.reloadIssueData.name,
@@ -282,6 +275,23 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '')
             sheet.getRange(row, iconColumn).setValue('')
+        }
+
+
+        const start = Date.now()
+        for (const index of indexes) {
+            if (Date.now() - start >= GSheetProjectSettings.issuesLoadTimeoutMillis) {
+                Observability.reportWarning("Issues load timeout occurred")
+                break
+            }
+
+            try {
+                processIndex(index)
+
+            } catch (e) {
+                const row = range.getRow() + index
+                Observability.reportError(`Error loading issue data for row #${row}: ${e}`)
+            }
         }
     }
 

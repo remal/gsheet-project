@@ -18,7 +18,7 @@ class IssueHierarchyFormatter {
             GSheetProjectSettings.firstDataRow,
             SheetUtils.getLastRow(sheet),
         )
-        const issues = Utils.timed(`${IssueHierarchyFormatter.name}: getting issues`, () =>
+        const issues = Observability.timed(`${IssueHierarchyFormatter.name}: getting issues`, () =>
             issuesRange.getValues()
                 .map(it => it[0]?.toString())
                 .filter(it => it?.length)
@@ -29,12 +29,12 @@ class IssueHierarchyFormatter {
         }
 
         if (GSheetProjectSettings.reorderHierarchyAutomatically) {
-            Utils.timed(`${IssueHierarchyFormatter.name}: ${this.reorderIssuesAccordingToHierarchy.name}`, () =>
+            Observability.timed(`${IssueHierarchyFormatter.name}: ${this.reorderIssuesAccordingToHierarchy.name}`, () =>
                 this.reorderIssuesAccordingToHierarchy(issues),
             )
         }
 
-        Utils.timed(`${IssueHierarchyFormatter.name}: ${this.formatHierarchyIssues.name}`, () =>
+        Observability.timed(`${IssueHierarchyFormatter.name}: ${this.formatHierarchyIssues.name}`, () =>
             this.formatHierarchyIssues(issues),
         )
     }

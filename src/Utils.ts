@@ -298,19 +298,6 @@ class Utils {
         return (n1, n2) => n2 - n1
     }
 
-    static timed<T>(timerLabel: string, action: () => T, enabled?: boolean): T {
-        if (enabled === false) {
-            return action()
-        }
-
-        console.time(timerLabel)
-        try {
-            return action()
-        } finally {
-            console.timeEnd(timerLabel)
-        }
-    }
-
     static isString(value: unknown): value is string {
         return typeof value === 'string'
     }
