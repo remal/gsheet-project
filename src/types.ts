@@ -6,8 +6,20 @@ type Row = number
 type Column = number
 type Formula = string
 
-type IssuesMetric<T> = (issues: Issue[], childIssues: Issue[], blockerIssues: Issue[], row: Row) => T
-type IssuesCounterMetric = (issues: Issue[], childIssues: Issue[], blockerIssues: Issue[], row: Row) => Issue[]
+type IssuesMetric<T> = (
+    issues: Issue[],
+    childIssues: Issue[],
+    blockerIssues: Issue[],
+    sheet: Sheet,
+    row: Row,
+) => T
+type IssuesCounterMetric = (
+    issues: Issue[],
+    childIssues: Issue[],
+    blockerIssues: Issue[],
+    sheet: Sheet,
+    row: Row,
+) => Issue[]
 
 type Range = GoogleAppsScript.Spreadsheet.Range
 type RangeList = GoogleAppsScript.Spreadsheet.RangeList

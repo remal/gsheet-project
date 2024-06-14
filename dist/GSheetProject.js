@@ -855,7 +855,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 if (column == null) {
                     continue;
                 }
-                const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, row);
+                const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, sheet, row);
                 sheet.getRange(row, column).setValue(value ? "Yes" : '');
             }
             for (const [columnName, issuesCounterMetric] of Object.entries(GSheetProjectSettings.counterIssuesMetrics)) {
@@ -863,7 +863,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 if (column == null) {
                     continue;
                 }
-                const foundIssues = issuesCounterMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, row);
+                const foundIssues = issuesCounterMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, sheet, row);
                 if (!foundIssues.length) {
                     sheet.getRange(row, column).setValue('');
                     continue;
@@ -1698,7 +1698,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}c85bd23860d5346f008181426afa8f4b633753c07bd05bcdfb5403ca7b8c7b96:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}e69d8c3834e0378fcc28a8864e8f22102fa04c8a3df1df11507c544a07622442:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
