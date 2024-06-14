@@ -176,13 +176,13 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return issueTracker.loadIssues(issueIds)
             }))
 
-            const loadedChildIssues: Issue[] = LazyProxy.create(() => Utils.timed([
+            const loadedAllChildIssues: Issue[] = LazyProxy.create(() => Utils.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
                 `row #${row}`,
                 `loading child issues`,
             ].join(': '), () => {
-                const issueIds = loadedIssues.map(it => it.id)
+                const issueIds = loadedIssues.map(it => it.id).filter(Utils.distinct())
                 return [
                     issueTracker.loadChildren(issueIds),
                     Object.values(issueKeyQueries)
@@ -200,13 +200,19 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `row #${row}`,
                 `loading blocker issues`,
             ].join(': '), () => {
-                const issueIds = loadedIssues.map(it => it.id)
-                const allIssueIds = [loadedIssues, loadedChildIssues]
+                const issueIds = loadedIssues.map(it => it.id).filter(Utils.distinct())
+                const allIssueIds = [loadedIssues, loadedAllChildIssues]
                     .flatMap(it => it.map(it => it.id))
                     .filter(Utils.distinct())
                 return issueTracker.loadBlockers(allIssueIds)
                     .filter(issue => !issueIds.includes(issue.id))
             }))
+
+            const loadedChildIssues: Issue[] = LazyProxy.create(() => {
+                const blockerIssueIds = loadedBlockerIssues.map(issue => issue.id).filter(Utils.distinct())
+                return loadedAllChildIssues
+                    .filter(issue => !blockerIssueIds.includes(issue.id))
+            })
 
 
             const titles = issueKeys.map(issueKey => {

@@ -800,13 +800,13 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 const issueIds = Object.values(issueKeyIds).filter(Utils.distinct());
                 return issueTracker.loadIssues(issueIds);
             }));
-            const loadedChildIssues = LazyProxy.create(() => Utils.timed([
+            const loadedAllChildIssues = LazyProxy.create(() => Utils.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
                 `row #${row}`,
                 `loading child issues`,
             ].join(': '), () => {
-                const issueIds = loadedIssues.map(it => it.id);
+                const issueIds = loadedIssues.map(it => it.id).filter(Utils.distinct());
                 return [
                     issueTracker.loadChildren(issueIds),
                     Object.values(issueKeyQueries)
@@ -823,13 +823,18 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `row #${row}`,
                 `loading blocker issues`,
             ].join(': '), () => {
-                const issueIds = loadedIssues.map(it => it.id);
-                const allIssueIds = [loadedIssues, loadedChildIssues]
+                const issueIds = loadedIssues.map(it => it.id).filter(Utils.distinct());
+                const allIssueIds = [loadedIssues, loadedAllChildIssues]
                     .flatMap(it => it.map(it => it.id))
                     .filter(Utils.distinct());
                 return issueTracker.loadBlockers(allIssueIds)
                     .filter(issue => !issueIds.includes(issue.id));
             }));
+            const loadedChildIssues = LazyProxy.create(() => {
+                const blockerIssueIds = loadedBlockerIssues.map(issue => issue.id).filter(Utils.distinct());
+                return loadedAllChildIssues
+                    .filter(issue => !blockerIssueIds.includes(issue.id));
+            });
             const titles = issueKeys.map(issueKey => {
                 var _a, _b;
                 const issueId = issueKeyIds[issueKey];
@@ -1698,7 +1703,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}e69d8c3834e0378fcc28a8864e8f22102fa04c8a3df1df11507c544a07622442:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}48c1ef27d3677633ce925c90d4b05e9cff84b0901876c56a45c5894a7bb0a12f:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
