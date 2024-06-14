@@ -22,6 +22,9 @@ class SheetLayouts {
             GSheetProjectSettings.issuesRangeName,
             GSheetProjectSettings.childIssuesRangeName,
             GSheetProjectSettings.teamsRangeName,
+            GSheetProjectSettings.estimatesRangeName,
+            GSheetProjectSettings.startsRangeName,
+            GSheetProjectSettings.endsRangeName,
 
             GSheetProjectSettings.settingsScheduleStartRangeName,
             GSheetProjectSettings.settingsScheduleBufferRangeName,

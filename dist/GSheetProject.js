@@ -127,6 +127,9 @@ GSheetProjectSettings.skipHiddenIssues = true;
 GSheetProjectSettings.issuesRangeName = 'Issues';
 GSheetProjectSettings.childIssuesRangeName = 'ChildIssues';
 GSheetProjectSettings.teamsRangeName = "Teams";
+GSheetProjectSettings.estimatesRangeName = "Estimates";
+GSheetProjectSettings.startsRangeName = "Starts";
+GSheetProjectSettings.endsRangeName = "Ends";
 GSheetProjectSettings.settingsScheduleStartRangeName = 'ScheduleStart';
 GSheetProjectSettings.settingsScheduleBufferRangeName = 'ScheduleBuffer';
 GSheetProjectSettings.settingsTeamsTableRangeName = 'TeamsTable';
@@ -1695,7 +1698,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}ef8305609693fcd0266ee030f20961beefad450d640a782546f18d8ff748114e:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}c85bd23860d5346f008181426afa8f4b633753c07bd05bcdfb5403ca7b8c7b96:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1924,6 +1927,7 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
+                rangeName: GSheetProjectSettings.estimatesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(`
                         =INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""
@@ -1935,11 +1939,13 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.startColumnName,
+                rangeName: GSheetProjectSettings.startsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.endColumnName,
+                rangeName: GSheetProjectSettings.endsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
@@ -2000,6 +2006,9 @@ class SheetLayouts {
             GSheetProjectSettings.issuesRangeName,
             GSheetProjectSettings.childIssuesRangeName,
             GSheetProjectSettings.teamsRangeName,
+            GSheetProjectSettings.estimatesRangeName,
+            GSheetProjectSettings.startsRangeName,
+            GSheetProjectSettings.endsRangeName,
             GSheetProjectSettings.settingsScheduleStartRangeName,
             GSheetProjectSettings.settingsScheduleBufferRangeName,
             GSheetProjectSettings.settingsTeamsTableRangeName,

@@ -82,6 +82,7 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.estimateColumnName,
+                rangeName: GSheetProjectSettings.estimatesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(`
                         =INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""
@@ -95,11 +96,13 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.startColumnName,
+                rangeName: GSheetProjectSettings.startsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.endColumnName,
+                rangeName: GSheetProjectSettings.endsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
