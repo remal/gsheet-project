@@ -6,7 +6,7 @@ class Observability {
     }
 
     static reportWarning(message: any) {
-        console.error(message)
+        console.warn(message)
     }
 
     static timed<T>(timerLabel: string, action: () => T, enabled?: boolean): T {

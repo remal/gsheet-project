@@ -48,6 +48,12 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
     })
 }
 
+function cleanupGSheetProject() {
+    EntryPoint.entryPoint(() => {
+        ProtectionLocks.releaseExpiredLocks()
+    })
+}
+
 function onOpenGSheetProject(event?: SheetsOnOpen) {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded()

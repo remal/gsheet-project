@@ -18,7 +18,6 @@ class EntryPoint {
 
         } finally {
             ProtectionLocks.release()
-            ProtectionLocks.releaseExpiredLocks()
             this._isInEntryPoint = false
         }
     }

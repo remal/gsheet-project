@@ -52,6 +52,11 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
         IssueHierarchyFormatter.reorderAllIssuesAccordingToHierarchy();
     });
 }
+function cleanupGSheetProject() {
+    EntryPoint.entryPoint(() => {
+        ProtectionLocks.releaseExpiredLocks();
+    });
+}
 function onOpenGSheetProject(event) {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded();
@@ -586,7 +591,6 @@ class EntryPoint {
         }
         finally {
             ProtectionLocks.release();
-            ProtectionLocks.releaseExpiredLocks();
             this._isInEntryPoint = false;
         }
     }
@@ -1441,7 +1445,7 @@ class Observability {
         SpreadsheetApp.getActiveSpreadsheet().toast((_a = message === null || message === void 0 ? void 0 : message.toString()) !== null && _a !== void 0 ? _a : '', "Automation error");
     }
     static reportWarning(message) {
-        console.error(message);
+        console.warn(message);
     }
     static timed(timerLabel, action, enabled) {
         if (enabled === false) {
@@ -1738,7 +1742,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}50c29a03f174cbcd6a69b91ea56cc2eb3d70c325f0d42dc05667755ddf4fb4e0:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}03270ab2e9c274d885108282658f6d77e4d0bd5825046c2fc094fa1f970fd6bc:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
