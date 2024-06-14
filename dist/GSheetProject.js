@@ -723,7 +723,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 cleanupColumns();
                 return;
             }
-            const isOriginalIssueKeysTextChanged = () => sheet.getRange(row, currentIssueColumn).getValue() !== originalIssueKeysText;
+            const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn);
+            const isOriginalIssueKeysTextChanged = () => originalIssueKeysRange.getValue() !== originalIssueKeysText;
             const allIssueKeys = originalIssueKeysText
                 .split(/[\r\n]+/)
                 .map(key => key.trim())
@@ -786,6 +787,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 };
             });
             if (isOriginalIssueKeysTextChanged()) {
+                Observability.reportWarning(`Content of ${originalIssueKeysRange.getA1Notation()} has been changed`);
                 return;
             }
             sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks));
@@ -1735,7 +1737,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}37c494a4588f0376fd1e0db9acc5cc8e6bfb0f7192362daabd68f1586488a73f:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}4854e0096b1160f7fb1bac7bcd2f047c47e695b8b43351d16d7eff9c212a8e13:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

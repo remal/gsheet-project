@@ -87,8 +87,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return
             }
 
-            const isOriginalIssueKeysTextChanged = () =>
-                sheet.getRange(row, currentIssueColumn).getValue() !== originalIssueKeysText
+
+            const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn)
+            const isOriginalIssueKeysTextChanged = () => originalIssueKeysRange.getValue() !== originalIssueKeysText
+
 
             const allIssueKeys = originalIssueKeysText
                 .split(/[\r\n]+/)
@@ -162,6 +164,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             })
 
             if (isOriginalIssueKeysTextChanged()) {
+                Observability.reportWarning(`Content of ${originalIssueKeysRange.getA1Notation()} has been changed`)
                 return
             }
 
