@@ -903,7 +903,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
         const start = Date.now();
         let processedIndexes = 0;
         for (const index of indexes) {
-            console.info(`Processing #${processedIndexes++} index out of #${indexes.length + 1}`);
+            console.info(`Processing index ${processedIndexes++} / ${indexes.length + 1}`);
             if (Date.now() - start >= GSheetProjectSettings.issuesLoadTimeoutMillis) {
                 Observability.reportWarning("Issues load timeout occurred");
                 break;
@@ -1795,7 +1795,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}7bb07270aea13e4a6715a29e9083ec9df3329a30097fe1394ec34676ba761b50:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}9c3e9bedc85dc0d71c22ad057a4d495347c897ea732611bfe842c181838d336d:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
