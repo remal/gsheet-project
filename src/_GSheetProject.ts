@@ -22,26 +22,17 @@ function refreshSelectedRowsOfGSheetProject() {
 
 function refreshAllRowsOfGSheetProject() {
     EntryPoint.entryPoint(() => {
-        if (!PropertyLocks.waitLock(refreshAllRowsOfGSheetProject.name)) {
-            return
-        }
-        try {
+        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+            .filter(sheet => SheetUtils.isGridSheet(sheet))
+            .forEach(sheet => {
+                const rowsRange = sheet.getRange(
+                    `1:${SheetUtils.getLastRow(sheet)}`,
+                )
 
-            SpreadsheetApp.getActiveSpreadsheet().getSheets()
-                .filter(sheet => SheetUtils.isGridSheet(sheet))
-                .forEach(sheet => {
-                    const rowsRange = sheet.getRange(
-                        `1:${SheetUtils.getLastRow(sheet)}`,
-                    )
-
-                    onEditGSheetProject({
-                        range: rowsRange,
-                    })
+                onEditGSheetProject({
+                    range: rowsRange,
                 })
-
-        } finally {
-            PropertyLocks.releaseLock(refreshAllRowsOfGSheetProject.name)
-        }
+            })
     }, false)
 }
 

@@ -32,22 +32,14 @@ function refreshSelectedRowsOfGSheetProject() {
 }
 function refreshAllRowsOfGSheetProject() {
     EntryPoint.entryPoint(() => {
-        if (!PropertyLocks.waitLock(refreshAllRowsOfGSheetProject.name)) {
-            return;
-        }
-        try {
-            SpreadsheetApp.getActiveSpreadsheet().getSheets()
-                .filter(sheet => SheetUtils.isGridSheet(sheet))
-                .forEach(sheet => {
-                const rowsRange = sheet.getRange(`1:${SheetUtils.getLastRow(sheet)}`);
-                onEditGSheetProject({
-                    range: rowsRange,
-                });
+        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+            .filter(sheet => SheetUtils.isGridSheet(sheet))
+            .forEach(sheet => {
+            const rowsRange = sheet.getRange(`1:${SheetUtils.getLastRow(sheet)}`);
+            onEditGSheetProject({
+                range: rowsRange,
             });
-        }
-        finally {
-            PropertyLocks.releaseLock(refreshAllRowsOfGSheetProject.name);
-        }
+        });
     }, false);
 }
 function applyDefaultStylesOfGSheetProject() {
@@ -1803,7 +1795,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f25e0892a311b0156ee9c9025e660928f2849f097d2f9ffdc62d7c70fb5ccd57:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}7bb07270aea13e4a6715a29e9083ec9df3329a30097fe1394ec34676ba761b50:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
