@@ -37,6 +37,8 @@ type SheetsOnChange = GoogleAppsScript.Events.SheetsOnChange
 type SheetsOnEdit = GoogleAppsScript.Events.SheetsOnEdit
 type SheetsOnFormSubmit = GoogleAppsScript.Events.SheetsOnFormSubmit
 
+type Lock = GoogleAppsScript.Lock.Lock
+
 type HorizontalAlignment = 'left' | 'center' | 'normal' | 'right'
 type VerticalAlignment = 'top' | 'middle' | 'bottom'
 type FontSize = number

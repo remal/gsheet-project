@@ -32,7 +32,8 @@ function refreshSelectedRowsOfGSheetProject() {
 }
 function refreshAllRowsOfGSheetProject() {
     EntryPoint.entryPoint(() => {
-        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+        const spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+        spreadSheet.getSheets()
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
             const rowsRange = sheet.getRange(`1:${SheetUtils.getLastRow(sheet)}`);
@@ -40,7 +41,7 @@ function refreshAllRowsOfGSheetProject() {
                 range: rowsRange,
             });
         });
-    });
+    }, false);
 }
 function applyDefaultStylesOfGSheetProject() {
     EntryPoint.entryPoint(() => {
@@ -55,12 +56,12 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
         ProtectionLocks.releaseExpiredLocks();
-    });
+    }, false);
 }
 function onOpenGSheetProject(event) {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded();
-    });
+    }, false);
     SpreadsheetApp.getUi()
         .createMenu("GSheetProject")
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
@@ -149,6 +150,8 @@ GSheetProjectSettings.issueTrackers = [];
 GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.booleanIssuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
+GSheetProjectSettings.useLockService = true;
+GSheetProjectSettings.lockTimeout = 10 * 60 * 1000;
 GSheetProjectSettings.sheetName = "Projects";
 GSheetProjectSettings.iconColumnName = "icon";
 //static doneColumnName: ColumnName = "Done"
@@ -576,9 +579,14 @@ class DocumentFlags {
 }
 
 class EntryPoint {
-    static entryPoint(action) {
+    static entryPoint(action, useLocks) {
         if (this._isInEntryPoint) {
             return action();
+        }
+        let lock = null;
+        if (useLocks !== null && useLocks !== void 0 ? useLocks : GSheetProjectSettings.useLockService) {
+            lock = LockService.getDocumentLock();
+            lock.waitLock(GSheetProjectSettings.lockTimeout);
         }
         try {
             this._isInEntryPoint = true;
@@ -591,6 +599,7 @@ class EntryPoint {
         }
         finally {
             ProtectionLocks.release();
+            lock === null || lock === void 0 ? void 0 : lock.releaseLock();
             this._isInEntryPoint = false;
         }
     }
@@ -1747,7 +1756,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}0c2be47a1080c9f567eb7007f0db53ed4f7b6925fdbc6f8513c3b0d49f5edcb8:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}470f51f40d35713c84e16d09c9fc8cdf37f28222984c3984d5ab4bb92948dbad:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

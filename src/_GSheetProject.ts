@@ -22,7 +22,8 @@ function refreshSelectedRowsOfGSheetProject() {
 
 function refreshAllRowsOfGSheetProject() {
     EntryPoint.entryPoint(() => {
-        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+        const spreadSheet = SpreadsheetApp.getActiveSpreadsheet()
+        spreadSheet.getSheets()
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
                 const rowsRange = sheet.getRange(
@@ -33,7 +34,7 @@ function refreshAllRowsOfGSheetProject() {
                     range: rowsRange,
                 })
             })
-    })
+    }, false)
 }
 
 function applyDefaultStylesOfGSheetProject() {
@@ -51,13 +52,13 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
         ProtectionLocks.releaseExpiredLocks()
-    })
+    }, false)
 }
 
 function onOpenGSheetProject(event?: SheetsOnOpen) {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded()
-    })
+    }, false)
 
     SpreadsheetApp.getUi()
         .createMenu("GSheetProject")

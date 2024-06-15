@@ -37,6 +37,9 @@ class GSheetProjectSettings {
     static booleanIssuesMetrics: Record<ColumnName, IssuesMetric<boolean>> = {}
     static counterIssuesMetrics: Record<ColumnName, IssuesCounterMetric> = {}
 
+    static useLockService: boolean = true
+    static lockTimeout: number = 10 * 60 * 1000
+
 
     static sheetName: SheetName = "Projects"
     static iconColumnName: ColumnName = "icon"
