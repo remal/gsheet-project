@@ -10,12 +10,12 @@ class EntryPoint {
         let lock: Lock | null = null
         if (useLocks ?? GSheetProjectSettings.useLockService) {
             lock = LockService.getDocumentLock()
-            lock.waitLock(GSheetProjectSettings.lockTimeout)
         }
 
         try {
             this._isInEntryPoint = true
             ExecutionCache.resetCache()
+            lock?.waitLock(GSheetProjectSettings.lockTimeoutMillis)
             return action()
 
         } catch (e) {

@@ -22,18 +22,26 @@ function refreshSelectedRowsOfGSheetProject() {
 
 function refreshAllRowsOfGSheetProject() {
     EntryPoint.entryPoint(() => {
-        const spreadSheet = SpreadsheetApp.getActiveSpreadsheet()
-        spreadSheet.getSheets()
-            .filter(sheet => SheetUtils.isGridSheet(sheet))
-            .forEach(sheet => {
-                const rowsRange = sheet.getRange(
-                    `1:${SheetUtils.getLastRow(sheet)}`,
-                )
+        if (!PropertyLocks.waitLock(refreshAllRowsOfGSheetProject.name)) {
+            return
+        }
+        try {
 
-                onEditGSheetProject({
-                    range: rowsRange,
+            SpreadsheetApp.getActiveSpreadsheet().getSheets()
+                .filter(sheet => SheetUtils.isGridSheet(sheet))
+                .forEach(sheet => {
+                    const rowsRange = sheet.getRange(
+                        `1:${SheetUtils.getLastRow(sheet)}`,
+                    )
+
+                    onEditGSheetProject({
+                        range: rowsRange,
+                    })
                 })
-            })
+
+        } finally {
+            PropertyLocks.releaseLock(refreshAllRowsOfGSheetProject.name)
+        }
     }, false)
 }
 
@@ -52,6 +60,7 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
         ProtectionLocks.releaseExpiredLocks()
+        PropertyLocks.releaseExpiredPropertyLocks()
     }, false)
 }
 

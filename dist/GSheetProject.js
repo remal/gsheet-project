@@ -32,15 +32,22 @@ function refreshSelectedRowsOfGSheetProject() {
 }
 function refreshAllRowsOfGSheetProject() {
     EntryPoint.entryPoint(() => {
-        const spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
-        spreadSheet.getSheets()
-            .filter(sheet => SheetUtils.isGridSheet(sheet))
-            .forEach(sheet => {
-            const rowsRange = sheet.getRange(`1:${SheetUtils.getLastRow(sheet)}`);
-            onEditGSheetProject({
-                range: rowsRange,
+        if (!PropertyLocks.waitLock(refreshAllRowsOfGSheetProject.name)) {
+            return;
+        }
+        try {
+            SpreadsheetApp.getActiveSpreadsheet().getSheets()
+                .filter(sheet => SheetUtils.isGridSheet(sheet))
+                .forEach(sheet => {
+                const rowsRange = sheet.getRange(`1:${SheetUtils.getLastRow(sheet)}`);
+                onEditGSheetProject({
+                    range: rowsRange,
+                });
             });
-        });
+        }
+        finally {
+            PropertyLocks.releaseLock(refreshAllRowsOfGSheetProject.name);
+        }
     }, false);
 }
 function applyDefaultStylesOfGSheetProject() {
@@ -56,6 +63,7 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
         ProtectionLocks.releaseExpiredLocks();
+        PropertyLocks.releaseExpiredPropertyLocks();
     }, false);
 }
 function onOpenGSheetProject(event) {
@@ -151,7 +159,7 @@ GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.booleanIssuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
 GSheetProjectSettings.useLockService = true;
-GSheetProjectSettings.lockTimeout = 10 * 60 * 1000;
+GSheetProjectSettings.lockTimeoutMillis = 10 * 60 * 1000;
 GSheetProjectSettings.sheetName = "Projects";
 GSheetProjectSettings.iconColumnName = "icon";
 //static doneColumnName: ColumnName = "Done"
@@ -543,8 +551,9 @@ class DefaultFormulas extends AbstractIssueLogic {
 DefaultFormulas.DEFAULT_FORMULA_MARKER = "default";
 class DocumentFlags {
     static set(key, value = true) {
+        key = `flag|${key}`;
         if (value) {
-            PropertiesService.getDocumentProperties().setProperty(key, new Date().getTime().toString());
+            PropertiesService.getDocumentProperties().setProperty(key, Date.now().toString());
         }
         else {
             PropertiesService.getDocumentProperties().deleteProperty(key);
@@ -552,9 +561,11 @@ class DocumentFlags {
     }
     static isSet(key) {
         var _a;
+        key = `flag|${key}`;
         return (_a = PropertiesService.getDocumentProperties().getProperty(key)) === null || _a === void 0 ? void 0 : _a.length;
     }
     static cleanupByPrefix(keyPrefix) {
+        keyPrefix = `flag|${keyPrefix}`;
         const entries = [];
         for (const [key, value] of Object.entries(PropertiesService.getDocumentProperties().getProperties())) {
             if (key.startsWith(keyPrefix)) {
@@ -586,11 +597,11 @@ class EntryPoint {
         let lock = null;
         if (useLocks !== null && useLocks !== void 0 ? useLocks : GSheetProjectSettings.useLockService) {
             lock = LockService.getDocumentLock();
-            lock.waitLock(GSheetProjectSettings.lockTimeout);
         }
         try {
             this._isInEntryPoint = true;
             ExecutionCache.resetCache();
+            lock === null || lock === void 0 ? void 0 : lock.waitLock(GSheetProjectSettings.lockTimeoutMillis);
             return action();
         }
         catch (e) {
@@ -1474,6 +1485,45 @@ class Observability {
         }
     }
 }
+class PropertyLocks {
+    static waitLock(property, timeout = GSheetProjectSettings.lockTimeoutMillis) {
+        property = `lock|${property}`;
+        const start = Date.now();
+        while (true) {
+            const propertyValue = PropertiesService.getDocumentProperties().getProperty(property);
+            if (!(propertyValue === null || propertyValue === void 0 ? void 0 : propertyValue.length)) {
+                break;
+            }
+            const date = Utils.parseDate(propertyValue);
+            if (date == null || date.getTime() < Date.now()) {
+                break;
+            }
+            if (start + timeout > Date.now()) {
+                Utilities.sleep(1000);
+            }
+            else {
+                return false;
+            }
+        }
+        PropertiesService.getDocumentProperties().setProperty(property, Date.now().toString());
+        return true;
+    }
+    static releaseLock(property) {
+        property = `lock|${property}`;
+        PropertiesService.getDocumentProperties().deleteProperty(property);
+    }
+    static releaseExpiredPropertyLocks() {
+        for (const [key, value] of Object.entries(PropertiesService.getDocumentProperties().getProperties())) {
+            if (!key.startsWith('lock|')) {
+                continue;
+            }
+            const date = Utils.parseDate(value);
+            if (date == null || date.getTime() < Date.now()) {
+                PropertiesService.getDocumentProperties().deleteProperty(key);
+            }
+        }
+    }
+}
 class ProtectionLocks {
     static lockAllColumns(sheet) {
         if (!GSheetProjectSettings.lockColumns) {
@@ -1486,7 +1536,7 @@ class ProtectionLocks {
         Observability.timed(`${ProtectionLocks.name}: ${this.lockAllColumns.name}: ${sheet.getSheetName()}`, () => {
             const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
             const protection = range.protect()
-                .setDescription(`lock|columns|all|${new Date().getTime()}`)
+                .setDescription(`lock|columns|all|${Date.now()}`)
                 .setWarningOnly(true);
             this._allColumnsProtections.set(sheetId, protection);
         });
@@ -1502,7 +1552,7 @@ class ProtectionLocks {
         Observability.timed(`${ProtectionLocks.name}: ${this.lockAllRows.name}: ${sheet.getSheetName()}`, () => {
             const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1);
             const protection = range.protect()
-                .setDescription(`lock|rows|all|${new Date().getTime()}`)
+                .setDescription(`lock|rows|all|${Date.now()}`)
                 .setWarningOnly(true);
             this._allRowsProtections.set(sheetId, protection);
         });
@@ -1527,7 +1577,7 @@ class ProtectionLocks {
             Observability.timed(`${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowToLock}`, () => {
                 const range = sheet.getRange(1, sheet.getMaxColumns(), rowToLock, 1);
                 const protection = range.protect()
-                    .setDescription(`lock|rows|${rowToLock}|${new Date().getTime()}`)
+                    .setDescription(`lock|rows|${rowToLock}|${Date.now()}`)
                     .setWarningOnly(true);
                 rowsProtections.set(rowToLock, protection);
             });
@@ -1547,12 +1597,9 @@ class ProtectionLocks {
         });
     }
     static releaseExpiredLocks() {
-        if (!GSheetProjectSettings.lockColumns && !GSheetProjectSettings.lockRows) {
-            return;
-        }
         Observability.timed(`${ProtectionLocks.name}: ${this.releaseExpiredLocks.name}`, () => {
             const maxLockDurationMillis = 10 * 60 * 1000;
-            const minTimestamp = new Date().getTime() - maxLockDurationMillis;
+            const minTimestamp = Date.now() - maxLockDurationMillis;
             SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(sheet => {
                 for (const protection of sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE)) {
                     const description = protection.getDescription();
@@ -1756,7 +1803,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}470f51f40d35713c84e16d09c9fc8cdf37f28222984c3984d5ab4bb92948dbad:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}4952655bada9abe92e22fb852ae0f4eab4f89f1b4840fd4948684a1c0e6742be:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

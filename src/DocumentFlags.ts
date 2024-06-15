@@ -1,14 +1,16 @@
 class DocumentFlags {
 
     static set(key: string, value: boolean = true) {
+        key = `flag|${key}`
         if (value) {
-            PropertiesService.getDocumentProperties().setProperty(key, new Date().getTime().toString())
+            PropertiesService.getDocumentProperties().setProperty(key, Date.now().toString())
         } else {
             PropertiesService.getDocumentProperties().deleteProperty(key)
         }
     }
 
     static isSet(key: string) {
+        key = `flag|${key}`
         return PropertiesService.getDocumentProperties().getProperty(key)?.length
     }
 
@@ -18,6 +20,7 @@ class DocumentFlags {
             number: number
         }
 
+        keyPrefix = `flag|${keyPrefix}`
         const entries: Entry[] = []
         for (const [key, value] of Object.entries(PropertiesService.getDocumentProperties().getProperties())) {
             if (key.startsWith(keyPrefix)) {

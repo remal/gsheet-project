@@ -17,7 +17,7 @@ class ProtectionLocks {
         Observability.timed(`${ProtectionLocks.name}: ${this.lockAllColumns.name}: ${sheet.getSheetName()}`, () => {
             const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns())
             const protection = range.protect()
-                .setDescription(`lock|columns|all|${new Date().getTime()}`)
+                .setDescription(`lock|columns|all|${Date.now()}`)
                 .setWarningOnly(true)
             this._allColumnsProtections.set(sheetId, protection)
         })
@@ -36,7 +36,7 @@ class ProtectionLocks {
         Observability.timed(`${ProtectionLocks.name}: ${this.lockAllRows.name}: ${sheet.getSheetName()}`, () => {
             const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1)
             const protection = range.protect()
-                .setDescription(`lock|rows|all|${new Date().getTime()}`)
+                .setDescription(`lock|rows|all|${Date.now()}`)
                 .setWarningOnly(true)
             this._allRowsProtections.set(sheetId, protection)
         })
@@ -68,7 +68,7 @@ class ProtectionLocks {
                 () => {
                     const range = sheet.getRange(1, sheet.getMaxColumns(), rowToLock, 1)
                     const protection = range.protect()
-                        .setDescription(`lock|rows|${rowToLock}|${new Date().getTime()}`)
+                        .setDescription(`lock|rows|${rowToLock}|${Date.now()}`)
                         .setWarningOnly(true)
                     rowsProtections.set(rowToLock, protection)
                 },
@@ -96,13 +96,9 @@ class ProtectionLocks {
     }
 
     static releaseExpiredLocks() {
-        if (!GSheetProjectSettings.lockColumns && !GSheetProjectSettings.lockRows) {
-            return
-        }
-
         Observability.timed(`${ProtectionLocks.name}: ${this.releaseExpiredLocks.name}`, () => {
             const maxLockDurationMillis = 10 * 60 * 1000
-            const minTimestamp = new Date().getTime() - maxLockDurationMillis
+            const minTimestamp = Date.now() - maxLockDurationMillis
             SpreadsheetApp.getActiveSpreadsheet().getSheets().forEach(sheet => {
                 for (const protection of sheet.getProtections(SpreadsheetApp.ProtectionType.RANGE)) {
                     const description = protection.getDescription()
