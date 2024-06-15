@@ -159,7 +159,7 @@ GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.booleanIssuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
 GSheetProjectSettings.useLockService = true;
-GSheetProjectSettings.lockTimeoutMillis = 10 * 60 * 1000;
+GSheetProjectSettings.lockTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.sheetName = "Projects";
 GSheetProjectSettings.iconColumnName = "icon";
 //static doneColumnName: ColumnName = "Done"
@@ -1505,7 +1505,7 @@ class PropertyLocks {
                 return false;
             }
         }
-        PropertiesService.getDocumentProperties().setProperty(property, Date.now().toString());
+        PropertiesService.getDocumentProperties().setProperty(property, (Date.now() + timeout).toString());
         return true;
     }
     static releaseLock(property) {
@@ -1803,7 +1803,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}4952655bada9abe92e22fb852ae0f4eab4f89f1b4840fd4948684a1c0e6742be:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}f25e0892a311b0156ee9c9025e660928f2849f097d2f9ffdc62d7c70fb5ccd57:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

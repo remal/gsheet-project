@@ -21,7 +21,7 @@ class PropertyLocks {
             }
         }
 
-        PropertiesService.getDocumentProperties().setProperty(property, Date.now().toString())
+        PropertiesService.getDocumentProperties().setProperty(property, (Date.now() + timeout).toString())
         return true
     }
 
