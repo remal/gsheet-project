@@ -315,7 +315,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 })
 
             } catch (e) {
-                Observability.reportError(`Error loading issue data for row #${row}: ${e}`)
+                Observability.reportError(`Error loading issue data for row #${row}: ${e}`, e)
             }
         }
     }

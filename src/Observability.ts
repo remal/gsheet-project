@@ -1,7 +1,7 @@
 class Observability {
 
-    static reportError(message: any) {
-        console.error(message)
+    static reportError(message: any, exception?: Error) {
+        console.error(exception ?? message)
         SpreadsheetApp.getActiveSpreadsheet().toast(message?.toString() ?? '', "Automation error")
     }
 

@@ -926,7 +926,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 });
             }
             catch (e) {
-                Observability.reportError(`Error loading issue data for row #${row}: ${e}`);
+                Observability.reportError(`Error loading issue data for row #${row}: ${e}`, e);
             }
         }
     }
@@ -1467,9 +1467,9 @@ class NamedRangeUtils {
     }
 }
 class Observability {
-    static reportError(message) {
+    static reportError(message, exception) {
         var _a;
-        console.error(message);
+        console.error(exception !== null && exception !== void 0 ? exception : message);
         SpreadsheetApp.getActiveSpreadsheet().toast((_a = message === null || message === void 0 ? void 0 : message.toString()) !== null && _a !== void 0 ? _a : '', "Automation error");
     }
     static reportWarning(message) {
@@ -1806,7 +1806,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}57e1b3534fb59f2d22b6c96205d537e7d6aa903833b9b80048d6edf7b63ae499:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}7a94249461010bff09775a8a455d4768b7baf4ff7ba4ce7ada590ddde1594500:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
