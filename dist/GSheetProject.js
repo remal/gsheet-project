@@ -720,6 +720,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     sheet.getRangeList(notations).setValue('');
                 }
                 sheet.getRange(row, lastDataReloadColumn).setValue(new Date());
+                SpreadsheetApp.flush();
             };
             if (GSheetProjectSettings.skipHiddenIssues && sheet.isRowHiddenByUser(row)) { // a slow check
                 cleanupColumns();
@@ -1818,7 +1819,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}11341cb774ba304f9a1bdd7af1d6e341baef191ef557d063d37347dfdf48e167:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}4b6584f687337278f9b70363727d2c848dd6b4c14145efca62e00cb3a3b49b33:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
