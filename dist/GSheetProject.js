@@ -1799,7 +1799,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}ced331033b64127324354829aadfd000271488c0c31814fe91faf6b282ce4b62:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}a42fb8486a2ade52d88e9fa221f15d66e5fda9c14265f49317ea1c9e46f5c939:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2030,12 +2030,6 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.estimateColumnName,
                 rangeName: GSheetProjectSettings.estimatesRangeName,
-                dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`
-                        =INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""
-                    `)
-                    .setHelpText(`Estimate must be defined for a team`)
-                    .build(),
                 defaultFormat: '#,##0',
                 defaultHorizontalAlignment: 'center',
             },

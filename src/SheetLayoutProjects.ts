@@ -84,14 +84,6 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.estimateColumnName,
                 rangeName: GSheetProjectSettings.estimatesRangeName,
-                dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`
-                        =INDIRECT(ADDRESS(ROW(), COLUMN(${GSheetProjectSettings.teamsRangeName}))) <> ""
-                    `)
-                    .setHelpText(
-                        `Estimate must be defined for a team`,
-                    )
-                    .build(),
                 defaultFormat: '#,##0',
                 defaultHorizontalAlignment: 'center',
             },
