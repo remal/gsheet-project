@@ -35,6 +35,7 @@ class GSheetProjectSettings {
     static issueTrackers: IssueTracker[] = []
     static issuesLoadTimeoutMillis: number = 5 * 60 * 1000
     static booleanIssuesMetrics: Record<ColumnName, IssuesMetric<boolean>> = {}
+    static stringIssuesMetrics: Record<ColumnName, IssuesMetric<string>> = {}
     static counterIssuesMetrics: Record<ColumnName, IssuesCounterMetric> = {}
 
     static useLockService: boolean = true

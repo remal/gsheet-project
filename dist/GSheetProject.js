@@ -149,6 +149,7 @@ GSheetProjectSettings.publicHolidaysRangeName = 'PublicHolidays';
 GSheetProjectSettings.issueTrackers = [];
 GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.booleanIssuesMetrics = {};
+GSheetProjectSettings.stringIssuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
 GSheetProjectSettings.useLockService = true;
 GSheetProjectSettings.lockTimeoutMillis = 5 * 60 * 1000;
@@ -702,18 +703,20 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         withTitle ? sheet.getRange(row, titleColumn) : null,
                         sheet.getRange(row, iconColumn),
                     ],
-                    Object.keys(GSheetProjectSettings.booleanIssuesMetrics)
-                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName))
-                        .filter(column => column != null)
-                        .map(column => sheet.getRange(row, column)),
-                    Object.keys(GSheetProjectSettings.counterIssuesMetrics)
+                    [
+                        GSheetProjectSettings.booleanIssuesMetrics,
+                        GSheetProjectSettings.stringIssuesMetrics,
+                        GSheetProjectSettings.counterIssuesMetrics,
+                    ]
+                        .flatMap(metrics => Object.keys(metrics))
                         .map(columnName => SheetUtils.findColumnByName(sheet, columnName))
                         .filter(column => column != null)
                         .map(column => sheet.getRange(row, column)),
                 ]
                     .flat()
                     .filter(range => range != null)
-                    .map(range => range.getA1Notation());
+                    .map(range => range.getA1Notation())
+                    .filter(Utils.distinct());
                 if (notations.length) {
                     sheet.getRangeList(notations).setValue('');
                 }
@@ -874,23 +877,40 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 .filter(title => title === null || title === void 0 ? void 0 : title.length)
                 .map(title => title);
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
-            for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.booleanIssuesMetrics)) {
+            [
+                GSheetProjectSettings.booleanIssuesMetrics,
+                GSheetProjectSettings.stringIssuesMetrics,
+            ]
+                .flatMap(metrics => Object.entries(metrics))
+                .forEach(([columnName, issuesMetric]) => {
+                var _a;
                 const column = SheetUtils.findColumnByName(sheet, columnName);
                 if (column == null) {
-                    continue;
+                    return;
                 }
                 const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, sheet, row);
-                sheet.getRange(row, column).setValue(value ? "Yes" : '');
-            }
-            for (const [columnName, issuesCounterMetric] of Object.entries(GSheetProjectSettings.counterIssuesMetrics)) {
+                let text;
+                if (Utils.isBoolean(value)) {
+                    text = value ? "Yes" : "";
+                }
+                else {
+                    text = (_a = value === null || value === void 0 ? void 0 : value.toString()) !== null && _a !== void 0 ? _a : '';
+                }
+                sheet.getRange(row, column).setValue(text);
+            });
+            [
+                GSheetProjectSettings.counterIssuesMetrics,
+            ]
+                .flatMap(metrics => Object.entries(metrics))
+                .forEach(([columnName, issuesMetric]) => {
                 const column = SheetUtils.findColumnByName(sheet, columnName);
                 if (column == null) {
-                    continue;
+                    return;
                 }
-                const foundIssues = issuesCounterMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, sheet, row);
+                const foundIssues = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, sheet, row);
                 if (!foundIssues.length) {
                     sheet.getRange(row, column).setValue('');
-                    continue;
+                    return;
                 }
                 const foundIssueIds = foundIssues.map(it => it.id)
                     .filter(Utils.distinct());
@@ -899,7 +919,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     url: issueTracker.getUrlForIssueIds(foundIssueIds),
                 };
                 sheet.getRange(row, column).setRichTextValue(RichTextUtils.createLinkValue(link));
-            }
+            });
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '');
             sheet.getRange(row, iconColumn).setValue('');
             SpreadsheetApp.flush();
@@ -1799,7 +1819,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}a42fb8486a2ade52d88e9fa221f15d66e5fda9c14265f49317ea1c9e46f5c939:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}ace32ddd39a0b0912bb8036d818b27659beb096de3751e03121bb876c1ebacc9:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
