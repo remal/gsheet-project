@@ -36,11 +36,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
             const row = range.getRow() + index
             ProtectionLocks.lockRows(sheet, row)
 
-            const cleanupColumns = (withTitle: boolean = true) => {
+            const cleanupColumns = (withTitle: boolean = false) => {
                 const notations = [
                     [
-                        withTitle ? sheet.getRange(row, titleColumn) : null,
-                        sheet.getRange(row, iconColumn),
+                        withTitle ? titleColumn : null,
+                        iconColumn,
                     ],
                     [
                         GSheetProjectSettings.booleanIssuesMetrics,
@@ -48,12 +48,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         GSheetProjectSettings.counterIssuesMetrics,
                     ]
                         .flatMap(metrics => Object.keys(metrics))
-                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName))
-                        .filter(column => column != null)
-                        .map(column => sheet.getRange(row, column!)),
+                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName)),
                 ]
                     .flat()
-                    .filter(range => range != null)
+                    .filter(column => column != null)
+                    .map(column => sheet.getRange(row, column!))
                     .map(range => range!.getA1Notation())
                     .filter(Utils.distinct())
                 if (notations.length) {
@@ -85,7 +84,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 currentIssueColumn = issueColumn
                 originalIssueKeysText = issues[index]
             } else {
-                cleanupColumns()
+                cleanupColumns(true)
                 return
             }
 
@@ -138,7 +137,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
 
             if (issueTracker == null) {
-                cleanupColumns(false)
+                cleanupColumns()
                 return
             }
 

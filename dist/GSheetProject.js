@@ -697,11 +697,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
             var _a, _b, _c;
             const row = range.getRow() + index;
             ProtectionLocks.lockRows(sheet, row);
-            const cleanupColumns = (withTitle = true) => {
+            const cleanupColumns = (withTitle = false) => {
                 const notations = [
                     [
-                        withTitle ? sheet.getRange(row, titleColumn) : null,
-                        sheet.getRange(row, iconColumn),
+                        withTitle ? titleColumn : null,
+                        iconColumn,
                     ],
                     [
                         GSheetProjectSettings.booleanIssuesMetrics,
@@ -709,12 +709,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         GSheetProjectSettings.counterIssuesMetrics,
                     ]
                         .flatMap(metrics => Object.keys(metrics))
-                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName))
-                        .filter(column => column != null)
-                        .map(column => sheet.getRange(row, column)),
+                        .map(columnName => SheetUtils.findColumnByName(sheet, columnName)),
                 ]
                     .flat()
-                    .filter(range => range != null)
+                    .filter(column => column != null)
+                    .map(column => sheet.getRange(row, column))
                     .map(range => range.getA1Notation())
                     .filter(Utils.distinct());
                 if (notations.length) {
@@ -744,7 +743,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 originalIssueKeysText = issues[index];
             }
             else {
-                cleanupColumns();
+                cleanupColumns(true);
                 return;
             }
             const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn);
@@ -787,7 +786,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
             }
             if (issueTracker == null) {
-                cleanupColumns(false);
+                cleanupColumns();
                 return;
             }
             const allIssueLinks = allIssueKeys.map(issueKey => {
@@ -1819,7 +1818,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}ace32ddd39a0b0912bb8036d818b27659beb096de3751e03121bb876c1ebacc9:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}11341cb774ba304f9a1bdd7af1d6e341baef191ef557d063d37347dfdf48e167:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
