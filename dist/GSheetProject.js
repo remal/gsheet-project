@@ -718,7 +718,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     sheet.getRangeList(notations).setValue('');
                 }
                 sheet.getRange(row, lastDataReloadColumn).setValue(new Date());
-                SpreadsheetApp.flush();
             };
             if (GSheetProjectSettings.skipHiddenIssues && sheet.isRowHiddenByUser(row)) { // a slow check
                 cleanupColumns();
@@ -909,7 +908,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '');
             sheet.getRange(row, iconColumn).setValue('');
-            SpreadsheetApp.flush();
         };
         const start = Date.now();
         let processedIndexes = 0;
@@ -927,8 +925,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             catch (e) {
                 sheet.getRange(row, iconColumn).setValue('');
-                SpreadsheetApp.flush();
                 Observability.reportError(`Error loading issue data for row #${row}: ${e}`, e);
+            }
+            finally {
+                SpreadsheetApp.flush();
             }
         }
     }
@@ -1808,7 +1808,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}8cd46b337a7ab73cb642fe1be526ad93a5f869b02081522673f7b8d7538fb8a0:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}7c0e361bf0830fc02699578f920ad1393f4ffec70dd90f899821c633b82c60af:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

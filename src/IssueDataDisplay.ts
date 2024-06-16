@@ -59,7 +59,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
 
                 sheet.getRange(row, lastDataReloadColumn).setValue(new Date())
-                SpreadsheetApp.flush()
             }
 
             if (GSheetProjectSettings.skipHiddenIssues && sheet.isRowHiddenByUser(row)) { // a slow check
@@ -294,7 +293,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '')
             sheet.getRange(row, iconColumn).setValue('')
-            SpreadsheetApp.flush()
         }
 
 
@@ -316,8 +314,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             } catch (e) {
                 sheet.getRange(row, iconColumn).setValue('')
-                SpreadsheetApp.flush()
                 Observability.reportError(`Error loading issue data for row #${row}: ${e}`, e)
+
+            } finally {
+                SpreadsheetApp.flush()
             }
         }
     }
