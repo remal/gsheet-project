@@ -315,6 +315,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 })
 
             } catch (e) {
+                sheet.getRange(row, iconColumn).setValue('')
+                SpreadsheetApp.flush()
                 Observability.reportError(`Error loading issue data for row #${row}: ${e}`, e)
             }
         }

@@ -926,6 +926,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 });
             }
             catch (e) {
+                sheet.getRange(row, iconColumn).setValue('');
+                SpreadsheetApp.flush();
                 Observability.reportError(`Error loading issue data for row #${row}: ${e}`, e);
             }
         }
@@ -1806,7 +1808,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}7a94249461010bff09775a8a455d4768b7baf4ff7ba4ce7ada590ddde1594500:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}9baf19fdb1901d49ea96fdc04715268891948657cdde75a5924e43c164bf5795:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
