@@ -43,8 +43,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         iconColumn,
                     ],
                     [
-                        GSheetProjectSettings.booleanIssuesMetrics,
-                        GSheetProjectSettings.stringIssuesMetrics,
+                        GSheetProjectSettings.issuesMetrics,
                         GSheetProjectSettings.counterIssuesMetrics,
                     ]
                         .flatMap(metrics => Object.keys(metrics))
@@ -245,62 +244,52 @@ class IssueDataDisplay extends AbstractIssueLogic {
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'))
 
 
-            ;[
-                GSheetProjectSettings.booleanIssuesMetrics,
-                GSheetProjectSettings.stringIssuesMetrics,
-            ]
-                .flatMap(metrics => Object.entries(metrics))
-                .forEach(([columnName, issuesMetric]) => {
-                    const column = SheetUtils.findColumnByName(sheet, columnName)
-                    if (column == null) {
-                        return
-                    }
-                    const value = issuesMetric(
-                        loadedIssues,
-                        loadedChildIssues,
-                        loadedBlockerIssues,
-                        sheet,
-                        row,
-                    )
-                    let text: string
-                    if (Utils.isBoolean(value)) {
-                        text = value ? "Yes" : ""
-                    } else {
-                        text = value?.toString() ?? ''
-                    }
-                    sheet.getRange(row, column).setValue(text)
-                })
+            for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.issuesMetrics)) {
+                const column = SheetUtils.findColumnByName(sheet, columnName)
+                if (column == null) {
+                    continue
+                }
+                let value = issuesMetric(
+                    loadedIssues,
+                    loadedChildIssues,
+                    loadedBlockerIssues,
+                    sheet,
+                    row,
+                )
+                if (value == null) {
+                    value = ''
+                } else if (Utils.isBoolean(value)) {
+                    value = value ? "Yes" : ""
+                }
+                sheet.getRange(row, column).setValue(value)
+            }
 
 
-            ;[
-                GSheetProjectSettings.counterIssuesMetrics,
-            ]
-                .flatMap(metrics => Object.entries(metrics))
-                .forEach(([columnName, issuesMetric]) => {
-                    const column = SheetUtils.findColumnByName(sheet, columnName)
-                    if (column == null) {
-                        return
-                    }
-                    const foundIssues = issuesMetric(
-                        loadedIssues,
-                        loadedChildIssues,
-                        loadedBlockerIssues,
-                        sheet,
-                        row,
-                    )
-                    if (!foundIssues.length) {
-                        sheet.getRange(row, column).setValue('')
-                        return
-                    }
+            for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.counterIssuesMetrics)) {
+                const column = SheetUtils.findColumnByName(sheet, columnName)
+                if (column == null) {
+                    continue
+                }
+                const foundIssues = issuesMetric(
+                    loadedIssues,
+                    loadedChildIssues,
+                    loadedBlockerIssues,
+                    sheet,
+                    row,
+                )
+                if (!foundIssues.length) {
+                    sheet.getRange(row, column).setValue('')
+                    continue
+                }
 
-                    const foundIssueIds = foundIssues.map(it => it.id)
-                        .filter(Utils.distinct())
-                    const link = {
-                        title: foundIssues.length.toString(),
-                        url: issueTracker.getUrlForIssueIds(foundIssueIds),
-                    }
-                    sheet.getRange(row, column).setRichTextValue(RichTextUtils.createLinkValue(link))
-                })
+                const foundIssueIds = foundIssues.map(it => it.id)
+                    .filter(Utils.distinct())
+                const link = {
+                    title: foundIssues.length.toString(),
+                    url: issueTracker.getUrlForIssueIds(foundIssueIds),
+                }
+                sheet.getRange(row, column).setRichTextValue(RichTextUtils.createLinkValue(link))
+            }
 
 
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '')

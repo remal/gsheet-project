@@ -148,8 +148,7 @@ GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName = 'MilestonesTabl
 GSheetProjectSettings.publicHolidaysRangeName = 'PublicHolidays';
 GSheetProjectSettings.issueTrackers = [];
 GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
-GSheetProjectSettings.booleanIssuesMetrics = {};
-GSheetProjectSettings.stringIssuesMetrics = {};
+GSheetProjectSettings.issuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
 GSheetProjectSettings.useLockService = true;
 GSheetProjectSettings.lockTimeoutMillis = 5 * 60 * 1000;
@@ -704,8 +703,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                         iconColumn,
                     ],
                     [
-                        GSheetProjectSettings.booleanIssuesMetrics,
-                        GSheetProjectSettings.stringIssuesMetrics,
+                        GSheetProjectSettings.issuesMetrics,
                         GSheetProjectSettings.counterIssuesMetrics,
                     ]
                         .flatMap(metrics => Object.keys(metrics))
@@ -877,40 +875,29 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 .filter(title => title === null || title === void 0 ? void 0 : title.length)
                 .map(title => title);
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
-            [
-                GSheetProjectSettings.booleanIssuesMetrics,
-                GSheetProjectSettings.stringIssuesMetrics,
-            ]
-                .flatMap(metrics => Object.entries(metrics))
-                .forEach(([columnName, issuesMetric]) => {
-                var _a;
+            for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.issuesMetrics)) {
                 const column = SheetUtils.findColumnByName(sheet, columnName);
                 if (column == null) {
-                    return;
+                    continue;
                 }
-                const value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, sheet, row);
-                let text;
-                if (Utils.isBoolean(value)) {
-                    text = value ? "Yes" : "";
+                let value = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, sheet, row);
+                if (value == null) {
+                    value = '';
                 }
-                else {
-                    text = (_a = value === null || value === void 0 ? void 0 : value.toString()) !== null && _a !== void 0 ? _a : '';
+                else if (Utils.isBoolean(value)) {
+                    value = value ? "Yes" : "";
                 }
-                sheet.getRange(row, column).setValue(text);
-            });
-            [
-                GSheetProjectSettings.counterIssuesMetrics,
-            ]
-                .flatMap(metrics => Object.entries(metrics))
-                .forEach(([columnName, issuesMetric]) => {
+                sheet.getRange(row, column).setValue(value);
+            }
+            for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.counterIssuesMetrics)) {
                 const column = SheetUtils.findColumnByName(sheet, columnName);
                 if (column == null) {
-                    return;
+                    continue;
                 }
                 const foundIssues = issuesMetric(loadedIssues, loadedChildIssues, loadedBlockerIssues, sheet, row);
                 if (!foundIssues.length) {
                     sheet.getRange(row, column).setValue('');
-                    return;
+                    continue;
                 }
                 const foundIssueIds = foundIssues.map(it => it.id)
                     .filter(Utils.distinct());
@@ -919,7 +906,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     url: issueTracker.getUrlForIssueIds(foundIssueIds),
                 };
                 sheet.getRange(row, column).setRichTextValue(RichTextUtils.createLinkValue(link));
-            });
+            }
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '');
             sheet.getRange(row, iconColumn).setValue('');
             SpreadsheetApp.flush();
@@ -1819,7 +1806,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}4b6584f687337278f9b70363727d2c848dd6b4c14145efca62e00cb3a3b49b33:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}57e1b3534fb59f2d22b6c96205d537e7d6aa903833b9b80048d6edf7b63ae499:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
