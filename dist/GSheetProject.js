@@ -1471,8 +1471,11 @@ class NamedRangeUtils {
 class Observability {
     static reportError(message, exception) {
         var _a;
-        console.error(exception !== null && exception !== void 0 ? exception : message);
+        console.error(message);
         SpreadsheetApp.getActiveSpreadsheet().toast((_a = message === null || message === void 0 ? void 0 : message.toString()) !== null && _a !== void 0 ? _a : '', "Automation error");
+        if (exception != null) {
+            console.log(exception);
+        }
     }
     static reportWarning(message) {
         console.warn(message);
@@ -1808,7 +1811,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}7c0e361bf0830fc02699578f920ad1393f4ffec70dd90f899821c633b82c60af:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}fb4e5ab2caeb4481b2b2f20c26d8986d0f81c78cacb74f510f012c497588288f:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
