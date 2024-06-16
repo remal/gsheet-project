@@ -82,17 +82,6 @@ class DefaultFormulas extends AbstractIssueLogic {
 
             const teamA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, teamColumn))
 
-            const resourcesLookup = `
-                VLOOKUP(
-                    ${teamA1Notation},
-                    ${GSheetProjectSettings.settingsTeamsTableRangeName},
-                    1
-                        + COLUMN(${GSheetProjectSettings.settingsTeamsTableResourcesRangeName})
-                        - COLUMN(${GSheetProjectSettings.settingsTeamsTableRangeName}),
-                    FALSE
-                )
-            `
-
             const notEnoughPreviousLanes = `
                 COUNTIFS(
                     OFFSET(
@@ -111,7 +100,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         1
                     ),
                     ">0"
-                ) < ${resourcesLookup}
+                ) < resources
             `
 
             const filter = `
@@ -144,7 +133,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                 MIN(
                     SORTN(
                         ${filter},
-                        ${resourcesLookup},
+                        resources,
                         0,
                         1,
                         FALSE
@@ -167,11 +156,26 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `
 
+            const withResources = `
+                LET(
+                    resources,
+                    VLOOKUP(
+                        ${teamA1Notation},
+                        ${GSheetProjectSettings.settingsTeamsTableRangeName},
+                        1
+                            + COLUMN(${GSheetProjectSettings.settingsTeamsTableResourcesRangeName})
+                            - COLUMN(${GSheetProjectSettings.settingsTeamsTableRangeName}),
+                        FALSE
+                    ),
+                    ${firstDataRowIf}
+                )
+            `
+
             const notEnoughDataIf = `
                 IF(
                     ${teamA1Notation} = "",
                     "",
-                    ${firstDataRowIf}
+                    ${withResources}
                 )
             `
 
