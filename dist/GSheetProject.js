@@ -675,6 +675,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
         const lastDataReloadColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName);
         const titleColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName);
         const { issues, childIssues, lastDataReload } = this._getIssueValuesWithLastReloadDate(range);
+        let lastDataNotChangedCheckTimestamp = Date.now();
         const indexes = Array.from(Utils.range(0, issues.length - 1))
             .toSorted((i1, i2) => {
             const d1 = lastDataReload[i1];
@@ -693,7 +694,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
         });
         const processIndex = (index) => {
-            var _a, _b, _c;
+            var _a, _b;
             const row = range.getRow() + index;
             ProtectionLocks.lockRows(sheet, row);
             const cleanupColumns = (withTitle = false) => {
@@ -723,20 +724,13 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 cleanupColumns();
                 return;
             }
-            if ((_a = GSheetProjectSettings.loadingText) === null || _a === void 0 ? void 0 : _a.length) {
-                sheet.getRange(row, iconColumn).setValue(GSheetProjectSettings.loadingText);
-            }
-            else {
-                sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`);
-            }
-            SpreadsheetApp.flush();
             let currentIssueColumn;
             let originalIssueKeysText;
-            if ((_b = childIssues[index]) === null || _b === void 0 ? void 0 : _b.length) {
+            if ((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length) {
                 currentIssueColumn = childIssueColumn;
                 originalIssueKeysText = childIssues[index];
             }
-            else if ((_c = issues[index]) === null || _c === void 0 ? void 0 : _c.length) {
+            else if ((_b = issues[index]) === null || _b === void 0 ? void 0 : _b.length) {
                 currentIssueColumn = issueColumn;
                 originalIssueKeysText = issues[index];
             }
@@ -746,8 +740,17 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn);
             const isOriginalIssueKeysTextChanged = () => {
+                const now = Date.now();
+                if (lastDataNotChangedCheckTimestamp >= now - 500) {
+                    return false;
+                }
                 const currentValue = originalIssueKeysRange.getValue().toString();
-                return currentValue !== originalIssueKeysText;
+                lastDataNotChangedCheckTimestamp = now;
+                if (currentValue !== originalIssueKeysText) {
+                    Observability.reportWarning(`Content of ${originalIssueKeysRange.getA1Notation()} has been changed`);
+                    return true;
+                }
+                return false;
             };
             const allIssueKeys = originalIssueKeysText
                 .split(/[\r\n]+/)
@@ -811,7 +814,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 };
             });
             if (isOriginalIssueKeysTextChanged()) {
-                Observability.reportWarning(`Content of ${originalIssueKeysRange.getA1Notation()} has been changed`);
                 return;
             }
             sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks));
@@ -873,6 +875,9 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 .map(title => title === null || title === void 0 ? void 0 : title.trim())
                 .filter(title => title === null || title === void 0 ? void 0 : title.length)
                 .map(title => title);
+            if (isOriginalIssueKeysTextChanged()) {
+                return;
+            }
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
             for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.issuesMetrics)) {
                 const column = SheetUtils.findColumnByName(sheet, columnName);
@@ -885,6 +890,9 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
                 else if (Utils.isBoolean(value)) {
                     value = value ? "Yes" : "";
+                }
+                if (isOriginalIssueKeysTextChanged()) {
+                    return;
                 }
                 sheet.getRange(row, column).setValue(value);
             }
@@ -904,10 +912,15 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     title: foundIssues.length.toString(),
                     url: issueTracker.getUrlForIssueIds(foundIssueIds),
                 };
+                if (isOriginalIssueKeysTextChanged()) {
+                    return;
+                }
                 sheet.getRange(row, column).setRichTextValue(RichTextUtils.createLinkValue(link));
             }
+            if (isOriginalIssueKeysTextChanged()) {
+                return;
+            }
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '');
-            sheet.getRange(row, iconColumn).setValue('');
         };
         const start = Date.now();
         let processedIndexes = 0;
@@ -918,16 +931,25 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 Observability.reportWarning("Issues load timeout occurred");
                 break;
             }
+            const iconRange = sheet.getRange(row, iconColumn);
             try {
                 Observability.timed(`loading issue data for row #${row}`, () => {
+                    var _a;
+                    if ((_a = GSheetProjectSettings.loadingText) === null || _a === void 0 ? void 0 : _a.length) {
+                        iconRange.setValue(GSheetProjectSettings.loadingText);
+                    }
+                    else {
+                        iconRange.setFormula(`=IMAGE("${Images.loadingImageUrl}")`);
+                    }
+                    SpreadsheetApp.flush();
                     processIndex(index);
                 });
             }
             catch (e) {
-                sheet.getRange(row, iconColumn).setValue('');
                 Observability.reportError(`Error loading issue data for row #${row}: ${e}`, e);
             }
             finally {
+                iconRange.setValue('');
                 SpreadsheetApp.flush();
             }
         }
@@ -1811,7 +1833,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}fb4e5ab2caeb4481b2b2f20c26d8986d0f81c78cacb74f510f012c497588288f:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}abbb4871289fcdea5ef69eaed30cbee5aa545f114d06546579f74d4f452f2b7d:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

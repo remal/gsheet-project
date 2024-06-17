@@ -16,6 +16,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
         const titleColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName)
 
         const {issues, childIssues, lastDataReload} = this._getIssueValuesWithLastReloadDate(range)
+        let lastDataNotChangedCheckTimestamp: number = Date.now()
         const indexes = Array.from(Utils.range(0, issues.length - 1))
             .toSorted((i1, i2) => {
                 const d1 = lastDataReload[i1]
@@ -66,13 +67,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return
             }
 
-            if (GSheetProjectSettings.loadingText?.length) {
-                sheet.getRange(row, iconColumn).setValue(GSheetProjectSettings.loadingText)
-            } else {
-                sheet.getRange(row, iconColumn).setFormula(`=IMAGE("${Images.loadingImageUrl}")`)
-            }
-            SpreadsheetApp.flush()
-
 
             let currentIssueColumn: Column
             let originalIssueKeysText: string
@@ -90,8 +84,19 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn)
             const isOriginalIssueKeysTextChanged = () => {
+                const now = Date.now()
+                if (lastDataNotChangedCheckTimestamp >= now - 500) {
+                    return false
+                }
+
                 const currentValue = originalIssueKeysRange.getValue().toString()
-                return currentValue !== originalIssueKeysText
+                lastDataNotChangedCheckTimestamp = now
+
+                if (currentValue !== originalIssueKeysText) {
+                    Observability.reportWarning(`Content of ${originalIssueKeysRange.getA1Notation()} has been changed`)
+                    return true
+                }
+                return false
             }
 
 
@@ -167,7 +172,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
             })
 
             if (isOriginalIssueKeysTextChanged()) {
-                Observability.reportWarning(`Content of ${originalIssueKeysRange.getA1Notation()} has been changed`)
                 return
             }
 
@@ -240,6 +244,9 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 .map(title => title?.trim())
                 .filter(title => title?.length)
                 .map(title => title!)
+            if (isOriginalIssueKeysTextChanged()) {
+                return
+            }
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'))
 
 
@@ -259,6 +266,9 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     value = ''
                 } else if (Utils.isBoolean(value)) {
                     value = value ? "Yes" : ""
+                }
+                if (isOriginalIssueKeysTextChanged()) {
+                    return
                 }
                 sheet.getRange(row, column).setValue(value)
             }
@@ -287,12 +297,17 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     title: foundIssues.length.toString(),
                     url: issueTracker.getUrlForIssueIds(foundIssueIds),
                 }
+                if (isOriginalIssueKeysTextChanged()) {
+                    return
+                }
                 sheet.getRange(row, column).setRichTextValue(RichTextUtils.createLinkValue(link))
             }
 
 
+            if (isOriginalIssueKeysTextChanged()) {
+                return
+            }
             sheet.getRange(row, lastDataReloadColumn).setValue(allIssueKeys.length ? new Date() : '')
-            sheet.getRange(row, iconColumn).setValue('')
         }
 
 
@@ -307,16 +322,25 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 break
             }
 
+            const iconRange = sheet.getRange(row, iconColumn)
+
             try {
                 Observability.timed(`loading issue data for row #${row}`, () => {
+                    if (GSheetProjectSettings.loadingText?.length) {
+                        iconRange.setValue(GSheetProjectSettings.loadingText)
+                    } else {
+                        iconRange.setFormula(`=IMAGE("${Images.loadingImageUrl}")`)
+                    }
+                    SpreadsheetApp.flush()
+
                     processIndex(index)
                 })
 
             } catch (e) {
-                sheet.getRange(row, iconColumn).setValue('')
                 Observability.reportError(`Error loading issue data for row #${row}: ${e}`, e)
 
             } finally {
+                iconRange.setValue('')
                 SpreadsheetApp.flush()
             }
         }
