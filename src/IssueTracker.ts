@@ -95,12 +95,12 @@ abstract class IssueTracker {
         return this.extractSearchQuery(issueKey)
     }
 
-    search(query: IssueSearchQuery): Issue[] {
+    searchByQuery(query: IssueSearchQuery): Issue[] {
         if (!query?.length) {
             return []
         }
 
-        throw Utils.throwNotImplemented(this.constructor.name, this.search.name)
+        throw Utils.throwNotImplemented(this.constructor.name, this.searchByQuery.name)
     }
 
 }

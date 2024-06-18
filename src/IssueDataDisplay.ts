@@ -200,7 +200,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     issueTracker.loadChildrenFor(loadedIssues),
                     Object.values(issueKeyQueries)
                         .filter(Utils.distinct())
-                        .flatMap(query => issueTracker.search(query)),
+                        .flatMap(query => issueTracker.searchByQuery(query)),
                 ]
                     .flat()
                     .filter(Utils.distinctBy(issue => issue.id))

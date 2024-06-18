@@ -839,7 +839,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     issueTracker.loadChildrenFor(loadedIssues),
                     Object.values(issueKeyQueries)
                         .filter(Utils.distinct())
-                        .flatMap(query => issueTracker.search(query)),
+                        .flatMap(query => issueTracker.searchByQuery(query)),
                 ]
                     .flat()
                     .filter(Utils.distinctBy(issue => issue.id))
@@ -1267,11 +1267,11 @@ class IssueTracker {
     loadIssueKeySearchTitle(issueKey) {
         return this.extractSearchQuery(issueKey);
     }
-    search(query) {
+    searchByQuery(query) {
         if (!(query === null || query === void 0 ? void 0 : query.length)) {
             return [];
         }
-        throw Utils.throwNotImplemented(this.constructor.name, this.search.name);
+        throw Utils.throwNotImplemented(this.constructor.name, this.searchByQuery.name);
     }
 }
 class Issue {
@@ -1346,7 +1346,7 @@ class IssueTrackerExample extends IssueTracker {
     getUrlForSearchQuery(query) {
         return `https://example.com/search?q=${encodeURIComponent(query)}`;
     }
-    search(query) {
+    searchByQuery(query) {
         if (!(query === null || query === void 0 ? void 0 : query.length)) {
             return [];
         }
@@ -1846,7 +1846,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}20225dc28a60cc2cb6a5f855c8b64b1297d43e42bbbd6042d06af71d7cb44022:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}23b1218523f4d17cce05c884e7c4905088a3c24d86273b7db38f1ac8de8bd79b:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

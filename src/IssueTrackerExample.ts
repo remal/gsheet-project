@@ -65,7 +65,7 @@ class IssueTrackerExample extends IssueTracker {
         return `https://example.com/search?q=${encodeURIComponent(query)}`
     }
 
-    search(query: IssueSearchQuery): Issue[] {
+    searchByQuery(query: IssueSearchQuery): Issue[] {
         if (!query?.length) {
             return []
         }
