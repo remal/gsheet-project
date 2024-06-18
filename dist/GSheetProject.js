@@ -1846,7 +1846,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}ae5ebc77e2b44c62f5acbe92c8d0c936e1091b3909af67e276983ccee045664a:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}f5c8cdda7b98b24db282c88911dfb44a1f82c4c4a8298e7de12f7112ed80b204:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2505,7 +2505,7 @@ class Utils {
         }
     }
     static arrayRemoveIf(array, predicate) {
-        for (let index = 0; index <= array.length; ++index) {
+        for (let index = 0; index < array.length; ++index) {
             const element = array[index];
             if (predicate(element)) {
                 array.splice(index, 1);

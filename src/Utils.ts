@@ -146,7 +146,7 @@ class Utils {
     }
 
     static arrayRemoveIf<T>(array: T[], predicate: (element: T) => boolean) {
-        for (let index = 0; index <= array.length; ++index) {
+        for (let index = 0; index < array.length; ++index) {
             const element = array[index]
             if (predicate(element)) {
                 array.splice(index, 1)
