@@ -314,7 +314,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
         let processedIndexes = 0
         for (const index of indexes) {
             const row = range.getRow() + index
-            console.info(`Processing index ${index} (${++processedIndexes} / ${indexes.length + 1}), row #${row}`)
+            console.info(`Processing index ${index} (${++processedIndexes} / ${indexes.length}), row #${row}`)
 
             if (Date.now() - start >= GSheetProjectSettings.issuesLoadTimeoutMillis) {
                 Observability.reportWarning("Issues load timeout occurred")
