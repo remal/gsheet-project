@@ -20,7 +20,7 @@ class IssueTrackerExample extends IssueTracker {
         return `https://example.com/search?q=id:(${encodeURIComponent(issueIds.join('|'))})`
     }
 
-    loadIssues(issueIds: IssueId[]): Issue[] {
+    loadIssuesByIssueId(issueIds: IssueId[]): Issue[] {
         if (!issueIds?.length) {
             return []
         }
@@ -28,12 +28,8 @@ class IssueTrackerExample extends IssueTracker {
         return issueIds.map(id => new IssueExample(this, id))
     }
 
-    loadChildren(issueIds: IssueId[]): Issue[] {
-        if (!issueIds?.length) {
-            return []
-        }
-
-        return issueIds.flatMap(id => {
+    loadChildrenFor(issues: Issue[]): Issue[] {
+        return issues.map(issue => issue.id).flatMap(id => {
             let hash = parseInt(id)
             if (isNaN(hash)) {
                 hash = Math.abs(Utils.hashCode(id))
@@ -44,12 +40,8 @@ class IssueTrackerExample extends IssueTracker {
         })
     }
 
-    loadBlockers(issueIds: IssueId[]): Issue[] {
-        if (!issueIds?.length) {
-            return []
-        }
-
-        return issueIds.flatMap(id => {
+    loadBlockersFor(issues: Issue[]): Issue[] {
+        return issues.map(issue => issue.id).flatMap(id => {
             let hash = parseInt(id)
             if (isNaN(hash)) {
                 hash = Math.abs(Utils.hashCode(id))

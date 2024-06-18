@@ -54,28 +54,28 @@ abstract class IssueTracker {
         throw Utils.throwNotImplemented(this.constructor.name, this.getUrlForIssueIds.name)
     }
 
-    loadIssues(issueIds: IssueId[]): Issue[] {
+    loadIssuesByIssueId(issueIds: IssueId[]): Issue[] {
         if (!issueIds?.length) {
             return []
         }
 
-        throw Utils.throwNotImplemented(this.constructor.name, this.loadIssues.name)
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadIssuesByIssueId.name)
     }
 
-    loadChildren(issueIds: IssueId[]): Issue[] {
-        if (!issueIds?.length) {
+    loadChildrenFor(issues: Issue[]): Issue[] {
+        if (!issues?.length) {
             return []
         }
 
-        throw Utils.throwNotImplemented(this.constructor.name, this.loadChildren.name)
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadChildrenFor.name)
     }
 
-    loadBlockers(issueIds: IssueId[]): Issue[] {
-        if (!issueIds?.length) {
+    loadBlockersFor(issues: Issue[]): Issue[] {
+        if (!issues?.length) {
             return []
         }
 
-        throw Utils.throwNotImplemented(this.constructor.name, this.loadBlockers.name)
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadBlockersFor.name)
     }
 
 

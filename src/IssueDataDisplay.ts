@@ -85,7 +85,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
             const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn)
             const isOriginalIssueKeysTextChanged = () => {
                 const now = Date.now()
-                if (lastDataNotChangedCheckTimestamp >= now - 500) {
+                const minTimestamp = now - GSheetProjectSettings.originalIssueKeysTextChangedTimeout
+                if (lastDataNotChangedCheckTimestamp >= minTimestamp) {
                     return false
                 }
 
@@ -185,7 +186,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `loading issues`,
             ].join(': '), () => {
                 const issueIds = Object.values(issueKeyIds).filter(Utils.distinct())
-                return issueTracker.loadIssues(issueIds)
+                return issueTracker?.loadIssuesByIssueId(issueIds)
             }))
 
             const loadedChildIssues: Issue[] = LazyProxy.create(() => Observability.timed([
@@ -196,7 +197,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             ].join(': '), () => {
                 const issueIds = loadedIssues.map(it => it.id)
                 return [
-                    issueTracker.loadChildren(issueIds),
+                    issueTracker.loadChildrenFor(loadedIssues),
                     Object.values(issueKeyQueries)
                         .filter(Utils.distinct())
                         .flatMap(query => issueTracker.search(query)),
@@ -213,10 +214,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `loading blocker issues`,
             ].join(': '), () => {
                 const issueIds = loadedIssues.map(it => it.id)
-                const allIssueIds = [loadedIssues, loadedChildIssues]
-                    .flatMap(it => it.map(it => it.id))
-                    .filter(Utils.distinct())
-                return issueTracker.loadBlockers(allIssueIds)
+                const allIssues = loadedIssues.concat(loadedChildIssues)
+                return issueTracker.loadBlockersFor(allIssues)
                     .filter(issue => !issueIds.includes(issue.id))
             }))
 

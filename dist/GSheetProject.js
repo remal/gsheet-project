@@ -150,6 +150,7 @@ GSheetProjectSettings.issueTrackers = [];
 GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.issuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
+GSheetProjectSettings.originalIssueKeysTextChangedTimeout = 500;
 GSheetProjectSettings.useLockService = true;
 GSheetProjectSettings.lockTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.sheetName = "Projects";
@@ -741,7 +742,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
             const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn);
             const isOriginalIssueKeysTextChanged = () => {
                 const now = Date.now();
-                if (lastDataNotChangedCheckTimestamp >= now - 500) {
+                const minTimestamp = now - GSheetProjectSettings.originalIssueKeysTextChangedTimeout;
+                if (lastDataNotChangedCheckTimestamp >= minTimestamp) {
                     return false;
                 }
                 const currentValue = originalIssueKeysRange.getValue().toString();
@@ -824,7 +826,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `loading issues`,
             ].join(': '), () => {
                 const issueIds = Object.values(issueKeyIds).filter(Utils.distinct());
-                return issueTracker.loadIssues(issueIds);
+                return issueTracker === null || issueTracker === void 0 ? void 0 : issueTracker.loadIssuesByIssueId(issueIds);
             }));
             const loadedChildIssues = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
@@ -834,7 +836,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             ].join(': '), () => {
                 const issueIds = loadedIssues.map(it => it.id);
                 return [
-                    issueTracker.loadChildren(issueIds),
+                    issueTracker.loadChildrenFor(loadedIssues),
                     Object.values(issueKeyQueries)
                         .filter(Utils.distinct())
                         .flatMap(query => issueTracker.search(query)),
@@ -850,10 +852,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `loading blocker issues`,
             ].join(': '), () => {
                 const issueIds = loadedIssues.map(it => it.id);
-                const allIssueIds = [loadedIssues, loadedChildIssues]
-                    .flatMap(it => it.map(it => it.id))
-                    .filter(Utils.distinct());
-                return issueTracker.loadBlockers(allIssueIds)
+                const allIssues = loadedIssues.concat(loadedChildIssues);
+                return issueTracker.loadBlockersFor(allIssues)
                     .filter(issue => !issueIds.includes(issue.id));
             }));
             const titles = issueKeys.map(issueKey => {
@@ -1237,23 +1237,23 @@ class IssueTracker {
         }
         throw Utils.throwNotImplemented(this.constructor.name, this.getUrlForIssueIds.name);
     }
-    loadIssues(issueIds) {
+    loadIssuesByIssueId(issueIds) {
         if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
             return [];
         }
-        throw Utils.throwNotImplemented(this.constructor.name, this.loadIssues.name);
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadIssuesByIssueId.name);
     }
-    loadChildren(issueIds) {
-        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+    loadChildrenFor(issues) {
+        if (!(issues === null || issues === void 0 ? void 0 : issues.length)) {
             return [];
         }
-        throw Utils.throwNotImplemented(this.constructor.name, this.loadChildren.name);
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadChildrenFor.name);
     }
-    loadBlockers(issueIds) {
-        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+    loadBlockersFor(issues) {
+        if (!(issues === null || issues === void 0 ? void 0 : issues.length)) {
             return [];
         }
-        throw Utils.throwNotImplemented(this.constructor.name, this.loadBlockers.name);
+        throw Utils.throwNotImplemented(this.constructor.name, this.loadBlockersFor.name);
     }
     extractSearchQuery(issueKey) {
         throw Utils.throwNotImplemented(this.constructor.name, this.extractSearchQuery.name);
@@ -1313,17 +1313,14 @@ class IssueTrackerExample extends IssueTracker {
         }
         return `https://example.com/search?q=id:(${encodeURIComponent(issueIds.join('|'))})`;
     }
-    loadIssues(issueIds) {
+    loadIssuesByIssueId(issueIds) {
         if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
             return [];
         }
         return issueIds.map(id => new IssueExample(this, id));
     }
-    loadChildren(issueIds) {
-        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
-            return [];
-        }
-        return issueIds.flatMap(id => {
+    loadChildrenFor(issues) {
+        return issues.map(issue => issue.id).flatMap(id => {
             let hash = parseInt(id);
             if (isNaN(hash)) {
                 hash = Math.abs(Utils.hashCode(id));
@@ -1331,11 +1328,8 @@ class IssueTrackerExample extends IssueTracker {
             return Array.from(Utils.range(0, hash % 3)).map(index => new IssueExample(this, `${id}-${index + 1}`));
         });
     }
-    loadBlockers(issueIds) {
-        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
-            return [];
-        }
-        return issueIds.flatMap(id => {
+    loadBlockersFor(issues) {
+        return issues.map(issue => issue.id).flatMap(id => {
             let hash = parseInt(id);
             if (isNaN(hash)) {
                 hash = Math.abs(Utils.hashCode(id));
@@ -1410,63 +1404,82 @@ class Lazy {
 class LazyProxy {
     static create(supplier) {
         const lazy = new Lazy(supplier);
-        const proxy = new Proxy({}, {
-            apply(_, thisArg, argArray) {
+        const proxy = new Proxy(lazy, {
+            apply(lazy, thisArg, argArray) {
                 const instance = lazy.get();
+                argArray = argArray.map(it => this.unwrapLazyProxy(it));
                 return Reflect.apply(instance, thisArg, argArray);
             },
-            construct(_, argArray, newTarget) {
+            construct(lazy, argArray, newTarget) {
                 const instance = lazy.get();
+                argArray = argArray.map(it => this.unwrapLazyProxy(it));
                 return Reflect.construct(instance, argArray, newTarget);
             },
-            defineProperty(_, property, attributes) {
+            defineProperty(lazy, property, attributes) {
                 const instance = lazy.get();
                 return Reflect.defineProperty(instance, property, attributes);
             },
-            deleteProperty(_, property) {
+            deleteProperty(lazy, property) {
                 const instance = lazy.get();
                 return Reflect.deleteProperty(instance, property);
             },
-            get(_, property) {
+            get(lazy, property, receiver) {
                 const instance = lazy.get();
-                return Reflect.get(instance, property, instance);
+                let value = Reflect.get(instance, property, instance);
+                if (Utils.isFunction(value)) {
+                    return function () {
+                        const target = this === receiver ? instance : this;
+                        const argArray = Array.from(arguments).map(it => LazyProxy.unwrapLazyProxy(it));
+                        return value.apply(target, argArray);
+                    };
+                }
+                return value;
             },
-            getOwnPropertyDescriptor(_, property) {
+            getOwnPropertyDescriptor(lazy, property) {
                 const instance = lazy.get();
                 return Reflect.getOwnPropertyDescriptor(instance, property);
             },
-            getPrototypeOf(_) {
+            getPrototypeOf(lazy) {
                 const instance = lazy.get();
                 return Reflect.getPrototypeOf(instance);
             },
-            has(_, property) {
+            has(lazy, property) {
                 const instance = lazy.get();
                 return Reflect.has(instance, property);
             },
-            isExtensible(_) {
+            isExtensible(lazy) {
                 const instance = lazy.get();
                 return Reflect.isExtensible(instance);
             },
-            ownKeys(_) {
+            ownKeys(lazy) {
                 const instance = lazy.get();
                 return Reflect.ownKeys(instance);
             },
-            preventExtensions(_) {
+            preventExtensions(lazy) {
                 const instance = lazy.get();
                 return Reflect.preventExtensions(instance);
             },
-            set(_, property, newValue) {
+            set(lazy, property, newValue) {
                 const instance = lazy.get();
                 return Reflect.set(instance, property, newValue, instance);
             },
-            setPrototypeOf(_, value) {
+            setPrototypeOf(lazy, value) {
                 const instance = lazy.get();
                 return Reflect.setPrototypeOf(instance, value);
             },
         });
+        this._lazyProxyToLazy.set(proxy, lazy);
         return proxy;
     }
+    static unwrapLazyProxy(lazyProxy) {
+        const lazy = this._lazyProxyToLazy.get(lazyProxy);
+        if (lazy == null) {
+            return lazyProxy;
+        }
+        return lazy.get();
+    }
 }
+LazyProxy._lazyProxyToLazy = new WeakMap();
 class NamedRangeUtils {
     static findNamedRange(rangeName) {
         const namedRanges = ExecutionCache.getOrCompute('named-ranges', () => {
@@ -1833,7 +1846,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}abbb4871289fcdea5ef69eaed30cbee5aa545f114d06546579f74d4f452f2b7d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}20225dc28a60cc2cb6a5f855c8b64b1297d43e42bbbd6042d06af71d7cb44022:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

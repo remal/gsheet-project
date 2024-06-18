@@ -1,62 +1,84 @@
 class LazyProxy {
 
+    private static readonly _lazyProxyToLazy = new WeakMap<any, Lazy<any>>()
+
     static create<T>(supplier: () => T): T {
         const lazy = new Lazy<any>(supplier)
-        const proxy = new Proxy({}, {
-            apply(_, thisArg: any, argArray: any[]): any {
+        const proxy = new Proxy(lazy, {
+            apply(lazy, thisArg: any, argArray: any[]): any {
                 const instance = lazy.get()
+                argArray = argArray.map(it => this.unwrapLazyProxy(it))
                 return Reflect.apply(instance, thisArg, argArray)
             },
-            construct(_, argArray: any[], newTarget: Function): object {
+            construct(lazy, argArray: any[], newTarget: Function): object {
                 const instance = lazy.get()
+                argArray = argArray.map(it => this.unwrapLazyProxy(it))
                 return Reflect.construct(instance, argArray, newTarget)
             },
-            defineProperty(_, property: string | symbol, attributes: PropertyDescriptor): boolean {
+            defineProperty(lazy, property: string | symbol, attributes: PropertyDescriptor): boolean {
                 const instance = lazy.get()
                 return Reflect.defineProperty(instance, property, attributes)
             },
-            deleteProperty(_, property: string | symbol): boolean {
+            deleteProperty(lazy, property: string | symbol): boolean {
                 const instance = lazy.get()
                 return Reflect.deleteProperty(instance, property)
             },
-            get(_, property: string | symbol): any {
+            get(lazy, property: string | symbol, receiver: any): any {
                 const instance = lazy.get()
-                return Reflect.get(instance, property, instance)
+                let value = Reflect.get(instance, property, instance)
+                if (Utils.isFunction(value)) {
+                    return function () {
+                        const target = this === receiver ? instance : this
+                        const argArray = Array.from(arguments).map(it => LazyProxy.unwrapLazyProxy(it))
+                        return value.apply(target, argArray)
+                    }
+                }
+                return value
             },
-            getOwnPropertyDescriptor(_, property: string | symbol): PropertyDescriptor | undefined {
+            getOwnPropertyDescriptor(lazy, property: string | symbol): PropertyDescriptor | undefined {
                 const instance = lazy.get()
                 return Reflect.getOwnPropertyDescriptor(instance, property)
             },
-            getPrototypeOf(_): object | null {
+            getPrototypeOf(lazy): object | null {
                 const instance = lazy.get()
                 return Reflect.getPrototypeOf(instance)
             },
-            has(_, property: string | symbol): boolean {
+            has(lazy, property: string | symbol): boolean {
                 const instance = lazy.get()
                 return Reflect.has(instance, property)
             },
-            isExtensible(_): boolean {
+            isExtensible(lazy): boolean {
                 const instance = lazy.get()
                 return Reflect.isExtensible(instance)
             },
-            ownKeys(_): ArrayLike<string | symbol> {
+            ownKeys(lazy): ArrayLike<string | symbol> {
                 const instance = lazy.get()
                 return Reflect.ownKeys(instance)
             },
-            preventExtensions(_): boolean {
+            preventExtensions(lazy): boolean {
                 const instance = lazy.get()
                 return Reflect.preventExtensions(instance)
             },
-            set(_, property: string | symbol, newValue: any): boolean {
+            set(lazy, property: string | symbol, newValue: any): boolean {
                 const instance = lazy.get()
                 return Reflect.set(instance, property, newValue, instance)
             },
-            setPrototypeOf(_, value: object | null): boolean {
+            setPrototypeOf(lazy, value: object | null): boolean {
                 const instance = lazy.get()
                 return Reflect.setPrototypeOf(instance, value)
             },
         })
+        this._lazyProxyToLazy.set(proxy, lazy)
         return proxy as T
+    }
+
+    static unwrapLazyProxy<T>(lazyProxy: T): T {
+        const lazy = this._lazyProxyToLazy.get(lazyProxy)
+        if (lazy == null) {
+            return lazyProxy
+        }
+
+        return lazy.get() as T
     }
 
 }
