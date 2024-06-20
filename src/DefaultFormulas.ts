@@ -142,7 +142,11 @@ class DefaultFormulas extends AbstractIssueLogic {
             `
 
             const nextWorkdayLastEnd = `
-                WORKDAY(${lastEnd}, 1, ${GSheetProjectSettings.publicHolidaysRangeName})
+                WORKDAY(
+                    ${lastEnd},
+                    1,
+                    ${GSheetProjectSettings.publicHolidaysRangeName}
+                )
             `
 
             const firstDataRowIf = `
@@ -171,11 +175,26 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `
 
+            const withDependencyEndDate = `
+                LET(
+                    dependencyEndDate,
+                    DATE(2000, 1, 1),
+                    MAX(
+                        ${withResources},
+                        WORKDAY(
+                            dependencyEndDate,
+                            1,
+                            ${GSheetProjectSettings.publicHolidaysRangeName}
+                        )
+                    )
+                )
+            `
+
             const notEnoughDataIf = `
                 IF(
                     ${teamA1Notation} = "",
                     "",
-                    ${withResources}
+                    ${withDependencyEndDate}
                 )
             `
 

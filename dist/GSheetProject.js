@@ -472,7 +472,11 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `;
             const nextWorkdayLastEnd = `
-                WORKDAY(${lastEnd}, 1, ${GSheetProjectSettings.publicHolidaysRangeName})
+                WORKDAY(
+                    ${lastEnd},
+                    1,
+                    ${GSheetProjectSettings.publicHolidaysRangeName}
+                )
             `;
             const firstDataRowIf = `
                 IF(
@@ -498,11 +502,25 @@ class DefaultFormulas extends AbstractIssueLogic {
                     ${firstDataRowIf}
                 )
             `;
+            const withDependencyEndDate = `
+                LET(
+                    dependencyEndDate,
+                    DATE(2000, 1, 1),
+                    MAX(
+                        ${withResources},
+                        WORKDAY(
+                            dependencyEndDate,
+                            1,
+                            ${GSheetProjectSettings.publicHolidaysRangeName}
+                        )
+                    )
+                )
+            `;
             const notEnoughDataIf = `
                 IF(
                     ${teamA1Notation} = "",
                     "",
-                    ${withResources}
+                    ${withDependencyEndDate}
                 )
             `;
             return `=${notEnoughDataIf}`;
@@ -1846,7 +1864,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f5c8cdda7b98b24db282c88911dfb44a1f82c4c4a8298e7de12f7112ed80b204:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}673e51f2cb4df0a46f8e82d18f117c419c94e7d6589699a542c3ad0b512a39e5:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
