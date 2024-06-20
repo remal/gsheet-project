@@ -78,7 +78,7 @@ function onOpenGSheetProject(event) {
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
         .addItem("Reorder rows according to hierarchy", reorderAllIssuesAccordingToHierarchyInGSheetProject.name)
-        .addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
+        //.addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi();
 }
@@ -1880,7 +1880,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}fe4cacb8dafd506afcd926f93b0beb4a561c22a76b15b2d5375c4684f8df1c55:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}79e1fbd5c6b8410332c0ca1476ab36c21bc987205c473353b8a38ffd61ca93cf:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

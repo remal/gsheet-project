@@ -80,7 +80,7 @@ function onOpenGSheetProject(event?: SheetsOnOpen) {
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
         .addItem("Reorder rows according to hierarchy", reorderAllIssuesAccordingToHierarchyInGSheetProject.name)
-        .addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
+        //.addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi()
 }
