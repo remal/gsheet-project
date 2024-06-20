@@ -42,6 +42,17 @@ function refreshAllRowsOfGSheetProject() {
         });
     }, false);
 }
+function reapplyDefaultFormulasOfGSheetProject() {
+    EntryPoint.entryPoint(() => {
+        SheetLayouts.migrateIfNeeded();
+        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+            .filter(sheet => SheetUtils.isGridSheet(sheet))
+            .forEach(sheet => {
+            const rowsRange = sheet.getRange(`1:${SheetUtils.getLastRow(sheet)}`);
+            DefaultFormulas.insertDefaultFormulas(rowsRange, true);
+        });
+    });
+}
 function applyDefaultStylesOfGSheetProject() {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrate();
@@ -67,6 +78,7 @@ function onOpenGSheetProject(event) {
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
         .addItem("Reorder rows according to hierarchy", reorderAllIssuesAccordingToHierarchyInGSheetProject.name)
+        .addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi();
 }
@@ -361,7 +373,7 @@ class DefaultFormulas extends AbstractIssueLogic {
     static isDefaultFormula(formula) {
         return Utils.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER);
     }
-    static insertDefaultFormulas(range) {
+    static insertDefaultFormulas(range, rewriteExistingDefaultFormula = false) {
         const processedRange = this._processRange(range);
         if (processedRange == null) {
             return;
@@ -395,6 +407,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                         sheet.getRange(row, column).setFormula('');
                     }
                     continue;
+                }
+                if (rewriteExistingDefaultFormula && this.isDefaultFormula(formulas[index])) {
+                    values[index] = '';
+                    formulas[index] = '';
                 }
                 if (!((_d = values[index]) === null || _d === void 0 ? void 0 : _d.length) && !((_e = formulas[index]) === null || _e === void 0 ? void 0 : _e.length)) {
                     console.info([
@@ -1864,7 +1880,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}673e51f2cb4df0a46f8e82d18f117c419c94e7d6589699a542c3ad0b512a39e5:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}fe4cacb8dafd506afcd926f93b0beb4a561c22a76b15b2d5375c4684f8df1c55:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

@@ -36,6 +36,21 @@ function refreshAllRowsOfGSheetProject() {
     }, false)
 }
 
+function reapplyDefaultFormulasOfGSheetProject() {
+    EntryPoint.entryPoint(() => {
+        SheetLayouts.migrateIfNeeded()
+        SpreadsheetApp.getActiveSpreadsheet().getSheets()
+            .filter(sheet => SheetUtils.isGridSheet(sheet))
+            .forEach(sheet => {
+                const rowsRange = sheet.getRange(
+                    `1:${SheetUtils.getLastRow(sheet)}`,
+                )
+
+                DefaultFormulas.insertDefaultFormulas(rowsRange, true)
+            })
+    })
+}
+
 function applyDefaultStylesOfGSheetProject() {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrate()
@@ -65,6 +80,7 @@ function onOpenGSheetProject(event?: SheetsOnOpen) {
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
         .addItem("Reorder rows according to hierarchy", reorderAllIssuesAccordingToHierarchyInGSheetProject.name)
+        .addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi()
 }

@@ -6,7 +6,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         return Utils.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER)
     }
 
-    static insertDefaultFormulas(range: Range) {
+    static insertDefaultFormulas(range: Range, rewriteExistingDefaultFormula: boolean = false) {
         const processedRange = this._processRange(range)
         if (processedRange == null) {
             return
@@ -47,6 +47,11 @@ class DefaultFormulas extends AbstractIssueLogic {
                             sheet.getRange(row, column).setFormula('')
                         }
                         continue
+                    }
+
+                    if (rewriteExistingDefaultFormula && this.isDefaultFormula(formulas[index])) {
+                        values[index] = ''
+                        formulas[index] = ''
                     }
 
                     if (!values[index]?.length && !formulas[index]?.length) {
