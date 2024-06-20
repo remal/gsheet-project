@@ -44,7 +44,6 @@ function refreshAllRowsOfGSheetProject() {
 }
 function reapplyDefaultFormulasOfGSheetProject() {
     EntryPoint.entryPoint(() => {
-        SheetLayouts.migrateIfNeeded();
         SpreadsheetApp.getActiveSpreadsheet().getSheets()
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
@@ -1880,7 +1879,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}79e1fbd5c6b8410332c0ca1476ab36c21bc987205c473353b8a38ffd61ca93cf:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}13e1501ec695627fcf3b4338730b5f5d8b635d11f14306440d39a82382ad4832:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

@@ -38,7 +38,6 @@ function refreshAllRowsOfGSheetProject() {
 
 function reapplyDefaultFormulasOfGSheetProject() {
     EntryPoint.entryPoint(() => {
-        SheetLayouts.migrateIfNeeded()
         SpreadsheetApp.getActiveSpreadsheet().getSheets()
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
