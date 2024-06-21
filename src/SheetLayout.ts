@@ -143,7 +143,7 @@ abstract class SheetLayout {
             const range = sheet.getRange(
                 GSheetProjectSettings.firstDataRow,
                 column,
-                maxRows,
+                maxRows - GSheetProjectSettings.firstDataRow + 1,
                 1,
             )
             if (info.rangeName?.length) {

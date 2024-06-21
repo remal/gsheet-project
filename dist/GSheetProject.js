@@ -2108,7 +2108,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f30e8d7324b1bb95ffa4d1de4a218099849f1036b7e459bd148824e6b6fa3cd9:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}ebc83dd216e3bfd768ada90c99665b6f08138a7469a47a037bd42775698b6ad8:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2203,7 +2203,7 @@ class SheetLayout {
                         .setFormula(formulaToExpect);
                 }
             }
-            const range = sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows, 1);
+            const range = sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows - GSheetProjectSettings.firstDataRow + 1, 1);
             if ((_f = info.rangeName) === null || _f === void 0 ? void 0 : _f.length) {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range);
             }
