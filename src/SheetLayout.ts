@@ -34,7 +34,10 @@ abstract class SheetLayout {
         const sheet = this.sheet
 
 
+        const conditionalFormattingScope = `layout:${this.constructor?.name || Utils.normalizeName(this.sheetName)}`
+        let conditionalFormattingOrder = 0
         ConditionalFormatting.removeConditionalFormatRulesByScope(sheet, 'layout')
+        ConditionalFormatting.removeConditionalFormatRulesByScope(sheet, conditionalFormattingScope)
 
 
         const columns = this.columns.reduce(
@@ -177,9 +180,9 @@ abstract class SheetLayout {
                 range.setDataValidation(dataValidation)
             }
 
-            info.conditionalFormats?.forEach(rule => {
-                const originalConfigurer = rule.configurer
-                rule.configurer = builder => {
+            info.conditionalFormats?.forEach(configurer => {
+                const originalConfigurer = configurer
+                configurer = builder => {
                     originalConfigurer(builder)
                     const formula = ConditionalFormatRuleUtils.extractFormula(builder)
                     if (formula != null) {
@@ -188,8 +191,9 @@ abstract class SheetLayout {
                     return builder
                 }
                 const fullRule = {
-                    scope: 'layout',
-                    ...rule,
+                    scope: conditionalFormattingScope,
+                    order: ++conditionalFormattingOrder,
+                    configurer,
                 }
                 ConditionalFormatting.addConditionalFormatRule(range, fullRule)
             })
@@ -216,15 +220,13 @@ abstract class SheetLayout {
 
 }
 
-type LayoutOrderedConditionalFormatRule = Omit<OrderedConditionalFormatRule, 'scope'>
-
 interface ColumnInfo {
     key?: string
     name: ColumnName
     arrayFormula?: string
     rangeName?: RangeName
     dataValidation?: () => (DataValidation | null)
-    conditionalFormats?: LayoutOrderedConditionalFormatRule[]
+    conditionalFormats?: ConditionalFormatRuleConfigurer[]
     defaultTitleFontSize?: number
     defaultWidth?: number | WidthString
     defaultFormat?: string

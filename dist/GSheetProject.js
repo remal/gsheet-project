@@ -64,6 +64,8 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
 }
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
+        ConditionalFormatting.removeDuplicateConditionalFormatRules();
+        ConditionalFormatting.combineConditionalFormatRules();
         ProtectionLocks.releaseExpiredLocks();
         PropertyLocks.releaseExpiredPropertyLocks();
     }, false);
@@ -345,6 +347,117 @@ class ConditionalFormatting {
             sheet.setConditionalFormatRules(filteredRules);
         }
     }
+    static removeDuplicateConditionalFormatRules(sheet) {
+        var _a;
+        if (sheet == null) {
+            SpreadsheetApp.getActiveSpreadsheet().getSheets()
+                .filter(sheet => SheetUtils.isGridSheet(sheet))
+                .forEach(sheet => this.removeDuplicateConditionalFormatRules(sheet));
+            return;
+        }
+        if (Utils.isString(sheet)) {
+            sheet = SheetUtils.getSheetByName(sheet);
+        }
+        const rules = (_a = sheet.getConditionalFormatRules()) !== null && _a !== void 0 ? _a : [];
+        const filteredRules = rules.filter(Utils.distinctBy(rule => JSON.stringify(Utils.toJsonObject(rule))));
+        if (filteredRules.length !== rules.length) {
+            sheet.setConditionalFormatRules(filteredRules);
+        }
+    }
+    static combineConditionalFormatRules(sheet) {
+        var _a;
+        if (sheet == null) {
+            SpreadsheetApp.getActiveSpreadsheet().getSheets()
+                .filter(sheet => SheetUtils.isGridSheet(sheet))
+                .forEach(sheet => this.combineConditionalFormatRules(sheet));
+            return;
+        }
+        if (Utils.isString(sheet)) {
+            sheet = SheetUtils.getSheetByName(sheet);
+        }
+        const rules = (_a = sheet.getConditionalFormatRules()) !== null && _a !== void 0 ? _a : [];
+        if (rules.length <= 1) {
+            return;
+        }
+        const originalRules = [...rules];
+        const isMergeableRule = (rule) => {
+            const ranges = rule.getRanges();
+            const firstRange = ranges.shift();
+            if (firstRange == null) {
+                return false;
+            }
+            for (const range of ranges) {
+                if (range.getColumn() !== firstRange.getColumn()
+                    || range.getNumColumns() !== firstRange.getNumColumns()) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        const getRuleKey = (rule) => {
+            const jsonObject = Utils.toJsonObject(rule);
+            delete jsonObject['ranges'];
+            const ranges = rule.getRanges();
+            const firstRange = ranges.shift();
+            jsonObject['columns'] = Array.from(Utils.range(firstRange.getColumn(), firstRange.getColumn() + firstRange.getNumColumns() - 1));
+            return JSON.stringify(jsonObject);
+        };
+        for (let index = 0; index < rules.length - 1; ++index) {
+            const rule = rules[index];
+            if (!isMergeableRule(rule)) {
+                continue;
+            }
+            const ruleKey = getRuleKey(rule);
+            let similarRule = null;
+            for (let otherIndex = index + 1; otherIndex < rules.length; ++otherIndex) {
+                const otherRule = rules[otherIndex];
+                if (!isMergeableRule(otherRule)) {
+                    continue;
+                }
+                const otherRuleKey = getRuleKey(otherRule);
+                if (otherRuleKey === ruleKey) {
+                    similarRule = otherRule;
+                    rules.splice(otherIndex, 1);
+                    break;
+                }
+            }
+            if (similarRule == null) {
+                continue;
+            }
+            let newRanges = [...rule.getRanges(), ...similarRule.getRanges()];
+            newRanges = newRanges.toSorted((r1, r2) => {
+                const row1 = r1.getRow();
+                const row2 = r2.getRow();
+                if (row1 === row2) {
+                    return r2.getNumRows() - r1.getNumRows();
+                }
+                return row1 - row2;
+            });
+            console.log('newRanges', newRanges.map(range => range.getA1Notation()));
+            for (let rangeIndex = 0; rangeIndex < newRanges.length - 1; ++rangeIndex) {
+                let range = newRanges[rangeIndex];
+                let firstRow = range.getRow();
+                let lastRow = firstRow + range.getNumRows() - 1;
+                for (let nextRangeIndex = rangeIndex + 1; nextRangeIndex < newRanges.length; ++nextRangeIndex) {
+                    const nextRange = newRanges[nextRangeIndex];
+                    const nextFirstRow = nextRange.getRow();
+                    if (nextFirstRow <= lastRow) {
+                        const nextLastRow = nextFirstRow + nextRange.getNumRows() - 1;
+                        firstRow = Math.min(firstRow, nextFirstRow);
+                        lastRow = Math.max(lastRow, nextLastRow);
+                        newRanges[rangeIndex] = range = range.getSheet().getRange(firstRow, range.getColumn(), lastRow - firstRow + 1, range.getNumColumns());
+                        newRanges.splice(nextRangeIndex, 1);
+                        --nextRangeIndex;
+                    }
+                }
+            }
+            console.log('newRanges', newRanges.map(range => range.getA1Notation()));
+            rules[index] = rule.copy().setRanges(newRanges).build();
+        }
+        if (rules.length !== originalRules.length) {
+            sheet.setConditionalFormatRules(rules);
+        }
+    }
     static _extractScope(rule) {
         if (!Utils.isString(rule)) {
             const formula = ConditionalFormatRuleUtils.extractFormula(rule);
@@ -372,6 +485,11 @@ class ConditionalFormatting {
             return parseFloat(match[1]);
         }
         return undefined;
+    }
+    static _ruleKey(rule) {
+        const jsonObject = Utils.toJsonObject(rule);
+        delete jsonObject['ranges'];
+        return JSON.stringify(jsonObject);
     }
 }
 class DefaultFormulas extends AbstractIssueLogic {
@@ -650,7 +768,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                 =IF(
                     OR(
                         ${startA1Notation} = "",
-                        ${estimateA1Notation} = ""
+                        ${estimateA1Notation} = "",
+                        ${estimateA1Notation} < 0
                     ),
                     "",
                     WORKDAY(
@@ -1982,7 +2101,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}a02216061db13b4f8f76b618375b8e77cb03fff4955bee334710b9ec576fa946:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}e412894ec0ad21f1ca4cfadf2d03e1fe4aadd840a95acccb6f7d19eb47f55400:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -1991,9 +2110,12 @@ class SheetLayout {
         this.migrate();
     }
     migrate() {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g;
         const sheet = this.sheet;
+        const conditionalFormattingScope = `layout:${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}`;
+        let conditionalFormattingOrder = 0;
         ConditionalFormatting.removeConditionalFormatRulesByScope(sheet, 'layout');
+        ConditionalFormatting.removeConditionalFormatRulesByScope(sheet, conditionalFormattingScope);
         const columns = this.columns.reduce((map, info) => {
             map.set(Utils.normalizeName(info.name), info);
             return map;
@@ -2012,7 +2134,7 @@ class SheetLayout {
         for (const [columnName, info] of columns.entries()) {
             const existingIndex = existingNormalizedNames.indexOf(columnName);
             if (existingIndex >= 0) {
-                if ((_a = info.key) === null || _a === void 0 ? void 0 : _a.length) {
+                if ((_b = info.key) === null || _b === void 0 ? void 0 : _b.length) {
                     const columnNumber = existingIndex + 1;
                     columnByKey.set(info.key, { columnNumber, info });
                 }
@@ -2023,7 +2145,7 @@ class SheetLayout {
             const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
                 .setValue(info.name);
             ExecutionCache.resetCache();
-            if ((_b = info.key) === null || _b === void 0 ? void 0 : _b.length) {
+            if ((_c = info.key) === null || _c === void 0 ? void 0 : _c.length) {
                 const columnNumber = lastColumn;
                 columnByKey.set(info.key, { columnNumber, info });
             }
@@ -2044,7 +2166,7 @@ class SheetLayout {
                 sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
                     .setNumberFormat(info.defaultFormat);
             }
-            if ((_c = info.defaultHorizontalAlignment) === null || _c === void 0 ? void 0 : _c.length) {
+            if ((_d = info.defaultHorizontalAlignment) === null || _d === void 0 ? void 0 : _d.length) {
                 sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
                     .setHorizontalAlignment(info.defaultHorizontalAlignment);
             }
@@ -2061,7 +2183,7 @@ class SheetLayout {
                 continue;
             }
             const column = index + 1;
-            if ((_d = info.arrayFormula) === null || _d === void 0 ? void 0 : _d.length) {
+            if ((_e = info.arrayFormula) === null || _e === void 0 ? void 0 : _e.length) {
                 const formulaToExpect = `
                     ={
                         "${Utils.escapeFormulaString(info.name)}";
@@ -2075,7 +2197,7 @@ class SheetLayout {
                 }
             }
             const range = sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows, 1);
-            if ((_e = info.rangeName) === null || _e === void 0 ? void 0 : _e.length) {
+            if ((_f = info.rangeName) === null || _f === void 0 ? void 0 : _f.length) {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range);
             }
             const processFormula = (formula) => {
@@ -2105,9 +2227,9 @@ class SheetLayout {
                 }
                 range.setDataValidation(dataValidation);
             }
-            (_f = info.conditionalFormats) === null || _f === void 0 ? void 0 : _f.forEach(rule => {
-                const originalConfigurer = rule.configurer;
-                rule.configurer = builder => {
+            (_g = info.conditionalFormats) === null || _g === void 0 ? void 0 : _g.forEach(configurer => {
+                const originalConfigurer = configurer;
+                configurer = builder => {
                     originalConfigurer(builder);
                     const formula = ConditionalFormatRuleUtils.extractFormula(builder);
                     if (formula != null) {
@@ -2116,8 +2238,9 @@ class SheetLayout {
                     return builder;
                 };
                 const fullRule = {
-                    scope: 'layout',
-                    ...rule,
+                    scope: conditionalFormattingScope,
+                    order: ++conditionalFormattingOrder,
+                    configurer,
                 };
                 ConditionalFormatting.addConditionalFormatRule(range, fullRule);
             });
@@ -2229,30 +2352,24 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
-                    {
-                        order: 1,
-                        configurer: builder => builder
-                            .whenFormulaSatisfied(`=AND(
+                    builder => builder
+                        .whenFormulaSatisfied(`=AND(
                                     ISFORMULA(#COLUMN_CELL),
                                     #COLUMN_CELL <> "",
                                     #COLUMN_CELL(deadline) <> "",
                                     #COLUMN_CELL > #COLUMN_CELL(deadline)
                                 )`)
-                            .setItalic(true)
-                            .setBold(true)
-                            .setFontColor('#c00'),
-                    },
-                    {
-                        order: 2,
-                        configurer: builder => builder
-                            .whenFormulaSatisfied(`=AND(
+                        .setItalic(true)
+                        .setBold(true)
+                        .setFontColor('#c00'),
+                    builder => builder
+                        .whenFormulaSatisfied(`=AND(
                                     #COLUMN_CELL <> "",
                                     #COLUMN_CELL(deadline) <> "",
                                     #COLUMN_CELL > #COLUMN_CELL(deadline)
                                 )`)
-                            .setBold(true)
-                            .setFontColor('#f00'),
-                    },
+                        .setBold(true)
+                        .setFontColor('#f00'),
                 ],
             },
             {
@@ -2596,6 +2713,94 @@ class Utils {
             return Math.round(255 * color).toString(16).padStart(2, '0');
         };
         return `#${f(0)}${f(8)}${f(4)}`;
+    }
+    static toJsonObject(object, callGetters = true, keepNulls = false) {
+        if (object == null) {
+            return object;
+        }
+        else if (object instanceof Date) {
+            return new Date(object.getTime());
+        }
+        else if (Array.isArray(object)) {
+            const result = [];
+            for (const element of object) {
+                if (element === object || element === undefined || (!keepNulls && element === null)) {
+                    continue;
+                }
+                result.push(this.toJsonObject(element, callGetters));
+            }
+            return result;
+        }
+        else if (this.isFunction(object.toJSON)) {
+            return object.toJSON();
+        }
+        else if (this.isFunction(object.getA1Notation)) {
+            return object.getA1Notation();
+        }
+        else if (this.isFunction(object.getSheetName)) {
+            return object.getSheetName();
+        }
+        else if (typeof object === 'object') {
+            const prototypePropertiesToExclude = ['constructor'];
+            const properties = [];
+            for (const property in object) {
+                if (!object.hasOwnProperty(property)
+                    && prototypePropertiesToExclude.includes(property)) {
+                    continue;
+                }
+                properties.push(property);
+            }
+            properties.sort((p1, p2) => {
+                const n1 = parseFloat(p1);
+                const n2 = parseFloat(p2);
+                if (!isNaN(n1) && !isNaN(n2)) {
+                    return n1 - n2;
+                }
+                return p1.localeCompare(p2);
+            });
+            const result = {};
+            for (const property of properties) {
+                const value = object[property];
+                if (value === object || value === undefined || (!keepNulls && value === null)) {
+                    continue;
+                }
+                if (this.isFunction(value)) {
+                    if (callGetters) {
+                        const getterMatcher = property.match(/^(get|is)([A-Z].*)$/);
+                        if (getterMatcher != null) {
+                            const propValue = value.call(object);
+                            if (propValue === object || propValue === undefined || (!keepNulls && propValue === null)) {
+                                continue;
+                            }
+                            let name = getterMatcher[2];
+                            name = name.substring(0, 1).toLowerCase() + name.substring(1);
+                            result[name] = this.toJsonObject(propValue, callGetters);
+                        }
+                    }
+                    continue;
+                }
+                result[property] = this.toJsonObject(value, callGetters);
+            }
+            return result;
+        }
+        else {
+            return object;
+        }
+    }
+    static groupBy(array, keyGetter) {
+        const result = new Map();
+        for (const element of array) {
+            const key = keyGetter(element);
+            if (key != null) {
+                let groupedElements = result.get(key);
+                if (groupedElements == null) {
+                    groupedElements = [];
+                    result.set(key, groupedElements);
+                }
+                groupedElements.push(element);
+            }
+        }
+        return result;
     }
     static extractRegex(string, regexp, group) {
         if (this.isString(regexp)) {

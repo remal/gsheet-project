@@ -100,34 +100,28 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
-                    {
-                        order: 1,
-                        configurer: builder => builder
-                            .whenFormulaSatisfied(
-                                `=AND(
+                    builder => builder
+                        .whenFormulaSatisfied(
+                            `=AND(
                                     ISFORMULA(#COLUMN_CELL),
                                     #COLUMN_CELL <> "",
                                     #COLUMN_CELL(deadline) <> "",
                                     #COLUMN_CELL > #COLUMN_CELL(deadline)
                                 )`,
-                            )
-                            .setItalic(true)
-                            .setBold(true)
-                            .setFontColor('#c00'),
-                    },
-                    {
-                        order: 2,
-                        configurer: builder => builder
-                            .whenFormulaSatisfied(
-                                `=AND(
+                        )
+                        .setItalic(true)
+                        .setBold(true)
+                        .setFontColor('#c00'),
+                    builder => builder
+                        .whenFormulaSatisfied(
+                            `=AND(
                                     #COLUMN_CELL <> "",
                                     #COLUMN_CELL(deadline) <> "",
                                     #COLUMN_CELL > #COLUMN_CELL(deadline)
                                 )`,
-                            )
-                            .setBold(true)
-                            .setFontColor('#f00'),
-                    },
+                        )
+                        .setBold(true)
+                        .setFontColor('#f00'),
                 ],
             },
             {

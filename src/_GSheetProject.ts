@@ -64,6 +64,8 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
 
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
+        ConditionalFormatting.removeDuplicateConditionalFormatRules()
+        ConditionalFormatting.combineConditionalFormatRules()
         ProtectionLocks.releaseExpiredLocks()
         PropertyLocks.releaseExpiredPropertyLocks()
     }, false)

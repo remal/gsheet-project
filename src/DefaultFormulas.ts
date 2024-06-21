@@ -320,7 +320,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                 =IF(
                     OR(
                         ${startA1Notation} = "",
-                        ${estimateA1Notation} = ""
+                        ${estimateA1Notation} = "",
+                        ${estimateA1Notation} < 0
                     ),
                     "",
                     WORKDAY(
