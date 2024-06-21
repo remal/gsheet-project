@@ -893,7 +893,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 var _a, _b;
                 const issueId = issueKeyIds[issueKey];
                 if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
-                    return (_a = loadedIssues.find(issue => issue.id)) === null || _a === void 0 ? void 0 : _a.title;
+                    return (_a = loadedIssues.find(issue => issue.id === issueId)) === null || _a === void 0 ? void 0 : _a.title;
                 }
                 if ((_b = issueKeyQueries[issueKey]) === null || _b === void 0 ? void 0 : _b.length) {
                     return Observability.timed([
@@ -1879,7 +1879,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}13e1501ec695627fcf3b4338730b5f5d8b635d11f14306440d39a82382ad4832:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}e2386dcc3db706fd50cf2ba5c76e470817cffb07a860d39b67be525e0929d595:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

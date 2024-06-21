@@ -223,7 +223,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             const titles = issueKeys.map(issueKey => {
                 const issueId = issueKeyIds[issueKey]
                 if (issueId?.length) {
-                    return loadedIssues.find(issue => issue.id)?.title
+                    return loadedIssues.find(issue => issue.id === issueId)?.title
                 }
 
                 if (issueKeyQueries[issueKey]?.length) {
