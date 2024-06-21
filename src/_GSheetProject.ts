@@ -64,6 +64,7 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
 
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
+        SheetLayouts.migrateIfNeeded()
         ConditionalFormatting.removeDuplicateConditionalFormatRules()
         ConditionalFormatting.combineConditionalFormatRules()
         ProtectionLocks.releaseExpiredLocks()

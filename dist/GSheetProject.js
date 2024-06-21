@@ -64,6 +64,7 @@ function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
 }
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
+        SheetLayouts.migrateIfNeeded();
         ConditionalFormatting.removeDuplicateConditionalFormatRules();
         ConditionalFormatting.combineConditionalFormatRules();
         ProtectionLocks.releaseExpiredLocks();
@@ -2105,7 +2106,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}ed720d47d1b2a8b6ebd5d62151ffdf3ccb27b98e1c25aab61dd9683f8549591b:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}64e37aa8deed4fe344047bdf5b7e59562702f2ec977da28d3a4cb033e80ed091:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
