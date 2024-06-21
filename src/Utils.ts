@@ -22,15 +22,15 @@ class Utils {
     }
 
     static processFormula(formula: string): string {
-        return formula
-            .replaceAll(/#SELF\b/g, 'INDIRECT("RC", FALSE)')
-            .split(/[\r\n]+/)
+        formula = formula.replaceAll(/#SELF_COLUMN\(([^)]+)\)/g, 'INDIRECT("RC"&COLUMN($1), FALSE)')
+        formula = formula.replaceAll(/#SELF(\b|&)/g, 'INDIRECT("RC", FALSE)$1')
+        return formula.split(/[\r\n]+/)
             .map(line => line.replace(/^\s+/, ''))
             .filter(line => line.length)
             .map(line => line.replaceAll(/^([*/+-]+ )/g, ' $1'))
             .map(line => line.replaceAll(/\s*\t\s*/g, ' '))
             .map(line => line.replaceAll(/"\s*&\s*""/g, '"'))
-            .map(line => line.replaceAll(/"& "/g, '" & "'))
+            .map(line => line.replaceAll(/([")])\s*&\s*([")])/g, '$1 & $2'))
             .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
             .join('')
             .trim()

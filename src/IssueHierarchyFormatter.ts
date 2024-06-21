@@ -1,13 +1,13 @@
 class IssueHierarchyFormatter {
 
     static formatHierarchy(range: Range) {
-        if (![GSheetProjectSettings.childIssueColumnName].some(columnName =>
+        if (![GSheetProjectSettings.childIssueKeyColumnName].some(columnName =>
             RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName),
         )) {
             return
         }
 
-        let issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.issueColumnName)
+        let issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.issueKeyColumnName)
         if (issuesRange == null) {
             return
         }
@@ -52,8 +52,8 @@ class IssueHierarchyFormatter {
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName)
         ProtectionLocks.lockAllRows(sheet)
 
-        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName)
-        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName)
+        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName)
+        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName)
 
         const {
             issues,
@@ -179,8 +179,8 @@ class IssueHierarchyFormatter {
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName)
         ProtectionLocks.lockAllRows(sheet)
 
-        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName)
-        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName)
+        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName)
+        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName)
         const milestonesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName)
         const typesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.typeColumnName)
         const deadlinesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName)

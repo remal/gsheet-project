@@ -10,8 +10,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
         const sheet = range.getSheet()
         const iconColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.iconColumnName)
-        const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName)
-        const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName)
+        const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName)
+        const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName)
         const lastDataReloadColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName)
         const titleColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName)
 

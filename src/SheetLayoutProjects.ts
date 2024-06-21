@@ -22,6 +22,7 @@ class SheetLayoutProjects extends SheetLayout {
             */
             {
                 name: GSheetProjectSettings.milestoneColumnName,
+                rangeName: GSheetProjectSettings.milestonesRangeName,
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'center',
             },
@@ -31,7 +32,7 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.issueColumnName,
+                name: GSheetProjectSettings.issueKeyColumnName,
                 rangeName: GSheetProjectSettings.issuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(`
@@ -41,15 +42,15 @@ class SheetLayoutProjects extends SheetLayout {
                         ) <= 1
                     `)
                     .setHelpText(
-                        `Multiple rows with the same ${GSheetProjectSettings.issueColumnName}`
-                        + ` without ${GSheetProjectSettings.childIssueColumnName}`,
+                        `Multiple rows with the same ${GSheetProjectSettings.issueKeyColumnName}`
+                        + ` without ${GSheetProjectSettings.childIssueKeyColumnName}`,
                     )
                     .build(),
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.childIssueColumnName,
+                name: GSheetProjectSettings.childIssueKeyColumnName,
                 rangeName: GSheetProjectSettings.childIssuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(`

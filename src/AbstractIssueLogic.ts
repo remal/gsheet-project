@@ -2,8 +2,8 @@ abstract class AbstractIssueLogic {
 
     protected static _processRange(range: Range): Range | null {
         if (![
-            GSheetProjectSettings.issueColumnName,
-            GSheetProjectSettings.childIssueColumnName,
+            GSheetProjectSettings.issueKeyColumnName,
+            GSheetProjectSettings.childIssueKeyColumnName,
         ].some(columnName =>
             RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName),
         )) {
@@ -26,8 +26,8 @@ abstract class AbstractIssueLogic {
         const startRow = range.getRow()
         const endRow = startRow + range.getNumRows() - 1
         const result = SheetUtils.getColumnsStringValues(sheet, {
-            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
-            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
+            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName),
+            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName),
         }, startRow, endRow)
 
         Utils.trimArrayEndBy(result.issues, it => !it?.length)
@@ -41,8 +41,8 @@ abstract class AbstractIssueLogic {
         const startRow = range.getRow()
         const endRow = startRow + range.getNumRows() - 1
         const result = SheetUtils.getColumnsValues(sheet, {
-            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
-            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
+            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName),
+            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName),
             lastDataReload: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName),
         }, startRow, endRow)
 

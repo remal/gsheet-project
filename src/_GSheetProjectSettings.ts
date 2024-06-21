@@ -12,6 +12,7 @@ class GSheetProjectSettings {
 
     static issuesRangeName: RangeName = 'Issues'
     static childIssuesRangeName: RangeName = 'ChildIssues'
+    static milestonesRangeName: RangeName = "Milestones"
     static titlesRangeName: RangeName = "Titles"
     static teamsRangeName: RangeName = "Teams"
     static estimatesRangeName: RangeName = "Estimates"
@@ -38,6 +39,8 @@ class GSheetProjectSettings {
     static counterIssuesMetrics: Record<ColumnName, IssuesCounterMetric> = {}
     static originalIssueKeysTextChangedTimeout: number = 500
 
+    static reserveIssueKeyPrefix: string = 'reserve/'
+
     static useLockService: boolean = true
     static lockTimeoutMillis: number = 5 * 60 * 1000
 
@@ -47,8 +50,8 @@ class GSheetProjectSettings {
     //static doneColumnName: ColumnName = "Done"
     static milestoneColumnName: ColumnName = "Milestone"
     static typeColumnName: ColumnName = "Type"
-    static issueColumnName: ColumnName = "Issue"
-    static childIssueColumnName: ColumnName = "Child\nIssue"
+    static issueKeyColumnName: ColumnName = "Issue"
+    static childIssueKeyColumnName: ColumnName = "Child\nIssue"
     static lastDataReloadColumnName: ColumnName = "Last\nReload"
     static titleColumnName: ColumnName = "Title"
     static teamColumnName: ColumnName = "Team"

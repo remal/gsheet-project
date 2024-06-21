@@ -143,6 +143,7 @@ GSheetProjectSettings.skipHiddenIssues = true;
 //static restoreUndoneEnd: boolean = false
 GSheetProjectSettings.issuesRangeName = 'Issues';
 GSheetProjectSettings.childIssuesRangeName = 'ChildIssues';
+GSheetProjectSettings.milestonesRangeName = "Milestones";
 GSheetProjectSettings.titlesRangeName = "Titles";
 GSheetProjectSettings.teamsRangeName = "Teams";
 GSheetProjectSettings.estimatesRangeName = "Estimates";
@@ -162,6 +163,7 @@ GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.issuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
 GSheetProjectSettings.originalIssueKeysTextChangedTimeout = 500;
+GSheetProjectSettings.reserveIssueKeyPrefix = 'reserve/';
 GSheetProjectSettings.useLockService = true;
 GSheetProjectSettings.lockTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.sheetName = "Projects";
@@ -169,8 +171,8 @@ GSheetProjectSettings.iconColumnName = "icon";
 //static doneColumnName: ColumnName = "Done"
 GSheetProjectSettings.milestoneColumnName = "Milestone";
 GSheetProjectSettings.typeColumnName = "Type";
-GSheetProjectSettings.issueColumnName = "Issue";
-GSheetProjectSettings.childIssueColumnName = "Child\nIssue";
+GSheetProjectSettings.issueKeyColumnName = "Issue";
+GSheetProjectSettings.childIssueKeyColumnName = "Child\nIssue";
 GSheetProjectSettings.lastDataReloadColumnName = "Last\nReload";
 GSheetProjectSettings.titleColumnName = "Title";
 GSheetProjectSettings.teamColumnName = "Team";
@@ -186,8 +188,8 @@ GSheetProjectSettings.fontSize = 10;
 class AbstractIssueLogic {
     static _processRange(range) {
         if (![
-            GSheetProjectSettings.issueColumnName,
-            GSheetProjectSettings.childIssueColumnName,
+            GSheetProjectSettings.issueKeyColumnName,
+            GSheetProjectSettings.childIssueKeyColumnName,
         ].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
             return null;
         }
@@ -205,8 +207,8 @@ class AbstractIssueLogic {
         const startRow = range.getRow();
         const endRow = startRow + range.getNumRows() - 1;
         const result = SheetUtils.getColumnsStringValues(sheet, {
-            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
-            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
+            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName),
+            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName),
         }, startRow, endRow);
         Utils.trimArrayEndBy(result.issues, it => !(it === null || it === void 0 ? void 0 : it.length));
         result.childIssues.length = result.issues.length;
@@ -217,8 +219,8 @@ class AbstractIssueLogic {
         const startRow = range.getRow();
         const endRow = startRow + range.getNumRows() - 1;
         const result = SheetUtils.getColumnsValues(sheet, {
-            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName),
-            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName),
+            issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName),
+            childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName),
             lastDataReload: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName),
         }, startRow, endRow);
         Utils.trimArrayEndBy(result.issues, it => { var _a; return !((_a = it === null || it === void 0 ? void 0 : it.toString()) === null || _a === void 0 ? void 0 : _a.length); });
@@ -384,6 +386,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const startRow = range.getRow();
         const endRow = startRow + range.getNumRows() - 1;
         const { issues, childIssues } = this._getIssueValues(range);
+        const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName);
         const milestoneColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName);
         const teamColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.teamColumnName);
         const estimateColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName);
@@ -396,7 +399,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             addFormulas.name,
             `column #${column}`,
         ].join(': '), () => {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c, _d, _e, _f, _g;
             const values = this._getStringValues(range, column);
             const formulas = this._getFormulas(range, column);
             for (let row = startRow; row <= endRow; ++row) {
@@ -419,17 +422,68 @@ class DefaultFormulas extends AbstractIssueLogic {
                         `column #${column}`,
                         `row #${row}`,
                     ].join(': '));
-                    let formula = Utils.processFormula(formulaGenerator(row));
-                    formula = Utils.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER);
-                    sheet.getRange(row, column).setFormula(formula);
+                    if (formulaGenerator != null) {
+                        const isReserve = (_f = issues[index]) === null || _f === void 0 ? void 0 : _f.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
+                        let formula = Utils.processFormula((_g = formulaGenerator(row, isReserve)) !== null && _g !== void 0 ? _g : '');
+                        if (formula.length) {
+                            formula = Utils.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER);
+                            sheet.getRange(row, column).setFormula(formula);
+                        }
+                    }
                 }
             }
         });
-        addFormulas(startColumn, row => {
+        addFormulas(childIssueColumn, (row, isReserve) => {
+            if (isReserve) {
+                return `
+                    =IF(
+                        #SELF_COLUMN(${GSheetProjectSettings.teamsRangeName}) <> "",
+                        #SELF_COLUMN(${GSheetProjectSettings.teamsRangeName})
+                        & " - "
+                        & COUNTIFS(
+                            OFFSET(
+                                ${GSheetProjectSettings.issuesRangeName},
+                                0,
+                                0,
+                                ROW() - ${GSheetProjectSettings.firstDataRow} + 1,
+                                1
+                            ), "="&#SELF_COLUMN(${GSheetProjectSettings.issuesRangeName}),
+                            OFFSET(
+                                ${GSheetProjectSettings.teamsRangeName},
+                                0,
+                                0,
+                                ROW() - ${GSheetProjectSettings.firstDataRow} + 1,
+                                1
+                            ), "="&#SELF_COLUMN(${GSheetProjectSettings.teamsRangeName})
+                        ),
+                        ""
+                    )
+                `;
+            }
+            return undefined;
+        });
+        addFormulas(estimateColumn, (row, isReserve) => {
+            if (isReserve) {
+                const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn));
+                const endA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, endColumn));
+                return `=LET(
+                    workDays,
+                    NETWORKDAYS(${startA1Notation}, ${endA1Notation}, ${GSheetProjectSettings.publicHolidaysRangeName}),
+                    IF(
+                        workDays > 0,
+                        workDays,
+                        ""
+                    )
+                )`;
+            }
+            return undefined;
+        });
+        addFormulas(startColumn, (row, isReserve) => {
             const teamTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(GSheetProjectSettings.titleRow, teamColumn));
             const estimateTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(GSheetProjectSettings.titleRow, estimateColumn));
             const endTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(GSheetProjectSettings.titleRow, endColumn));
             const teamA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, teamColumn));
+            const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn));
             const notEnoughPreviousLanes = `
                 COUNTIFS(
                     OFFSET(
@@ -517,7 +571,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     ${firstDataRowIf}
                 )
             `;
-            const withDependencyEndDate = `
+            let mainCalculation = `
                 LET(
                     dependencyEndDate,
                     DATE(2000, 1, 1),
@@ -531,16 +585,60 @@ class DefaultFormulas extends AbstractIssueLogic {
                     )
                 )
             `;
+            if (isReserve) {
+                let previousMilestone = `
+                    MAX(FILTER(
+                        ${GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName},
+                        ${GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName} < ${deadlineA1Notation}
+                    ))
+                `;
+                previousMilestone = `
+                    MAX(
+                        ${previousMilestone},
+                        ${GSheetProjectSettings.settingsScheduleStartRangeName} - 1
+                    )
+                `;
+                mainCalculation = `
+                    MAX(
+                        WORKDAY(
+                            ${previousMilestone},
+                            1,
+                            ${GSheetProjectSettings.publicHolidaysRangeName}
+                        ),
+                        ${withResources}
+                    )
+                `;
+                mainCalculation = `
+                    LET(
+                        startDate,
+                        ${mainCalculation},
+                        IF(
+                            startDate <= ${deadlineA1Notation},
+                            startDate,
+                            ""
+                        )
+                    )
+                `;
+            }
             const notEnoughDataIf = `
                 IF(
                     ${teamA1Notation} = "",
                     "",
-                    ${withDependencyEndDate}
+                    ${mainCalculation}
                 )
             `;
             return `=${notEnoughDataIf}`;
         });
-        addFormulas(endColumn, row => {
+        addFormulas(endColumn, (row, isReserve) => {
+            if (isReserve) {
+                const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn));
+                const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn));
+                return `=IF(
+                    ${startA1Notation} <= ${deadlineA1Notation},
+                    ${deadlineA1Notation},
+                    ""
+                )`;
+            }
             const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn));
             const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn));
             const bufferRangeName = GSheetProjectSettings.settingsScheduleBufferRangeName;
@@ -559,7 +657,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `;
         });
-        addFormulas(deadlineColumn, row => {
+        addFormulas(deadlineColumn, (row, isReserve) => {
             const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, milestoneColumn));
             return `
                 =IF(
@@ -579,6 +677,7 @@ class DefaultFormulas extends AbstractIssueLogic {
     }
 }
 DefaultFormulas.DEFAULT_FORMULA_MARKER = "default";
+DefaultFormulas.RESERVE_DEFAULT_FORMULA_MARKER = "reserve";
 class DocumentFlags {
     static set(key, value = true) {
         key = `flag|${key}`;
@@ -704,8 +803,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
         }
         const sheet = range.getSheet();
         const iconColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.iconColumnName);
-        const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName);
-        const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName);
+        const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
+        const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName);
         const lastDataReloadColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName);
         const titleColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName);
         const { issues, childIssues, lastDataReload } = this._getIssueValuesWithLastReloadDate(range);
@@ -995,10 +1094,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
 }
 class IssueHierarchyFormatter {
     static formatHierarchy(range) {
-        if (![GSheetProjectSettings.childIssueColumnName].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
+        if (![GSheetProjectSettings.childIssueKeyColumnName].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
             return;
         }
-        let issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.issueColumnName);
+        let issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.issueKeyColumnName);
         if (issuesRange == null) {
             return;
         }
@@ -1025,8 +1124,8 @@ class IssueHierarchyFormatter {
         }
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
         ProtectionLocks.lockAllRows(sheet);
-        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName);
-        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName);
+        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
+        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName);
         const { issues, childIssues, } = SheetUtils.getColumnsStringValues(sheet, {
             issues: issuesColumn,
             childIssues: childIssuesColumn,
@@ -1130,8 +1229,8 @@ class IssueHierarchyFormatter {
         }
         const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
         ProtectionLocks.lockAllRows(sheet);
-        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueColumnName);
-        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueColumnName);
+        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
+        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName);
         const milestonesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName);
         const typesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.typeColumnName);
         const deadlinesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName);
@@ -1879,7 +1978,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}e2386dcc3db706fd50cf2ba5c76e470817cffb07a860d39b67be525e0929d595:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}2afbc4acbe49a27767d793199281c3f17973f57f9ce202eb83cfeed0214fb50f:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2052,6 +2151,7 @@ class SheetLayoutProjects extends SheetLayout {
             
             {
                 name: GSheetProjectSettings.milestoneColumnName,
+                rangeName: GSheetProjectSettings.milestonesRangeName,
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'center',
             },
@@ -2061,7 +2161,7 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.issueColumnName,
+                name: GSheetProjectSettings.issueKeyColumnName,
                 rangeName: GSheetProjectSettings.issuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(`
@@ -2070,14 +2170,14 @@ class SheetLayoutProjects extends SheetLayout {
                             ${GSheetProjectSettings.childIssuesRangeName}, "="
                         ) <= 1
                     `)
-                    .setHelpText(`Multiple rows with the same ${GSheetProjectSettings.issueColumnName}`
-                    + ` without ${GSheetProjectSettings.childIssueColumnName}`)
+                    .setHelpText(`Multiple rows with the same ${GSheetProjectSettings.issueKeyColumnName}`
+                    + ` without ${GSheetProjectSettings.childIssueKeyColumnName}`)
                     .build(),
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
             {
-                name: GSheetProjectSettings.childIssueColumnName,
+                name: GSheetProjectSettings.childIssueKeyColumnName,
                 rangeName: GSheetProjectSettings.childIssuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
                     .requireFormulaSatisfied(`
@@ -2433,15 +2533,15 @@ class Utils {
         return value;
     }
     static processFormula(formula) {
-        return formula
-            .replaceAll(/#SELF\b/g, 'INDIRECT("RC", FALSE)')
-            .split(/[\r\n]+/)
+        formula = formula.replaceAll(/#SELF_COLUMN\(([^)]+)\)/g, 'INDIRECT("RC"&COLUMN($1), FALSE)');
+        formula = formula.replaceAll(/#SELF(\b|&)/g, 'INDIRECT("RC", FALSE)$1');
+        return formula.split(/[\r\n]+/)
             .map(line => line.replace(/^\s+/, ''))
             .filter(line => line.length)
             .map(line => line.replaceAll(/^([*/+-]+ )/g, ' $1'))
             .map(line => line.replaceAll(/\s*\t\s*/g, ' '))
             .map(line => line.replaceAll(/"\s*&\s*""/g, '"'))
-            .map(line => line.replaceAll(/"& "/g, '" & "'))
+            .map(line => line.replaceAll(/([")])\s*&\s*([")])/g, '$1 & $2'))
             .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
             .join('')
             .trim();

@@ -1,6 +1,7 @@
 class DefaultFormulas extends AbstractIssueLogic {
 
     private static readonly DEFAULT_FORMULA_MARKER = "default"
+    private static readonly RESERVE_DEFAULT_FORMULA_MARKER = "reserve"
 
     static isDefaultFormula(formula: string | null | undefined): boolean {
         return Utils.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER)
@@ -20,6 +21,7 @@ class DefaultFormulas extends AbstractIssueLogic {
 
         const {issues, childIssues} = this._getIssueValues(range)
 
+        const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName)
         const milestoneColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName)
         const teamColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.teamColumnName)
         const estimateColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName)
@@ -29,7 +31,7 @@ class DefaultFormulas extends AbstractIssueLogic {
 
         const addFormulas = (
             column: Column,
-            formulaGenerator: (row: Row) => string,
+            formulaGenerator: (row: Row, isReserve: boolean) => string | null | undefined,
         ) => Observability.timed(
             [
                 DefaultFormulas.name,
@@ -62,16 +64,71 @@ class DefaultFormulas extends AbstractIssueLogic {
                             `column #${column}`,
                             `row #${row}`,
                         ].join(': '))
-                        let formula = Utils.processFormula(formulaGenerator(row))
-                        formula = Utils.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER)
-                        sheet.getRange(row, column).setFormula(formula)
+
+                        if (formulaGenerator != null) {
+                            const isReserve = issues[index]?.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix)
+                            let formula = Utils.processFormula(formulaGenerator(row, isReserve) ?? '')
+                            if (formula.length) {
+                                formula = Utils.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER)
+                                sheet.getRange(row, column).setFormula(formula)
+                            }
+                        }
                     }
                 }
             },
         )
 
 
-        addFormulas(startColumn, row => {
+        addFormulas(childIssueColumn, (row, isReserve) => {
+            if (isReserve) {
+                return `
+                    =IF(
+                        #SELF_COLUMN(${GSheetProjectSettings.teamsRangeName}) <> "",
+                        #SELF_COLUMN(${GSheetProjectSettings.teamsRangeName})
+                        & " - "
+                        & COUNTIFS(
+                            OFFSET(
+                                ${GSheetProjectSettings.issuesRangeName},
+                                0,
+                                0,
+                                ROW() - ${GSheetProjectSettings.firstDataRow} + 1,
+                                1
+                            ), "="&#SELF_COLUMN(${GSheetProjectSettings.issuesRangeName}),
+                            OFFSET(
+                                ${GSheetProjectSettings.teamsRangeName},
+                                0,
+                                0,
+                                ROW() - ${GSheetProjectSettings.firstDataRow} + 1,
+                                1
+                            ), "="&#SELF_COLUMN(${GSheetProjectSettings.teamsRangeName})
+                        ),
+                        ""
+                    )
+                `
+            }
+
+            return undefined
+        })
+
+        addFormulas(estimateColumn, (row, isReserve) => {
+            if (isReserve) {
+                const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn))
+                const endA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, endColumn))
+                return `=LET(
+                    workDays,
+                    NETWORKDAYS(${startA1Notation}, ${endA1Notation}, ${GSheetProjectSettings.publicHolidaysRangeName}),
+                    IF(
+                        workDays > 0,
+                        workDays,
+                        ""
+                    )
+                )`
+            }
+
+            return undefined
+        })
+
+        addFormulas(startColumn, (row, isReserve) => {
             const teamTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
                 GSheetProjectSettings.titleRow,
                 teamColumn,
@@ -86,6 +143,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             ))
 
             const teamA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, teamColumn))
+            const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn))
 
             const notEnoughPreviousLanes = `
                 COUNTIFS(
@@ -180,7 +238,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `
 
-            const withDependencyEndDate = `
+            let mainCalculation = `
                 LET(
                     dependencyEndDate,
                     DATE(2000, 1, 1),
@@ -195,18 +253,66 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `
 
+            if (isReserve) {
+                let previousMilestone = `
+                    MAX(FILTER(
+                        ${GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName},
+                        ${GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName} < ${deadlineA1Notation}
+                    ))
+                `
+                previousMilestone = `
+                    MAX(
+                        ${previousMilestone},
+                        ${GSheetProjectSettings.settingsScheduleStartRangeName} - 1
+                    )
+                `
+
+                mainCalculation = `
+                    MAX(
+                        WORKDAY(
+                            ${previousMilestone},
+                            1,
+                            ${GSheetProjectSettings.publicHolidaysRangeName}
+                        ),
+                        ${withResources}
+                    )
+                `
+
+                mainCalculation = `
+                    LET(
+                        startDate,
+                        ${mainCalculation},
+                        IF(
+                            startDate <= ${deadlineA1Notation},
+                            startDate,
+                            ""
+                        )
+                    )
+                `
+            }
+
             const notEnoughDataIf = `
                 IF(
                     ${teamA1Notation} = "",
                     "",
-                    ${withDependencyEndDate}
+                    ${mainCalculation}
                 )
             `
 
             return `=${notEnoughDataIf}`
         })
 
-        addFormulas(endColumn, row => {
+        addFormulas(endColumn, (row, isReserve) => {
+            if (isReserve) {
+                const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn))
+                const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn))
+                return `=IF(
+                    ${startA1Notation} <= ${deadlineA1Notation},
+                    ${deadlineA1Notation},
+                    ""
+                )`
+            }
+
             const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn))
             const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn))
             const bufferRangeName = GSheetProjectSettings.settingsScheduleBufferRangeName
@@ -226,7 +332,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             `
         })
 
-        addFormulas(deadlineColumn, row => {
+        addFormulas(deadlineColumn, (row, isReserve) => {
             const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, milestoneColumn))
             return `
                 =IF(
