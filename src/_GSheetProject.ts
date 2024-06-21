@@ -111,6 +111,7 @@ function onEditGSheetProject(event?: Partial<Pick<SheetsOnEdit, 'range'>>) {
     }
 
     EntryPoint.entryPoint(() => {
+        Observability.timed(`Common format`, () => CommonFormatter.applyCommonFormatsToRowRange(range))
         //Observability.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
         Observability.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range))
         Observability.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range))

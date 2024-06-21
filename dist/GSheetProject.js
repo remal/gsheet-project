@@ -105,6 +105,7 @@ function onEditGSheetProject(event) {
         return;
     }
     EntryPoint.entryPoint(() => {
+        Observability.timed(`Common format`, () => CommonFormatter.applyCommonFormatsToRowRange(range));
         //Observability.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
         Observability.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range));
         Observability.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range));
@@ -249,16 +250,10 @@ class CommonFormatter {
         SpreadsheetApp.getActiveSpreadsheet().getSheets()
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
-            this.setMiddleVerticalAlign(sheet);
             this.highlightCellsWithFormula(sheet);
+            const range = sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns());
+            this.applyCommonFormatsToRange(range);
         });
-    }
-    static setMiddleVerticalAlign(sheet) {
-        if (Utils.isString(sheet)) {
-            sheet = SheetUtils.getSheetByName(sheet);
-        }
-        sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
-            .setVerticalAlignment('middle');
     }
     static highlightCellsWithFormula(sheet) {
         if (Utils.isString(sheet)) {
@@ -272,6 +267,15 @@ class CommonFormatter {
                 .setItalic(true)
                 .setFontColor('#333'),
         });
+    }
+    static applyCommonFormatsToRowRange(range) {
+        const sheet = range.getSheet();
+        range = sheet.getRange(range.getRow(), 1, range.getNumRows(), sheet.getMaxColumns());
+        this.applyCommonFormatsToRange(range);
+    }
+    static applyCommonFormatsToRange(range) {
+        range
+            .setVerticalAlignment('middle');
     }
 }
 class ConditionalFormatRuleUtils {
@@ -1978,7 +1982,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}2afbc4acbe49a27767d793199281c3f17973f57f9ce202eb83cfeed0214fb50f:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}a02216061db13b4f8f76b618375b8e77cb03fff4955bee334710b9ec576fa946:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

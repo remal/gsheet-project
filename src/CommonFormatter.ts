@@ -4,18 +4,11 @@ class CommonFormatter {
         SpreadsheetApp.getActiveSpreadsheet().getSheets()
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
-                this.setMiddleVerticalAlign(sheet)
                 this.highlightCellsWithFormula(sheet)
+
+                const range = sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
+                this.applyCommonFormatsToRange(range)
             })
-    }
-
-    static setMiddleVerticalAlign(sheet: Sheet | SheetName) {
-        if (Utils.isString(sheet)) {
-            sheet = SheetUtils.getSheetByName(sheet)
-        }
-
-        sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
-            .setVerticalAlignment('middle')
     }
 
     static highlightCellsWithFormula(sheet: Sheet | SheetName) {
@@ -34,6 +27,22 @@ class CommonFormatter {
                     .setFontColor('#333'),
             },
         )
+    }
+
+    static applyCommonFormatsToRowRange(range: Range) {
+        const sheet = range.getSheet()
+        range = sheet.getRange(
+            range.getRow(),
+            1,
+            range.getNumRows(),
+            sheet.getMaxColumns(),
+        )
+        this.applyCommonFormatsToRange(range)
+    }
+
+    static applyCommonFormatsToRange(range: Range) {
+        range
+            .setVerticalAlignment('middle')
     }
 
 }
