@@ -76,6 +76,7 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'left',
             },
             {
+                key: 'team',
                 name: GSheetProjectSettings.teamColumnName,
                 rangeName: GSheetProjectSettings.teamsRangeName,
                 //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
@@ -87,6 +88,19 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.estimatesRangeName,
                 defaultFormat: '#,##0',
                 defaultHorizontalAlignment: 'center',
+                conditionalFormats: [
+                    builder => builder
+                        .whenNumberLessThan(0)
+                        .setFontColor('#b7b7b7'),
+                    builder => builder
+                        .whenFormulaSatisfied(`
+                            =AND(
+                                #COLUMN_CELL = "",
+                                #COLUMN_CELL(team) <> ""
+                            )
+                        `)
+                        .setBackground('#e06666'),
+                ],
             },
             {
                 name: GSheetProjectSettings.startColumnName,
@@ -101,25 +115,25 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
                     builder => builder
-                        .whenFormulaSatisfied(
-                            `=AND(
-                                    ISFORMULA(#COLUMN_CELL),
-                                    #COLUMN_CELL <> "",
-                                    #COLUMN_CELL(deadline) <> "",
-                                    #COLUMN_CELL > #COLUMN_CELL(deadline)
-                                )`,
-                        )
+                        .whenFormulaSatisfied(`
+                            =AND(
+                                ISFORMULA(#COLUMN_CELL),
+                                #COLUMN_CELL <> "",
+                                #COLUMN_CELL(deadline) <> "",
+                                #COLUMN_CELL > #COLUMN_CELL(deadline)
+                            )
+                        `)
                         .setItalic(true)
                         .setBold(true)
                         .setFontColor('#c00'),
                     builder => builder
-                        .whenFormulaSatisfied(
-                            `=AND(
-                                    #COLUMN_CELL <> "",
-                                    #COLUMN_CELL(deadline) <> "",
-                                    #COLUMN_CELL > #COLUMN_CELL(deadline)
-                                )`,
-                        )
+                        .whenFormulaSatisfied(`
+                            =AND(
+                                #COLUMN_CELL <> "",
+                                #COLUMN_CELL(deadline) <> "",
+                                #COLUMN_CELL > #COLUMN_CELL(deadline)
+                            )
+                        `)
                         .setBold(true)
                         .setFontColor('#f00'),
                 ],

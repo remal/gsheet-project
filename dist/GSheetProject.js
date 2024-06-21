@@ -266,7 +266,9 @@ class CommonFormatter {
             scope: 'common',
             order: 10000,
             configurer: builder => builder
-                .whenFormulaSatisfied('=ISFORMULA(A1)')
+                .whenFormulaSatisfied(`
+                        =ISFORMULA(A1)
+                    `)
                 .setItalic(true)
                 .setFontColor('#333'),
         });
@@ -2106,7 +2108,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}64e37aa8deed4fe344047bdf5b7e59562702f2ec977da28d3a4cb033e80ed091:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}540b638f248ba282ead504541a8b35edb93651ec08a8108084c2bcef147978c5:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2333,6 +2335,7 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'left',
             },
             {
+                key: 'team',
                 name: GSheetProjectSettings.teamColumnName,
                 rangeName: GSheetProjectSettings.teamsRangeName,
                 //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
@@ -2344,6 +2347,19 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.estimatesRangeName,
                 defaultFormat: '#,##0',
                 defaultHorizontalAlignment: 'center',
+                conditionalFormats: [
+                    builder => builder
+                        .whenNumberLessThan(0)
+                        .setFontColor('#b7b7b7'),
+                    builder => builder
+                        .whenFormulaSatisfied(`
+                            =AND(
+                                #COLUMN_CELL = "",
+                                #COLUMN_CELL(team) <> ""
+                            )
+                        `)
+                        .setBackground('#e06666'),
+                ],
             },
             {
                 name: GSheetProjectSettings.startColumnName,
@@ -2358,21 +2374,25 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
                     builder => builder
-                        .whenFormulaSatisfied(`=AND(
-                                    ISFORMULA(#COLUMN_CELL),
-                                    #COLUMN_CELL <> "",
-                                    #COLUMN_CELL(deadline) <> "",
-                                    #COLUMN_CELL > #COLUMN_CELL(deadline)
-                                )`)
+                        .whenFormulaSatisfied(`
+                            =AND(
+                                ISFORMULA(#COLUMN_CELL),
+                                #COLUMN_CELL <> "",
+                                #COLUMN_CELL(deadline) <> "",
+                                #COLUMN_CELL > #COLUMN_CELL(deadline)
+                            )
+                        `)
                         .setItalic(true)
                         .setBold(true)
                         .setFontColor('#c00'),
                     builder => builder
-                        .whenFormulaSatisfied(`=AND(
-                                    #COLUMN_CELL <> "",
-                                    #COLUMN_CELL(deadline) <> "",
-                                    #COLUMN_CELL > #COLUMN_CELL(deadline)
-                                )`)
+                        .whenFormulaSatisfied(`
+                            =AND(
+                                #COLUMN_CELL <> "",
+                                #COLUMN_CELL(deadline) <> "",
+                                #COLUMN_CELL > #COLUMN_CELL(deadline)
+                            )
+                        `)
                         .setBold(true)
                         .setFontColor('#f00'),
                 ],
