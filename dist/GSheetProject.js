@@ -424,7 +424,8 @@ class ConditionalFormatting {
             if (similarRule == null) {
                 continue;
             }
-            let newRanges = [...rule.getRanges(), ...similarRule.getRanges()];
+            const ranges = [...rule.getRanges(), ...similarRule.getRanges()];
+            let newRanges = [...ranges];
             newRanges = newRanges.toSorted((r1, r2) => {
                 const row1 = r1.getRow();
                 const row2 = r2.getRow();
@@ -433,7 +434,6 @@ class ConditionalFormatting {
                 }
                 return row1 - row2;
             });
-            console.log('newRanges', newRanges.map(range => range.getA1Notation()));
             for (let rangeIndex = 0; rangeIndex < newRanges.length - 1; ++rangeIndex) {
                 let range = newRanges[rangeIndex];
                 let firstRow = range.getRow();
@@ -451,7 +451,7 @@ class ConditionalFormatting {
                     }
                 }
             }
-            console.log('newRanges', newRanges.map(range => range.getA1Notation()));
+            console.warn(`${ConditionalFormatting.name}: combining ${ranges} into ${newRanges}: ${ruleKey}`);
             rules[index] = rule.copy().setRanges(newRanges).build();
         }
         if (rules.length !== originalRules.length) {
@@ -2101,7 +2101,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}e412894ec0ad21f1ca4cfadf2d03e1fe4aadd840a95acccb6f7d19eb47f55400:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}bea5c0aededf2b48e721e70b10caf5fe3761e01f62f3049c224b7645e3f8292c:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

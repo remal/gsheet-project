@@ -158,7 +158,8 @@ class ConditionalFormatting {
                 continue
             }
 
-            let newRanges = [...rule.getRanges(), ...similarRule.getRanges()]
+            const ranges = [...rule.getRanges(), ...similarRule.getRanges()]
+            let newRanges = [...ranges]
             newRanges = newRanges.toSorted((r1, r2) => {
                 const row1 = r1.getRow()
                 const row2 = r2.getRow()
@@ -167,7 +168,6 @@ class ConditionalFormatting {
                 }
                 return row1 - row2
             })
-            console.log('newRanges', newRanges.map(range => range.getA1Notation()))
             for (let rangeIndex = 0; rangeIndex < newRanges.length - 1; ++rangeIndex) {
                 let range = newRanges[rangeIndex]
                 let firstRow = range.getRow()
@@ -191,8 +191,8 @@ class ConditionalFormatting {
                     }
                 }
             }
-            console.log('newRanges', newRanges.map(range => range.getA1Notation()))
 
+            console.warn(`${ConditionalFormatting.name}: combining ${ranges} into ${newRanges}: ${ruleKey}`)
             rules[index] = rule.copy().setRanges(newRanges).build()
         }
 
