@@ -2108,7 +2108,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}540b638f248ba282ead504541a8b35edb93651ec08a8108084c2bcef147978c5:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}f30e8d7324b1bb95ffa4d1de4a218099849f1036b7e459bd148824e6b6fa3cd9:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2349,7 +2349,9 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
                     builder => builder
-                        .whenNumberLessThan(0)
+                        .whenFormulaSatisfied(`
+                            =#COLUMN_CELL < 0
+                        `)
                         .setFontColor('#b7b7b7'),
                     builder => builder
                         .whenFormulaSatisfied(`

@@ -90,7 +90,9 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
                     builder => builder
-                        .whenNumberLessThan(0)
+                        .whenFormulaSatisfied(`
+                            =#COLUMN_CELL < 0
+                        `)
                         .setFontColor('#b7b7b7'),
                     builder => builder
                         .whenFormulaSatisfied(`
