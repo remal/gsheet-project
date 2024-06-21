@@ -5,7 +5,7 @@
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "yarn@4.3.0",
+  "packageManager": "yarn@4.3.1",
   "scripts": {
     "compile": "rimraf build && tsc -project tsconfig.json --rootDir src --outDir build",
     "dist": "yarn run compile && yarn node prepare-dist"
