@@ -192,7 +192,11 @@ class ConditionalFormatting {
                 }
             }
 
-            console.warn(`${ConditionalFormatting.name}: combining ${ranges} into ${newRanges}: ${ruleKey}`)
+            console.warn([
+                ConditionalFormatting.name,
+                `Combining ${ranges.map(it => it.getA1Notation())} into ${newRanges.map(it => it.getA1Notation())}`,
+                ruleKey,
+            ].join(': '))
             rules[index] = rule.copy().setRanges(newRanges).build()
         }
 

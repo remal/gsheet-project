@@ -451,7 +451,11 @@ class ConditionalFormatting {
                     }
                 }
             }
-            console.warn(`${ConditionalFormatting.name}: combining ${ranges} into ${newRanges}: ${ruleKey}`);
+            console.warn([
+                ConditionalFormatting.name,
+                `Combining ${ranges.map(it => it.getA1Notation())} into ${newRanges.map(it => it.getA1Notation())}`,
+                ruleKey,
+            ].join(': '));
             rules[index] = rule.copy().setRanges(newRanges).build();
         }
         if (rules.length !== originalRules.length) {
@@ -2101,7 +2105,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}bea5c0aededf2b48e721e70b10caf5fe3761e01f62f3049c224b7645e3f8292c:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}ed720d47d1b2a8b6ebd5d62151ffdf3ccb27b98e1c25aab61dd9683f8549591b:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
