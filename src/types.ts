@@ -42,3 +42,4 @@ type Lock = GoogleAppsScript.Lock.Lock
 type HorizontalAlignment = 'left' | 'center' | 'normal' | 'right'
 type VerticalAlignment = 'top' | 'middle' | 'bottom'
 type FontSize = number
+type Color = string

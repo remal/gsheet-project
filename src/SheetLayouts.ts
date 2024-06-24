@@ -7,18 +7,33 @@ class SheetLayouts {
         ]
     }
 
+    private static _isMigrated: boolean = false
+
     static migrateIfNeeded() {
-        this.instances.forEach(instance => instance.migrateIfNeeded())
-        this.applyAfterMigrationSteps()
+        Observability.timed([SheetLayouts.name, this.migrateIfNeeded.name].join(': '), () => {
+            this.instances.forEach(instance => {
+                const isMigrated = instance.migrateIfNeeded()
+                if (isMigrated) {
+                    this._isMigrated = true
+                }
+            })
+            this.applyAfterMigrationSteps()
+        })
     }
 
     static migrate() {
-        this.instances.forEach(instance => instance.migrate())
-        this.applyAfterMigrationSteps()
+        if (this._isMigrated) {
+            return
+        }
+
+        Observability.timed([SheetLayouts.name, this.migrate.name].join(': '), () => {
+            this.instances.forEach(instance => instance.migrate())
+            this.applyAfterMigrationSteps()
+        })
     }
 
     static applyAfterMigrationSteps() {
-        const rangeNames = [
+        const rangeNames: RangeName[] = [
             GSheetProjectSettings.issuesRangeName,
             GSheetProjectSettings.childIssuesRangeName,
             GSheetProjectSettings.titlesRangeName,
@@ -26,6 +41,9 @@ class SheetLayouts {
             GSheetProjectSettings.estimatesRangeName,
             GSheetProjectSettings.startsRangeName,
             GSheetProjectSettings.endsRangeName,
+
+            GSheetProjectSettings.inProgressesRangeName,
+            GSheetProjectSettings.codeCompletesRangeName,
 
             GSheetProjectSettings.settingsScheduleStartRangeName,
             GSheetProjectSettings.settingsScheduleBufferRangeName,
@@ -39,7 +57,7 @@ class SheetLayouts {
             GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName,
 
             GSheetProjectSettings.publicHolidaysRangeName,
-        ]
+        ].filter(it => it?.length).map(it => it!)
         const missingRangeNames = rangeNames.filter(name => NamedRangeUtils.findNamedRange(name) == null)
         if (missingRangeNames.length) {
             throw new Error(`Missing named range(s): '${missingRangeNames.join("', '")}'`)

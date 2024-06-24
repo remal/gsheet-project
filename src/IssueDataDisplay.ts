@@ -176,7 +176,9 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return
             }
 
-            sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks))
+            const issuesRichTextValue = RichTextUtils.createLinksValue(allIssueLinks)
+            originalIssueKeysText = issuesRichTextValue.getText()
+            sheet.getRange(row, currentIssueColumn).setRichTextValue(issuesRichTextValue)
 
 
             const loadedIssues: Issue[] = LazyProxy.create(() => Observability.timed([

@@ -124,7 +124,9 @@ var _a;
 class GSheetProjectSettings {
     static computeStringSettingsHash() {
         const hashableValues = {};
-        for (const [key, value] of Object.entries(_a)) {
+        const keys = Object.keys(_a).toSorted();
+        for (const key of keys) {
+            const value = _a[key];
             if (value == null
                 || typeof value === 'function'
                 || typeof value === 'object') {
@@ -153,6 +155,8 @@ GSheetProjectSettings.teamsRangeName = "Teams";
 GSheetProjectSettings.estimatesRangeName = "Estimates";
 GSheetProjectSettings.startsRangeName = "Starts";
 GSheetProjectSettings.endsRangeName = "Ends";
+GSheetProjectSettings.inProgressesRangeName = undefined;
+GSheetProjectSettings.codeCompletesRangeName = undefined;
 GSheetProjectSettings.settingsScheduleStartRangeName = 'ScheduleStart';
 GSheetProjectSettings.settingsScheduleBufferRangeName = 'ScheduleBuffer';
 GSheetProjectSettings.settingsTeamsTableRangeName = 'TeamsTable';
@@ -189,6 +193,12 @@ GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.loadingText = '\u2B6E'; // alternative: '\uD83D\uDD03'
 GSheetProjectSettings.indent = 4;
 GSheetProjectSettings.fontSize = 10;
+// see https://spreadsheet.dev/how-to-get-the-hexadecimal-codes-of-colors-in-google-sheets
+GSheetProjectSettings.errorColor = '#ff0000';
+GSheetProjectSettings.importantWarningColor = '#e06666';
+GSheetProjectSettings.warningColor = '#e69138';
+GSheetProjectSettings.unimportantWarningColor = '#fce5cd';
+GSheetProjectSettings.unimportantColor = '#b7b7b7';
 class AbstractIssueLogic {
     static _processRange(range) {
         if (![
@@ -270,9 +280,9 @@ class CommonFormatter {
                 .whenFormulaSatisfied(`
                         =ISFORMULA(A1)
                     `)
-                .setItalic(true)
-                .setFontColor('#333'),
-        });
+                .setItalic(true),
+            //.setFontColor('#333'),
+        }, false);
     }
     static applyCommonFormatsToRowRange(range) {
         const sheet = range.getSheet();
@@ -297,10 +307,16 @@ class ConditionalFormatRuleUtils {
     }
 }
 class ConditionalFormatting {
-    static addConditionalFormatRule(range, orderedRule) {
+    static addConditionalFormatRule(range, orderedRule, addIsFormulaRule = true) {
         var _a;
         if (!GSheetProjectSettings.updateConditionalFormatRules) {
             return;
+        }
+        if ((orderedRule.order | 0) !== orderedRule.order) {
+            throw new Error(`Order is not integer: ${orderedRule.order}`);
+        }
+        if (orderedRule.order <= 0) {
+            throw new Error(`Order is <= 0: ${orderedRule.order}`);
         }
         const builder = SpreadsheetApp.newConditionalFormatRule();
         builder.setRanges([range]);
@@ -309,33 +325,42 @@ class ConditionalFormatting {
         if (formula == null) {
             throw new Error(`Not a boolean condition with formula`);
         }
-        formula = '=AND(' + [
-            Formulas.processFormula(formula)
-                .replace(/^=+/, ''),
-            `"GSPs"<>"${orderedRule.scope}"`,
-            `"GSPo"<>"${orderedRule.order}"`,
-        ].join(', ') + ')';
-        builder.whenFormulaSatisfied(formula);
+        formula = Formulas.processFormula(formula)
+            .replace(/^=+/, '');
+        const newRuleFormula = Formulas.processFormula(`
+            =AND(
+                ${formula},
+                "GSPs"<>"${orderedRule.scope}",
+                "GSPo"<>"${orderedRule.order + 0.2}"
+            )
+        `);
+        builder.whenFormulaSatisfied(newRuleFormula);
         const newRule = builder.build();
+        const newRules = [newRule];
+        if (addIsFormulaRule) {
+            const newIsFormula = Formulas.processFormula(`
+                    =AND(
+                        ISFORMULA(#SELF),
+                        ${formula},
+                        "GSPs"<>"${orderedRule.scope}",
+                        "GSPo"<>"${orderedRule.order + 0.1}"
+                    )
+                `);
+            const newIsFormulaRule = newRule.copy()
+                .whenFormulaSatisfied(newIsFormula)
+                .setItalic(true)
+                .build();
+            newRules.push(newIsFormulaRule);
+        }
         const sheet = range.getSheet();
         let rules = (_a = sheet.getConditionalFormatRules()) !== null && _a !== void 0 ? _a : [];
-        rules = rules.filter(rule => !(this._extractScope(rule) === orderedRule.scope && this._extractOrder(rule) === orderedRule.order));
-        rules.push(newRule);
+        rules = rules.filter(rule => !(this._extractScope(rule) === orderedRule.scope && this._extractIntOrder(rule) === orderedRule.order));
+        rules.push(...newRules);
         rules = rules.toSorted((r1, r2) => {
-            const o1 = this._extractOrder(r1);
-            const o2 = this._extractOrder(r2);
-            if (o1 === null && o2 === null) {
-                return 0;
-            }
-            else if (o2 !== null) {
-                return 1;
-            }
-            else if (o1 !== null) {
-                return 11;
-            }
-            else {
-                return o2 - o1;
-            }
+            var _a, _b;
+            const o1 = (_a = this._extractFloatOrder(r1)) !== null && _a !== void 0 ? _a : 0;
+            const o2 = (_b = this._extractFloatOrder(r2)) !== null && _b !== void 0 ? _b : 0;
+            return o1 - o2;
         });
         sheet.setConditionalFormatRules(rules);
     }
@@ -474,13 +499,13 @@ class ConditionalFormatting {
             }
             rule = formula;
         }
-        const match = rule.match(/^=(?:AND|and)\(.+, "GSPs"\s*<>\s*"([a-z]*)"/);
+        const match = rule.match(/"GSPs"\s*<>\s*"([^"]*)"/);
         if (match) {
             return match[1];
         }
         return undefined;
     }
-    static _extractOrder(rule) {
+    static _extractIntOrder(rule) {
         if (!Utils.isString(rule)) {
             const formula = ConditionalFormatRuleUtils.extractFormula(rule);
             if (formula == null) {
@@ -488,9 +513,23 @@ class ConditionalFormatting {
             }
             rule = formula;
         }
-        const match = rule.match(/^=(?:AND|and)\(.+, "GSPo"\s*<>\s*"(\d+)"/);
+        const match = rule.match(/"GSPo"\s*<>\s*"(\d+)(\.\d*)?"/);
         if (match) {
             return parseInt(match[1]);
+        }
+        return undefined;
+    }
+    static _extractFloatOrder(rule) {
+        if (!Utils.isString(rule)) {
+            const formula = ConditionalFormatRuleUtils.extractFormula(rule);
+            if (formula == null) {
+                return undefined;
+            }
+            rule = formula;
+        }
+        const match = rule.match(/"GSPo"\s*<>\s*"(\d+(\.\d*)?)"/);
+        if (match) {
+            return parseFloat(match[1]);
         }
         return undefined;
     }
@@ -1116,7 +1155,9 @@ class IssueDataDisplay extends AbstractIssueLogic {
             if (isOriginalIssueKeysTextChanged()) {
                 return;
             }
-            sheet.getRange(row, currentIssueColumn).setRichTextValue(RichTextUtils.createLinksValue(allIssueLinks));
+            const issuesRichTextValue = RichTextUtils.createLinksValue(allIssueLinks);
+            originalIssueKeysText = issuesRichTextValue.getText();
+            sheet.getRange(row, currentIssueColumn).setRichTextValue(issuesRichTextValue);
             const loadedIssues = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
                 this.reloadIssueData.name,
@@ -2144,13 +2185,14 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}652e162c02ca3a007a76d680bd2194aa1f643bd4831e5dc708fc9cc284f32194:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}c4ebe6fa76c83357e4fbbf288d65b656d2ed2ae8b584dd5549515c511fb9b189:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
-            return;
+            return false;
         }
         this.migrate();
+        return true;
     }
     migrate() {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -2164,6 +2206,8 @@ class SheetLayout {
             return map;
         }, new Map());
         if (!columns.size) {
+            DocumentFlags.set(this._documentFlag);
+            DocumentFlags.cleanupByPrefix(this._documentFlagPrefix);
             return;
         }
         ProtectionLocks.lockAllColumns(sheet);
@@ -2271,6 +2315,9 @@ class SheetLayout {
                 range.setDataValidation(dataValidation);
             }
             (_g = info.conditionalFormats) === null || _g === void 0 ? void 0 : _g.forEach(configurer => {
+                if (configurer == null) {
+                    return;
+                }
                 const originalConfigurer = configurer;
                 configurer = builder => {
                     originalConfigurer(builder);
@@ -2311,6 +2358,7 @@ class SheetLayoutProjects extends SheetLayout {
         return GSheetProjectSettings.sheetName;
     }
     get columns() {
+        var _a;
         return [
             {
                 name: GSheetProjectSettings.iconColumnName,
@@ -2388,7 +2436,7 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`
                             =#COLUMN_CELL < 0
                         `)
-                        .setFontColor('#b7b7b7'),
+                        .setFontColor(GSheetProjectSettings.unimportantColor),
                     builder => builder
                         .whenFormulaSatisfied(`
                             =AND(
@@ -2396,7 +2444,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 #COLUMN_CELL(team) <> ""
                             )
                         `)
-                        .setBackground('#e06666'),
+                        .setBackground(GSheetProjectSettings.importantWarningColor),
                 ],
             },
             {
@@ -2404,6 +2452,20 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.startsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
+                conditionalFormats: [
+                    ((_a = GSheetProjectSettings.inProgressesRangeName) === null || _a === void 0 ? void 0 : _a.length)
+                        ? builder => builder
+                            .whenFormulaSatisfied(`
+                            =AND(
+                                #COLUMN_CELL <> "",
+                                ISFORMULA(#COLUMN_CELL),
+                                #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) = "Yes"
+                            )
+                        `)
+                            .setItalic(true)
+                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
+                        : null,
+                ],
             },
             {
                 name: GSheetProjectSettings.endColumnName,
@@ -2414,25 +2476,22 @@ class SheetLayoutProjects extends SheetLayout {
                     builder => builder
                         .whenFormulaSatisfied(`
                             =AND(
-                                ISFORMULA(#COLUMN_CELL),
                                 #COLUMN_CELL <> "",
                                 #COLUMN_CELL(deadline) <> "",
                                 #COLUMN_CELL > #COLUMN_CELL(deadline)
                             )
                         `)
-                        .setItalic(true)
                         .setBold(true)
-                        .setFontColor('#c00'),
+                        .setFontColor(GSheetProjectSettings.errorColor),
                     builder => builder
                         .whenFormulaSatisfied(`
                             =AND(
                                 #COLUMN_CELL <> "",
-                                #COLUMN_CELL(deadline) <> "",
-                                #COLUMN_CELL > #COLUMN_CELL(deadline)
+                                #COLUMN_CELL < TODAY()
                             )
                         `)
                         .setBold(true)
-                        .setFontColor('#f00'),
+                        .setFontColor(GSheetProjectSettings.warningColor),
                 ],
             },
             {
@@ -2454,12 +2513,24 @@ class SheetLayouts {
         ];
     }
     static migrateIfNeeded() {
-        this.instances.forEach(instance => instance.migrateIfNeeded());
-        this.applyAfterMigrationSteps();
+        Observability.timed([SheetLayouts.name, this.migrateIfNeeded.name].join(': '), () => {
+            this.instances.forEach(instance => {
+                const isMigrated = instance.migrateIfNeeded();
+                if (isMigrated) {
+                    this._isMigrated = true;
+                }
+            });
+            this.applyAfterMigrationSteps();
+        });
     }
     static migrate() {
-        this.instances.forEach(instance => instance.migrate());
-        this.applyAfterMigrationSteps();
+        if (this._isMigrated) {
+            return;
+        }
+        Observability.timed([SheetLayouts.name, this.migrate.name].join(': '), () => {
+            this.instances.forEach(instance => instance.migrate());
+            this.applyAfterMigrationSteps();
+        });
     }
     static applyAfterMigrationSteps() {
         const rangeNames = [
@@ -2470,6 +2541,8 @@ class SheetLayouts {
             GSheetProjectSettings.estimatesRangeName,
             GSheetProjectSettings.startsRangeName,
             GSheetProjectSettings.endsRangeName,
+            GSheetProjectSettings.inProgressesRangeName,
+            GSheetProjectSettings.codeCompletesRangeName,
             GSheetProjectSettings.settingsScheduleStartRangeName,
             GSheetProjectSettings.settingsScheduleBufferRangeName,
             GSheetProjectSettings.settingsTeamsTableRangeName,
@@ -2479,7 +2552,7 @@ class SheetLayouts {
             GSheetProjectSettings.settingsMilestonesTableMilestoneRangeName,
             GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName,
             GSheetProjectSettings.publicHolidaysRangeName,
-        ];
+        ].filter(it => it === null || it === void 0 ? void 0 : it.length).map(it => it);
         const missingRangeNames = rangeNames.filter(name => NamedRangeUtils.findNamedRange(name) == null);
         if (missingRangeNames.length) {
             throw new Error(`Missing named range(s): '${missingRangeNames.join("', '")}'`);
@@ -2487,6 +2560,7 @@ class SheetLayouts {
         CommonFormatter.applyCommonFormatsToAllSheets();
     }
 }
+SheetLayouts._isMigrated = false;
 class SheetLayoutSettings extends SheetLayout {
     get sheetName() {
         return GSheetProjectSettings.settingsSheetName;

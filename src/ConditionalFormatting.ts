@@ -3,9 +3,17 @@ class ConditionalFormatting {
     static addConditionalFormatRule(
         range: Range,
         orderedRule: OrderedConditionalFormatRule,
+        addIsFormulaRule: boolean = true,
     ) {
         if (!GSheetProjectSettings.updateConditionalFormatRules) {
             return
+        }
+
+        if ((orderedRule.order | 0) !== orderedRule.order) {
+            throw new Error(`Order is not integer: ${orderedRule.order}`)
+        }
+        if (orderedRule.order <= 0) {
+            throw new Error(`Order is <= 0: ${orderedRule.order}`)
         }
 
         const builder = SpreadsheetApp.newConditionalFormatRule()
@@ -15,33 +23,45 @@ class ConditionalFormatting {
         if (formula == null) {
             throw new Error(`Not a boolean condition with formula`)
         }
-        formula = '=AND(' + [
-            Formulas.processFormula(formula)
-                .replace(/^=+/, ''),
-            `"GSPs"<>"${orderedRule.scope}"`,
-            `"GSPo"<>"${orderedRule.order}"`,
-        ].join(', ') + ')'
-        builder.whenFormulaSatisfied(formula)
+        formula = Formulas.processFormula(formula)
+            .replace(/^=+/, '')
+        const newRuleFormula = Formulas.processFormula(`
+            =AND(
+                ${formula},
+                "GSPs"<>"${orderedRule.scope}",
+                "GSPo"<>"${orderedRule.order + 0.2}"
+            )
+        `)
+        builder.whenFormulaSatisfied(newRuleFormula)
         const newRule = builder.build()
+        const newRules = [newRule]
+
+        if (addIsFormulaRule) {
+            const newIsFormula = Formulas.processFormula(`
+                    =AND(
+                        ISFORMULA(#SELF),
+                        ${formula},
+                        "GSPs"<>"${orderedRule.scope}",
+                        "GSPo"<>"${orderedRule.order + 0.1}"
+                    )
+                `)
+            const newIsFormulaRule = newRule.copy()
+                .whenFormulaSatisfied(newIsFormula)
+                .setItalic(true)
+                .build()
+            newRules.push(newIsFormulaRule)
+        }
 
         const sheet = range.getSheet()
         let rules = sheet.getConditionalFormatRules() ?? []
         rules = rules.filter(rule =>
-            !(this._extractScope(rule) === orderedRule.scope && this._extractOrder(rule) === orderedRule.order),
+            !(this._extractScope(rule) === orderedRule.scope && this._extractIntOrder(rule) === orderedRule.order),
         )
-        rules.push(newRule)
+        rules.push(...newRules)
         rules = rules.toSorted((r1, r2) => {
-            const o1 = this._extractOrder(r1)
-            const o2 = this._extractOrder(r2)
-            if (o1 === null && o2 === null) {
-                return 0
-            } else if (o2 !== null) {
-                return 1
-            } else if (o1 !== null) {
-                return 11
-            } else {
-                return o2 - o1
-            }
+            const o1 = this._extractFloatOrder(r1) ?? 0
+            const o2 = this._extractFloatOrder(r2) ?? 0
+            return o1 - o2
         })
         sheet.setConditionalFormatRules(rules)
     }
@@ -213,7 +233,7 @@ class ConditionalFormatting {
             rule = formula
         }
 
-        const match = rule.match(/^=(?:AND|and)\(.+, "GSPs"\s*<>\s*"([a-z]*)"/)
+        const match = rule.match(/"GSPs"\s*<>\s*"([^"]*)"/)
         if (match) {
             return match[1]
         }
@@ -221,7 +241,7 @@ class ConditionalFormatting {
         return undefined
     }
 
-    private static _extractOrder(rule: ConditionalFormatRule | string): number | undefined {
+    private static _extractIntOrder(rule: ConditionalFormatRule | string): number | undefined {
         if (!Utils.isString(rule)) {
             const formula = ConditionalFormatRuleUtils.extractFormula(rule)
             if (formula == null) {
@@ -231,9 +251,27 @@ class ConditionalFormatting {
             rule = formula
         }
 
-        const match = rule.match(/^=(?:AND|and)\(.+, "GSPo"\s*<>\s*"(\d+)"/)
+        const match = rule.match(/"GSPo"\s*<>\s*"(\d+)(\.\d*)?"/)
         if (match) {
             return parseInt(match[1])
+        }
+
+        return undefined
+    }
+
+    private static _extractFloatOrder(rule: ConditionalFormatRule | string): number | undefined {
+        if (!Utils.isString(rule)) {
+            const formula = ConditionalFormatRuleUtils.extractFormula(rule)
+            if (formula == null) {
+                return undefined
+            }
+
+            rule = formula
+        }
+
+        const match = rule.match(/"GSPo"\s*<>\s*"(\d+(\.\d*)?)"/)
+        if (match) {
+            return parseFloat(match[1])
         }
 
         return undefined

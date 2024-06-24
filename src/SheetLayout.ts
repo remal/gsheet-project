@@ -22,12 +22,13 @@ abstract class SheetLayout {
         return `${this._documentFlagPrefix}$$$HASH$$$:${GSheetProjectSettings.computeStringSettingsHash()}`
     }
 
-    migrateIfNeeded() {
+    migrateIfNeeded(): boolean {
         if (DocumentFlags.isSet(this._documentFlag)) {
-            return
+            return false
         }
 
         this.migrate()
+        return true
     }
 
     migrate() {
@@ -48,6 +49,8 @@ abstract class SheetLayout {
             new Map<string, ColumnInfo>(),
         )
         if (!columns.size) {
+            DocumentFlags.set(this._documentFlag)
+            DocumentFlags.cleanupByPrefix(this._documentFlagPrefix)
             return
         }
 
@@ -181,6 +184,10 @@ abstract class SheetLayout {
             }
 
             info.conditionalFormats?.forEach(configurer => {
+                if (configurer == null) {
+                    return
+                }
+
                 const originalConfigurer = configurer
                 configurer = builder => {
                     originalConfigurer(builder)
@@ -226,7 +233,7 @@ interface ColumnInfo {
     arrayFormula?: string
     rangeName?: RangeName
     dataValidation?: () => (DataValidation | null)
-    conditionalFormats?: ConditionalFormatRuleConfigurer[]
+    conditionalFormats?: (ConditionalFormatRuleConfigurer | null | undefined)[]
     defaultTitleFontSize?: number
     defaultWidth?: number | WidthString
     defaultFormat?: string

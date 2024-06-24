@@ -19,6 +19,9 @@ class GSheetProjectSettings {
     static startsRangeName: RangeName = "Starts"
     static endsRangeName: RangeName = "Ends"
 
+    static inProgressesRangeName: RangeName | undefined = undefined
+    static codeCompletesRangeName: RangeName | undefined = undefined
+
     static settingsScheduleStartRangeName: RangeName = 'ScheduleStart'
     static settingsScheduleBufferRangeName: RangeName = 'ScheduleBuffer'
 
@@ -67,10 +70,19 @@ class GSheetProjectSettings {
     static indent: number = 4
     static fontSize: FontSize = 10
 
+    // see https://spreadsheet.dev/how-to-get-the-hexadecimal-codes-of-colors-in-google-sheets
+    static errorColor: Color = '#ff0000'
+    static importantWarningColor: Color = '#e06666'
+    static warningColor: Color = '#e69138'
+    static unimportantWarningColor: Color = '#fce5cd'
+    static unimportantColor: Color = '#b7b7b7'
+
 
     static computeStringSettingsHash(): string {
         const hashableValues: Record<string, any> = {}
-        for (const [key, value] of Object.entries(GSheetProjectSettings)) {
+        const keys = Object.keys(GSheetProjectSettings).toSorted()
+        for (const key of keys) {
+            const value = GSheetProjectSettings[key]
             if (value == null
                 || typeof value === 'function'
                 || typeof value === 'object'

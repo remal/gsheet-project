@@ -26,9 +26,10 @@ class CommonFormatter {
                     .whenFormulaSatisfied(`
                         =ISFORMULA(A1)
                     `)
-                    .setItalic(true)
-                    .setFontColor('#333'),
+                    .setItalic(true),
+                //.setFontColor('#333'),
             },
+            false,
         )
     }
 

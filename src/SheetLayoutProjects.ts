@@ -93,7 +93,7 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`
                             =#COLUMN_CELL < 0
                         `)
-                        .setFontColor('#b7b7b7'),
+                        .setFontColor(GSheetProjectSettings.unimportantColor),
                     builder => builder
                         .whenFormulaSatisfied(`
                             =AND(
@@ -101,7 +101,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 #COLUMN_CELL(team) <> ""
                             )
                         `)
-                        .setBackground('#e06666'),
+                        .setBackground(GSheetProjectSettings.importantWarningColor),
                 ],
             },
             {
@@ -109,6 +109,20 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.startsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
+                conditionalFormats: [
+                    GSheetProjectSettings.inProgressesRangeName?.length
+                        ? builder => builder
+                            .whenFormulaSatisfied(`
+                            =AND(
+                                #COLUMN_CELL <> "",
+                                ISFORMULA(#COLUMN_CELL),
+                                #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) = "Yes"
+                            )
+                        `)
+                            .setItalic(true)
+                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
+                        : null,
+                ],
             },
             {
                 name: GSheetProjectSettings.endColumnName,
@@ -119,25 +133,22 @@ class SheetLayoutProjects extends SheetLayout {
                     builder => builder
                         .whenFormulaSatisfied(`
                             =AND(
-                                ISFORMULA(#COLUMN_CELL),
                                 #COLUMN_CELL <> "",
                                 #COLUMN_CELL(deadline) <> "",
                                 #COLUMN_CELL > #COLUMN_CELL(deadline)
                             )
                         `)
-                        .setItalic(true)
                         .setBold(true)
-                        .setFontColor('#c00'),
+                        .setFontColor(GSheetProjectSettings.errorColor),
                     builder => builder
                         .whenFormulaSatisfied(`
                             =AND(
                                 #COLUMN_CELL <> "",
-                                #COLUMN_CELL(deadline) <> "",
-                                #COLUMN_CELL > #COLUMN_CELL(deadline)
+                                #COLUMN_CELL < TODAY()
                             )
                         `)
                         .setBold(true)
-                        .setFontColor('#f00'),
+                        .setFontColor(GSheetProjectSettings.warningColor),
                 ],
             },
             {
