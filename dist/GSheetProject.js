@@ -254,7 +254,7 @@ class CommonFormatter {
             .filter(sheet => SheetUtils.isGridSheet(sheet))
             .forEach(sheet => {
             this.highlightCellsWithFormula(sheet);
-            const range = sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns());
+            const range = SheetUtils.getWholeSheetRange(sheet);
             this.applyCommonFormatsToRange(range);
         });
     }
@@ -262,7 +262,8 @@ class CommonFormatter {
         if (Utils.isString(sheet)) {
             sheet = SheetUtils.getSheetByName(sheet);
         }
-        ConditionalFormatting.addConditionalFormatRule(sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()), {
+        const range = SheetUtils.getWholeSheetRange(sheet);
+        ConditionalFormatting.addConditionalFormatRule(range, {
             scope: 'common',
             order: 10000,
             configurer: builder => builder
@@ -275,7 +276,7 @@ class CommonFormatter {
     }
     static applyCommonFormatsToRowRange(range) {
         const sheet = range.getSheet();
-        range = sheet.getRange(range.getRow(), 1, range.getNumRows(), sheet.getMaxColumns());
+        range = sheet.getRange(range.getRow(), 1, range.getNumRows(), SheetUtils.getMaxColumns(sheet));
         this.applyCommonFormatsToRange(range);
     }
     static applyCommonFormatsToRange(range) {
@@ -309,9 +310,8 @@ class ConditionalFormatting {
             throw new Error(`Not a boolean condition with formula`);
         }
         formula = '=AND(' + [
-            Utils.processFormula(formula
-                .replace(/^=/, '')
-                .replace(/^and\(\s*(.+)\s*\)$/i, '$1')),
+            Formulas.processFormula(formula)
+                .replace(/^=+/, ''),
             `"GSPs"<>"${orderedRule.scope}"`,
             `"GSPo"<>"${orderedRule.order}"`,
         ].join(', ') + ')';
@@ -448,6 +448,7 @@ class ConditionalFormatting {
                         const nextLastRow = nextFirstRow + nextRange.getNumRows() - 1;
                         firstRow = Math.min(firstRow, nextFirstRow);
                         lastRow = Math.max(lastRow, nextLastRow);
+                        lastRow = Math.min(lastRow, SheetUtils.getMaxRows(sheet));
                         newRanges[rangeIndex] = range = range.getSheet().getRange(firstRow, range.getColumn(), lastRow - firstRow + 1, range.getNumColumns());
                         newRanges.splice(nextRangeIndex, 1);
                         --nextRangeIndex;
@@ -487,9 +488,9 @@ class ConditionalFormatting {
             }
             rule = formula;
         }
-        const match = rule.match(/^=(?:AND|and)\(.+, "GSPo"\s*<>\s*"(\d+(\.\d*)?)"/);
+        const match = rule.match(/^=(?:AND|and)\(.+, "GSPo"\s*<>\s*"(\d+)"/);
         if (match) {
-            return parseFloat(match[1]);
+            return parseInt(match[1]);
         }
         return undefined;
     }
@@ -501,7 +502,7 @@ class ConditionalFormatting {
 }
 class DefaultFormulas extends AbstractIssueLogic {
     static isDefaultFormula(formula) {
-        return Utils.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER);
+        return Formulas.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER);
     }
     static insertDefaultFormulas(range, rewriteExistingDefaultFormula = false) {
         const processedRange = this._processRange(range);
@@ -553,9 +554,9 @@ class DefaultFormulas extends AbstractIssueLogic {
                     ].join(': '));
                     if (formulaGenerator != null) {
                         const isReserve = (_f = issues[index]) === null || _f === void 0 ? void 0 : _f.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
-                        let formula = Utils.processFormula((_g = formulaGenerator(row, isReserve)) !== null && _g !== void 0 ? _g : '');
+                        let formula = Formulas.processFormula((_g = formulaGenerator(row, isReserve)) !== null && _g !== void 0 ? _g : '');
                         if (formula.length) {
-                            formula = Utils.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER);
+                            formula = Formulas.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER);
                             sheet.getRange(row, column).setFormula(formula);
                         }
                     }
@@ -807,7 +808,6 @@ class DefaultFormulas extends AbstractIssueLogic {
     }
 }
 DefaultFormulas.DEFAULT_FORMULA_MARKER = "default";
-DefaultFormulas.RESERVE_DEFAULT_FORMULA_MARKER = "reserve";
 class DocumentFlags {
     static set(key, value = true) {
         key = `flag|${key}`;
@@ -919,6 +919,42 @@ class ExecutionCache {
     }
 }
 ExecutionCache._data = new Map();
+class Formulas {
+    static processFormula(formula) {
+        formula = formula.replaceAll(/#SELF_COLUMN\(([^)]+)\)/g, 'INDIRECT("RC"&COLUMN($1), FALSE)');
+        formula = formula.replaceAll(/#SELF(\b|&)/g, 'INDIRECT("RC", FALSE)$1');
+        return formula.split(/[\r\n]+/)
+            .map(line => line.replace(/^\s+/, ''))
+            .filter(line => line.length)
+            .map(line => line.replaceAll(/^([*/+-]+ )/g, ' $1'))
+            .map(line => line.replaceAll(/\s*\t\s*/g, ' '))
+            .map(line => line.replaceAll(/"\s*&\s*""/g, '"'))
+            .map(line => line.replaceAll(/([")])\s*&\s*([")])/g, '$1 & $2'))
+            .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
+            .join('')
+            .trim();
+    }
+    static addFormulaMarker(formula, marker) {
+        formula = formula.replace(/^=/, '');
+        formula = `IF("GSPf"<>"${marker}", ${formula}, "")`;
+        return '=' + formula;
+    }
+    static extractFormulaMarkers(formula) {
+        if (!(formula === null || formula === void 0 ? void 0 : formula.length)) {
+            return [];
+        }
+        const markers = Utils.arrayOf();
+        const regex = /"GSPf"\s*<>\s*"([^"]+)"/g;
+        let match;
+        while ((match = regex.exec(formula)) !== null) {
+            markers.push(match[1]);
+        }
+        return markers;
+    }
+    static escapeFormulaString(string) {
+        return string.replaceAll(/"/g, '""');
+    }
+}
 class Images {
 }
 Images.loadingImageUrl = 'https://raw.githubusercontent.com/remal/misc/main/spinner-100.gif';
@@ -1434,7 +1470,7 @@ class IssueHierarchyFormatter {
                         if (isEmptyCell(titles, titleFormulas, index)) {
                             const firstTitleWithoutChildNotation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(firstRowWithoutChild, titlesColumn));
                             const childIssueNotation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, childIssuesColumn));
-                            const formula = Utils.processFormula(`
+                            const formula = Formulas.processFormula(`
                                 =${firstTitleWithoutChildNotation} & " - " & ${childIssueNotation}
                             `);
                             sheet.getRange(row, titlesColumn)
@@ -1839,7 +1875,7 @@ class ProtectionLocks {
             return;
         }
         Observability.timed(`${ProtectionLocks.name}: ${this.lockAllColumns.name}: ${sheet.getSheetName()}`, () => {
-            const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
+            const range = sheet.getRange(1, 1, 1, SheetUtils.getMaxColumns(sheet));
             const protection = range.protect()
                 .setDescription(`lock|columns|all|${Date.now()}`)
                 .setWarningOnly(true);
@@ -1855,7 +1891,7 @@ class ProtectionLocks {
             return;
         }
         Observability.timed(`${ProtectionLocks.name}: ${this.lockAllRows.name}: ${sheet.getSheetName()}`, () => {
-            const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1);
+            const range = sheet.getRange(1, SheetUtils.getMaxColumns(sheet), SheetUtils.getMaxRows(sheet), 1);
             const protection = range.protect()
                 .setDescription(`lock|rows|all|${Date.now()}`)
                 .setWarningOnly(true);
@@ -1880,7 +1916,7 @@ class ProtectionLocks {
         const maxLockedRow = Array.from(rowsProtections.keys()).reduce((prev, cur) => Math.max(prev, cur), 0);
         if (maxLockedRow < rowToLock) {
             Observability.timed(`${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowToLock}`, () => {
-                const range = sheet.getRange(1, sheet.getMaxColumns(), rowToLock, 1);
+                const range = sheet.getRange(1, SheetUtils.getMaxColumns(sheet), rowToLock, 1);
                 const protection = range.protect()
                     .setDescription(`lock|rows|${rowToLock}|${Date.now()}`)
                     .setWarningOnly(true);
@@ -2108,7 +2144,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}ebc83dd216e3bfd768ada90c99665b6f08138a7469a47a037bd42775698b6ad8:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}652e162c02ca3a007a76d680bd2194aa1f643bd4831e5dc708fc9cc284f32194:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2133,7 +2169,7 @@ class SheetLayout {
         ProtectionLocks.lockAllColumns(sheet);
         const columnByKey = new Map();
         let lastColumn = SheetUtils.getLastColumn(sheet);
-        const maxRows = sheet.getMaxRows();
+        const maxRows = SheetUtils.getMaxRows(sheet);
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]
             .map(it => it === null || it === void 0 ? void 0 : it.toString())
@@ -2193,8 +2229,8 @@ class SheetLayout {
             if ((_e = info.arrayFormula) === null || _e === void 0 ? void 0 : _e.length) {
                 const formulaToExpect = `
                     ={
-                        "${Utils.escapeFormulaString(info.name)}";
-                        ${Utils.processFormula(info.arrayFormula)}
+                        "${Formulas.escapeFormulaString(info.name)}";
+                        ${Formulas.processFormula(info.arrayFormula)}
                     }
                 `;
                 const formula = existingFormulas.get()[index];
@@ -2208,7 +2244,7 @@ class SheetLayout {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range);
             }
             const processFormula = (formula) => {
-                formula = Utils.processFormula(formula);
+                formula = Formulas.processFormula(formula);
                 formula = formula.replaceAll(/#COLUMN_CELL\(([^)]+)\)/g, (_, key) => {
                     var _a;
                     const columnNumber = (_a = columnByKey.get(key)) === null || _a === void 0 ? void 0 : _a.columnNumber;
@@ -2498,6 +2534,9 @@ class SheetUtils {
         return ExecutionCache.getOrCompute(['last-row', sheet], () => Math.max(sheet.getLastRow(), 1));
     }
     static setLastRow(sheet, lastRow) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
         ExecutionCache.put(['last-row', sheet], Math.max(lastRow, 1));
     }
     static getLastColumn(sheet) {
@@ -2507,7 +2546,40 @@ class SheetUtils {
         return ExecutionCache.getOrCompute(['last-column', sheet], () => Math.max(sheet.getLastColumn(), 1));
     }
     static setLastColumn(sheet, lastColumn) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
         ExecutionCache.put(['last-column', sheet], lastColumn);
+    }
+    static getMaxRows(sheet) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        return ExecutionCache.getOrCompute(['max-rows', sheet], () => Math.max(sheet.getMaxRows(), 1));
+    }
+    static setMaxRows(sheet, maxRows) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        ExecutionCache.put(['max-rows', sheet], Math.max(maxRows, 1));
+    }
+    static getMaxColumns(sheet) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        return ExecutionCache.getOrCompute(['max-columns', sheet], () => Math.max(sheet.getMaxColumns(), 1));
+    }
+    static setMaxColumns(sheet, maxColumns) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        ExecutionCache.put(['max-columns', sheet], maxColumns);
+    }
+    static getWholeSheetRange(sheet) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet);
+        }
+        return sheet.getRange(1, 1, SheetUtils.getMaxRows(sheet), SheetUtils.getMaxColumns(sheet));
     }
     static findColumnByName(sheet, columnName) {
         if (!(columnName === null || columnName === void 0 ? void 0 : columnName.length)) {
@@ -2679,40 +2751,6 @@ class Utils {
         value = value.substring(0, 1).toLowerCase() + value.substring(1).toLowerCase();
         value = value.replaceAll(/[^a-z0-9]+([a-z0-9])/ig, (_, letter) => letter.toUpperCase());
         return value;
-    }
-    static processFormula(formula) {
-        formula = formula.replaceAll(/#SELF_COLUMN\(([^)]+)\)/g, 'INDIRECT("RC"&COLUMN($1), FALSE)');
-        formula = formula.replaceAll(/#SELF(\b|&)/g, 'INDIRECT("RC", FALSE)$1');
-        return formula.split(/[\r\n]+/)
-            .map(line => line.replace(/^\s+/, ''))
-            .filter(line => line.length)
-            .map(line => line.replaceAll(/^([*/+-]+ )/g, ' $1'))
-            .map(line => line.replaceAll(/\s*\t\s*/g, ' '))
-            .map(line => line.replaceAll(/"\s*&\s*""/g, '"'))
-            .map(line => line.replaceAll(/([")])\s*&\s*([")])/g, '$1 & $2'))
-            .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
-            .join('')
-            .trim();
-    }
-    static addFormulaMarker(formula, marker) {
-        formula = formula.replace(/^=/, '');
-        formula = `IF("GSPf"<>"${marker}", ${formula}, "")`;
-        return '=' + formula;
-    }
-    static extractFormulaMarkers(formula) {
-        if (!(formula === null || formula === void 0 ? void 0 : formula.length)) {
-            return [];
-        }
-        const markers = this.arrayOf();
-        const regex = /"GSPf"\s*<>\s*"([^"]+)"/g;
-        let match;
-        while ((match = regex.exec(formula)) !== null) {
-            markers.push(match[1]);
-        }
-        return markers;
-    }
-    static escapeFormulaString(string) {
-        return string.replaceAll(/"/g, '""');
     }
     static mapRecordValues(record, transformer) {
         const result = {};

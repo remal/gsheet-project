@@ -1,10 +1,9 @@
 class DefaultFormulas extends AbstractIssueLogic {
 
     private static readonly DEFAULT_FORMULA_MARKER = "default"
-    private static readonly RESERVE_DEFAULT_FORMULA_MARKER = "reserve"
 
     static isDefaultFormula(formula: string | null | undefined): boolean {
-        return Utils.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER)
+        return Formulas.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER)
     }
 
     static insertDefaultFormulas(range: Range, rewriteExistingDefaultFormula: boolean = false) {
@@ -67,9 +66,9 @@ class DefaultFormulas extends AbstractIssueLogic {
 
                         if (formulaGenerator != null) {
                             const isReserve = issues[index]?.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix)
-                            let formula = Utils.processFormula(formulaGenerator(row, isReserve) ?? '')
+                            let formula = Formulas.processFormula(formulaGenerator(row, isReserve) ?? '')
                             if (formula.length) {
-                                formula = Utils.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER)
+                                formula = Formulas.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER)
                                 sheet.getRange(row, column).setFormula(formula)
                             }
                         }

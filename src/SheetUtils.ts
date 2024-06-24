@@ -46,6 +46,10 @@ class SheetUtils {
     }
 
     static setLastRow(sheet: Sheet | SheetName, lastRow: Row) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
         ExecutionCache.put(['last-row', sheet], Math.max(lastRow, 1))
     }
 
@@ -60,7 +64,60 @@ class SheetUtils {
     }
 
     static setLastColumn(sheet: Sheet | SheetName, lastColumn: Column) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
         ExecutionCache.put(['last-column', sheet], lastColumn)
+    }
+
+    static getMaxRows(sheet: Sheet | SheetName): Row {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
+        return ExecutionCache.getOrCompute(['max-rows', sheet], () =>
+            Math.max(sheet.getMaxRows(), 1),
+        )
+    }
+
+    static setMaxRows(sheet: Sheet | SheetName, maxRows: Row) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
+        ExecutionCache.put(['max-rows', sheet], Math.max(maxRows, 1))
+    }
+
+    static getMaxColumns(sheet: Sheet | SheetName): Column {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
+        return ExecutionCache.getOrCompute(['max-columns', sheet], () =>
+            Math.max(sheet.getMaxColumns(), 1),
+        )
+    }
+
+    static setMaxColumns(sheet: Sheet | SheetName, maxColumns: Column) {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
+        ExecutionCache.put(['max-columns', sheet], maxColumns)
+    }
+
+    static getWholeSheetRange(sheet: Sheet | SheetName): Range {
+        if (Utils.isString(sheet)) {
+            sheet = this.getSheetByName(sheet)
+        }
+
+        return sheet.getRange(
+            1,
+            1,
+            SheetUtils.getMaxRows(sheet),
+            SheetUtils.getMaxColumns(sheet),
+        )
     }
 
     static findColumnByName(

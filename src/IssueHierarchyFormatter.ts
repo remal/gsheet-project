@@ -290,7 +290,7 @@ class IssueHierarchyFormatter {
                             const childIssueNotation = RangeUtils.getAbsoluteA1Notation(
                                 sheet.getRange(row, childIssuesColumn),
                             )
-                            const formula = Utils.processFormula(`
+                            const formula = Formulas.processFormula(`
                                 =${firstTitleWithoutChildNotation} & " - " & ${childIssueNotation}
                             `)
                             sheet.getRange(row, titlesColumn)

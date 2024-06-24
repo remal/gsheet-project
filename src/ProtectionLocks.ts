@@ -15,7 +15,7 @@ class ProtectionLocks {
         }
 
         Observability.timed(`${ProtectionLocks.name}: ${this.lockAllColumns.name}: ${sheet.getSheetName()}`, () => {
-            const range = sheet.getRange(1, 1, 1, sheet.getMaxColumns())
+            const range = sheet.getRange(1, 1, 1, SheetUtils.getMaxColumns(sheet))
             const protection = range.protect()
                 .setDescription(`lock|columns|all|${Date.now()}`)
                 .setWarningOnly(true)
@@ -34,7 +34,7 @@ class ProtectionLocks {
         }
 
         Observability.timed(`${ProtectionLocks.name}: ${this.lockAllRows.name}: ${sheet.getSheetName()}`, () => {
-            const range = sheet.getRange(1, sheet.getMaxColumns(), sheet.getMaxRows(), 1)
+            const range = sheet.getRange(1, SheetUtils.getMaxColumns(sheet), SheetUtils.getMaxRows(sheet), 1)
             const protection = range.protect()
                 .setDescription(`lock|rows|all|${Date.now()}`)
                 .setWarningOnly(true)
@@ -66,7 +66,7 @@ class ProtectionLocks {
             Observability.timed(
                 `${ProtectionLocks.name}: ${this.lockRows.name}: ${sheet.getSheetName()}: ${rowToLock}`,
                 () => {
-                    const range = sheet.getRange(1, sheet.getMaxColumns(), rowToLock, 1)
+                    const range = sheet.getRange(1, SheetUtils.getMaxColumns(sheet), rowToLock, 1)
                     const protection = range.protect()
                         .setDescription(`lock|rows|${rowToLock}|${Date.now()}`)
                         .setWarningOnly(true)

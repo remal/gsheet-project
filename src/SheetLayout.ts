@@ -57,7 +57,7 @@ abstract class SheetLayout {
         const columnByKey = new Map<string, { columnNumber: Column, info: ColumnInfo }>()
 
         let lastColumn = SheetUtils.getLastColumn(sheet)
-        const maxRows = sheet.getMaxRows()
+        const maxRows = SheetUtils.getMaxRows(sheet)
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]
             .map(it => it?.toString())
@@ -129,8 +129,8 @@ abstract class SheetLayout {
             if (info.arrayFormula?.length) {
                 const formulaToExpect = `
                     ={
-                        "${Utils.escapeFormulaString(info.name)}";
-                        ${Utils.processFormula(info.arrayFormula)}
+                        "${Formulas.escapeFormulaString(info.name)}";
+                        ${Formulas.processFormula(info.arrayFormula)}
                     }
                 `
                 const formula = existingFormulas.get()[index]
@@ -152,7 +152,7 @@ abstract class SheetLayout {
 
 
             const processFormula = (formula: string): string => {
-                formula = Utils.processFormula(formula)
+                formula = Formulas.processFormula(formula)
                 formula = formula.replaceAll(/#COLUMN_CELL\(([^)]+)\)/g, (_, key) => {
                     const columnNumber = columnByKey.get(key)?.columnNumber
                     if (columnNumber == null) {

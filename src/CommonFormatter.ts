@@ -6,7 +6,7 @@ class CommonFormatter {
             .forEach(sheet => {
                 this.highlightCellsWithFormula(sheet)
 
-                const range = sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
+                const range = SheetUtils.getWholeSheetRange(sheet)
                 this.applyCommonFormatsToRange(range)
             })
     }
@@ -16,8 +16,9 @@ class CommonFormatter {
             sheet = SheetUtils.getSheetByName(sheet)
         }
 
+        const range = SheetUtils.getWholeSheetRange(sheet)
         ConditionalFormatting.addConditionalFormatRule(
-            sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()),
+            range,
             {
                 scope: 'common',
                 order: 10_000,
@@ -37,7 +38,7 @@ class CommonFormatter {
             range.getRow(),
             1,
             range.getNumRows(),
-            sheet.getMaxColumns(),
+            SheetUtils.getMaxColumns(sheet),
         )
         this.applyCommonFormatsToRange(range)
     }

@@ -16,11 +16,8 @@ class ConditionalFormatting {
             throw new Error(`Not a boolean condition with formula`)
         }
         formula = '=AND(' + [
-            Utils.processFormula(
-                formula
-                    .replace(/^=/, '')
-                    .replace(/^and\(\s*(.+)\s*\)$/i, '$1'),
-            ),
+            Formulas.processFormula(formula)
+                .replace(/^=+/, ''),
             `"GSPs"<>"${orderedRule.scope}"`,
             `"GSPo"<>"${orderedRule.order}"`,
         ].join(', ') + ')'
@@ -180,6 +177,7 @@ class ConditionalFormatting {
                         const nextLastRow = nextFirstRow + nextRange.getNumRows() - 1
                         firstRow = Math.min(firstRow, nextFirstRow)
                         lastRow = Math.max(lastRow, nextLastRow)
+                        lastRow = Math.min(lastRow, SheetUtils.getMaxRows(sheet))
                         newRanges[rangeIndex] = range = range.getSheet().getRange(
                             firstRow,
                             range.getColumn(),
@@ -233,9 +231,9 @@ class ConditionalFormatting {
             rule = formula
         }
 
-        const match = rule.match(/^=(?:AND|and)\(.+, "GSPo"\s*<>\s*"(\d+(\.\d*)?)"/)
+        const match = rule.match(/^=(?:AND|and)\(.+, "GSPo"\s*<>\s*"(\d+)"/)
         if (match) {
-            return parseFloat(match[1])
+            return parseInt(match[1])
         }
 
         return undefined
