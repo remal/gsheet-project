@@ -148,7 +148,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         issueIndex,
                         index,
                     ) ?? '')
-                    if (!formula.length) {
+                    if (formula.length) {
                         formula = Formulas.addFormulaMarker(
                             formula,
                             isChild ? this.DEFAULT_CHILD_FORMULA_MARKER : this.DEFAULT_FORMULA_MARKER,

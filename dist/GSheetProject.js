@@ -647,7 +647,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     ].join(': '));
                     const isReserve = (_g = issues[index]) === null || _g === void 0 ? void 0 : _g.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
                     let formula = Formulas.processFormula((_h = formulaGenerator(row, isReserve, isChild, issueIndex, index)) !== null && _h !== void 0 ? _h : '');
-                    if (!formula.length) {
+                    if (formula.length) {
                         formula = Formulas.addFormulaMarker(formula, isChild ? this.DEFAULT_CHILD_FORMULA_MARKER : this.DEFAULT_FORMULA_MARKER);
                         sheet.getRange(row, column).setFormula(formula);
                     }
@@ -2103,7 +2103,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}57762b3bfe1f9c1c551950652497c40a37c5d81cb8febf528b5661fbee8e3a83:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}2a41ce68a3f1437bca70b8258ecbfbe3b901bb4220e1989e9ae8c64472385a16:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
