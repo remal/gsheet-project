@@ -133,6 +133,13 @@ class DefaultFormulas extends AbstractIssueLogic {
                 }
 
                 if (!values[index]?.length && !formulas[index]?.length) {
+                    console.info([
+                        DefaultFormulas.name,
+                        sheet.getSheetName(),
+                        addFormulas.name,
+                        `column #${column}`,
+                        `row #${row}`,
+                    ].join(': '))
                     const isReserve = issues[index]?.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix)
                     let formula = Formulas.processFormula(formulaGenerator(
                         row,
@@ -141,19 +148,14 @@ class DefaultFormulas extends AbstractIssueLogic {
                         issueIndex,
                         index,
                     ) ?? '')
-                    if (formula.length) {
-                        console.info([
-                            DefaultFormulas.name,
-                            sheet.getSheetName(),
-                            addFormulas.name,
-                            `column #${column}`,
-                            `row #${row}`,
-                        ].join(': '))
+                    if (!formula.length) {
                         formula = Formulas.addFormulaMarker(
                             formula,
                             isChild ? this.DEFAULT_CHILD_FORMULA_MARKER : this.DEFAULT_FORMULA_MARKER,
                         )
                         sheet.getRange(row, column).setFormula(formula)
+                    } else {
+                        sheet.getRange(row, column).setFormula('')
                     }
                 }
             }
@@ -236,6 +238,12 @@ class DefaultFormulas extends AbstractIssueLogic {
                     ))
                     return `=${titleA1Notation} & " - " & ${childIssueA1Notation}`
                 }
+
+                const childIssueA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                    row,
+                    childIssueColumn,
+                ))
+                return `=${childIssueA1Notation}`
             }
 
             const issueA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(

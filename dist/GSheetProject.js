@@ -638,18 +638,21 @@ class DefaultFormulas extends AbstractIssueLogic {
                     formulas[index] = '';
                 }
                 if (!((_e = values[index]) === null || _e === void 0 ? void 0 : _e.length) && !((_f = formulas[index]) === null || _f === void 0 ? void 0 : _f.length)) {
+                    console.info([
+                        DefaultFormulas.name,
+                        sheet.getSheetName(),
+                        addFormulas.name,
+                        `column #${column}`,
+                        `row #${row}`,
+                    ].join(': '));
                     const isReserve = (_g = issues[index]) === null || _g === void 0 ? void 0 : _g.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
                     let formula = Formulas.processFormula((_h = formulaGenerator(row, isReserve, isChild, issueIndex, index)) !== null && _h !== void 0 ? _h : '');
-                    if (formula.length) {
-                        console.info([
-                            DefaultFormulas.name,
-                            sheet.getSheetName(),
-                            addFormulas.name,
-                            `column #${column}`,
-                            `row #${row}`,
-                        ].join(': '));
+                    if (!formula.length) {
                         formula = Formulas.addFormulaMarker(formula, isChild ? this.DEFAULT_CHILD_FORMULA_MARKER : this.DEFAULT_FORMULA_MARKER);
                         sheet.getRange(row, column).setFormula(formula);
+                    }
+                    else {
+                        sheet.getRange(row, column).setFormula('');
                     }
                 }
             }
@@ -712,6 +715,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                     const childIssueA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, childIssueColumn));
                     return `=${titleA1Notation} & " - " & ${childIssueA1Notation}`;
                 }
+                const childIssueA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, childIssueColumn));
+                return `=${childIssueA1Notation}`;
             }
             const issueA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, issueColumn));
             return `=${issueA1Notation}`;
@@ -2098,7 +2103,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}be50c06e105d3d752a175ead53105a9268c6593cd8ec17cd759b3db193363ce1:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}57762b3bfe1f9c1c551950652497c40a37c5d81cb8febf528b5661fbee8e3a83:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
