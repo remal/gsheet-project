@@ -537,10 +537,10 @@ class ConditionalFormatting {
 }
 class DefaultFormulas extends AbstractIssueLogic {
     static isDefaultFormula(formula) {
-        return Formulas.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER);
+        return Formulas.extractFormulaMarkers(formula).includes(this._DEFAULT_FORMULA_MARKER);
     }
     static isDefaultChildFormula(formula) {
-        return Formulas.extractFormulaMarkers(formula).includes(this.DEFAULT_CHILD_FORMULA_MARKER);
+        return Formulas.extractFormulaMarkers(formula).includes(this._DEFAULT_CHILD_FORMULA_MARKER);
     }
     static insertDefaultFormulas(range, rewriteExistingDefaultFormula = false) {
         const processedRange = this._processRange(range);
@@ -628,7 +628,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     }
                     continue;
                 }
-                const isChild = !!((_d = childIssues[index]) === null || _d === void 0 ? void 0 : _d.length);
+                const isChild = !!((_d = childIssues[issueIndex]) === null || _d === void 0 ? void 0 : _d.length);
                 const isDefaultFormula = this.isDefaultFormula(formulas[index]);
                 const isDefaultChildFormula = this.isDefaultChildFormula(formulas[index]);
                 if ((isChild && isDefaultFormula)
@@ -645,10 +645,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                         `column #${column}`,
                         `row #${row}`,
                     ].join(': '));
-                    const isReserve = (_g = issues[index]) === null || _g === void 0 ? void 0 : _g.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
+                    const isReserve = (_g = issues[issueIndex]) === null || _g === void 0 ? void 0 : _g.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
                     let formula = Formulas.processFormula((_h = formulaGenerator(row, isReserve, isChild, issueIndex, index)) !== null && _h !== void 0 ? _h : '');
                     if (formula.length) {
-                        formula = Formulas.addFormulaMarker(formula, isChild ? this.DEFAULT_CHILD_FORMULA_MARKER : this.DEFAULT_FORMULA_MARKER);
+                        formula = Formulas.addFormulaMarkers(formula, isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER, isReserve ? this._DEFAULT_RESERVE_FORMULA_MARKER : null);
                         sheet.getRange(row, column).setFormula(formula);
                     }
                     else {
@@ -657,26 +657,6 @@ class DefaultFormulas extends AbstractIssueLogic {
                 }
             }
         };
-        addFormulas(milestoneColumn, (row, isReserve, isChild, issueIndex) => {
-            if (isChild) {
-                const parentIssueRow = getParentIssueRow(issueIndex);
-                if (parentIssueRow != null) {
-                    const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(parentIssueRow, milestoneColumn));
-                    return `=${milestoneA1Notation}`;
-                }
-            }
-            return undefined;
-        });
-        addFormulas(typeColumn, (row, isReserve, isChild, issueIndex) => {
-            if (isChild) {
-                const parentIssueRow = getParentIssueRow(issueIndex);
-                if (parentIssueRow != null) {
-                    const typeA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(parentIssueRow, typeColumn));
-                    return `=${typeA1Notation}`;
-                }
-            }
-            return undefined;
-        });
         addFormulas(childIssueColumn, (row, isReserve, isChild, issueIndex) => {
             if (isReserve) {
                 childIssues[issueIndex] = `placeholder: ${addFormulas.name}`;
@@ -704,6 +684,26 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ""
                     )
                 `;
+            }
+            return undefined;
+        });
+        addFormulas(milestoneColumn, (row, isReserve, isChild, issueIndex) => {
+            if (isChild) {
+                const parentIssueRow = getParentIssueRow(issueIndex);
+                if (parentIssueRow != null) {
+                    const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(parentIssueRow, milestoneColumn));
+                    return `=${milestoneA1Notation}`;
+                }
+            }
+            return undefined;
+        });
+        addFormulas(typeColumn, (row, isReserve, isChild, issueIndex) => {
+            if (isChild) {
+                const parentIssueRow = getParentIssueRow(issueIndex);
+                if (parentIssueRow != null) {
+                    const typeA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(parentIssueRow, typeColumn));
+                    return `=${typeA1Notation}`;
+                }
             }
             return undefined;
         });
@@ -943,8 +943,9 @@ class DefaultFormulas extends AbstractIssueLogic {
         });
     }
 }
-DefaultFormulas.DEFAULT_FORMULA_MARKER = "default";
-DefaultFormulas.DEFAULT_CHILD_FORMULA_MARKER = "default-child";
+DefaultFormulas._DEFAULT_FORMULA_MARKER = "default";
+DefaultFormulas._DEFAULT_CHILD_FORMULA_MARKER = "default-child";
+DefaultFormulas._DEFAULT_RESERVE_FORMULA_MARKER = "default-reserve";
 class DocumentFlags {
     static set(key, value = true) {
         key = `flag|${key}`;
@@ -1079,10 +1080,13 @@ class Formulas {
         formula = `IF("GSPf"<>"${marker}", ${formula}, "")`;
         return '=' + formula;
     }
-    static addFormulaMarkers(formula, markers) {
+    static addFormulaMarkers(formula, ...markers) {
         markers = markers.filter(it => it === null || it === void 0 ? void 0 : it.length);
         if (!(markers === null || markers === void 0 ? void 0 : markers.length)) {
             return formula;
+        }
+        if (markers.length === 1) {
+            return this.addFormulaMarker(formula, markers[0]);
         }
         formula = formula.replace(/^=+/, '');
         formula = `IF(AND(${markers.map(marker => `"GSPf"<>"${marker}"`).join(', ')}), ${formula}, "")`;
@@ -2103,7 +2107,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}2a41ce68a3f1437bca70b8258ecbfbe3b901bb4220e1989e9ae8c64472385a16:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}c45c317e5c27399294b0341839db2ddaff9bad1b5d702683e07c03f387ac6b7c:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

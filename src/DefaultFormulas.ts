@@ -1,14 +1,15 @@
 class DefaultFormulas extends AbstractIssueLogic {
 
-    private static readonly DEFAULT_FORMULA_MARKER = "default"
-    private static readonly DEFAULT_CHILD_FORMULA_MARKER = "default-child"
+    private static readonly _DEFAULT_FORMULA_MARKER = "default"
+    private static readonly _DEFAULT_CHILD_FORMULA_MARKER = "default-child"
+    private static readonly _DEFAULT_RESERVE_FORMULA_MARKER = "default-reserve"
 
     static isDefaultFormula(formula: string | null | undefined): boolean {
-        return Formulas.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER)
+        return Formulas.extractFormulaMarkers(formula).includes(this._DEFAULT_FORMULA_MARKER)
     }
 
     static isDefaultChildFormula(formula: string | null | undefined): boolean {
-        return Formulas.extractFormulaMarkers(formula).includes(this.DEFAULT_CHILD_FORMULA_MARKER)
+        return Formulas.extractFormulaMarkers(formula).includes(this._DEFAULT_CHILD_FORMULA_MARKER)
     }
 
     static insertDefaultFormulas(range: Range, rewriteExistingDefaultFormula: boolean = false) {
@@ -121,7 +122,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     continue
                 }
 
-                const isChild = !!childIssues[index]?.length
+                const isChild = !!childIssues[issueIndex]?.length
                 const isDefaultFormula = this.isDefaultFormula(formulas[index])
                 const isDefaultChildFormula = this.isDefaultChildFormula(formulas[index])
                 if ((isChild && isDefaultFormula)
@@ -140,7 +141,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         `column #${column}`,
                         `row #${row}`,
                     ].join(': '))
-                    const isReserve = issues[index]?.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix)
+                    const isReserve = issues[issueIndex]?.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix)
                     let formula = Formulas.processFormula(formulaGenerator(
                         row,
                         isReserve,
@@ -149,9 +150,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                         index,
                     ) ?? '')
                     if (formula.length) {
-                        formula = Formulas.addFormulaMarker(
+                        formula = Formulas.addFormulaMarkers(
                             formula,
-                            isChild ? this.DEFAULT_CHILD_FORMULA_MARKER : this.DEFAULT_FORMULA_MARKER,
+                            isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER,
+                            isReserve ? this._DEFAULT_RESERVE_FORMULA_MARKER : null,
                         )
                         sheet.getRange(row, column).setFormula(formula)
                     } else {
@@ -161,36 +163,6 @@ class DefaultFormulas extends AbstractIssueLogic {
             }
         }
 
-
-        addFormulas(milestoneColumn, (row, isReserve, isChild, issueIndex) => {
-            if (isChild) {
-                const parentIssueRow = getParentIssueRow(issueIndex)
-                if (parentIssueRow != null) {
-                    const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
-                        parentIssueRow,
-                        milestoneColumn,
-                    ))
-                    return `=${milestoneA1Notation}`
-                }
-            }
-
-            return undefined
-        })
-
-        addFormulas(typeColumn, (row, isReserve, isChild, issueIndex) => {
-            if (isChild) {
-                const parentIssueRow = getParentIssueRow(issueIndex)
-                if (parentIssueRow != null) {
-                    const typeA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
-                        parentIssueRow,
-                        typeColumn,
-                    ))
-                    return `=${typeA1Notation}`
-                }
-            }
-
-            return undefined
-        })
 
         addFormulas(childIssueColumn, (row, isReserve, isChild, issueIndex) => {
             if (isReserve) {
@@ -219,6 +191,37 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ""
                     )
                 `
+            }
+
+            return undefined
+        })
+
+
+        addFormulas(milestoneColumn, (row, isReserve, isChild, issueIndex) => {
+            if (isChild) {
+                const parentIssueRow = getParentIssueRow(issueIndex)
+                if (parentIssueRow != null) {
+                    const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                        parentIssueRow,
+                        milestoneColumn,
+                    ))
+                    return `=${milestoneA1Notation}`
+                }
+            }
+
+            return undefined
+        })
+
+        addFormulas(typeColumn, (row, isReserve, isChild, issueIndex) => {
+            if (isChild) {
+                const parentIssueRow = getParentIssueRow(issueIndex)
+                if (parentIssueRow != null) {
+                    const typeA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
+                        parentIssueRow,
+                        typeColumn,
+                    ))
+                    return `=${typeA1Notation}`
+                }
             }
 
             return undefined

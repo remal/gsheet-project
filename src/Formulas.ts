@@ -15,7 +15,7 @@ class Formulas {
             .trim()
     }
 
-    static addFormulaMarker(formula: string, marker: string): string {
+    static addFormulaMarker(formula: string, marker: string | null | undefined): string {
         if (!marker?.length) {
             return formula
         }
@@ -25,10 +25,14 @@ class Formulas {
         return '=' + formula
     }
 
-    static addFormulaMarkers(formula: string, markers: string[]): string {
+    static addFormulaMarkers(formula: string, ...markers: (string | null | undefined)[]): string {
         markers = markers.filter(it => it?.length)
         if (!markers?.length) {
             return formula
+        }
+
+        if (markers.length === 1) {
+            return this.addFormulaMarker(formula, markers[0])
         }
 
         formula = formula.replace(/^=+/, '')
