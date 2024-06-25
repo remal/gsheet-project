@@ -35,8 +35,8 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.issueKeyColumnName,
                 rangeName: GSheetProjectSettings.issuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`
-                        =COUNTIFS(
+                    .requireFormulaSatisfied(`=
+                        COUNTIFS(
                             ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
                             ${GSheetProjectSettings.childIssuesRangeName}, "="
                         ) <= 1
@@ -53,11 +53,13 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.childIssueKeyColumnName,
                 rangeName: GSheetProjectSettings.childIssuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`
-                        =COUNTIF(${GSheetProjectSettings.issuesRangeName}, "=" & #SELF) = 0
+                    .requireFormulaSatisfied(`=
+                        #SELF_COLUMN(${GSheetProjectSettings.issuesRangeName})
+                        =
+                        OFFSET(#SELF_COLUMN(${GSheetProjectSettings.issuesRangeName}), -1, 0)
                     `)
                     .setHelpText(
-                        `Only one level of hierarchy is supported`,
+                        `Children should be grouped under their parent`,
                     )
                     .build(),
                 defaultFormat: '',
@@ -76,7 +78,6 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'left',
             },
             {
-                key: 'team',
                 name: GSheetProjectSettings.teamColumnName,
                 rangeName: GSheetProjectSettings.teamsRangeName,
                 //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
@@ -90,15 +91,15 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
                     builder => builder
-                        .whenFormulaSatisfied(`
-                            =#COLUMN_CELL < 0
+                        .whenFormulaSatisfied(`=
+                            #SELF < 0
                         `)
                         .setFontColor(GSheetProjectSettings.unimportantColor),
                     builder => builder
-                        .whenFormulaSatisfied(`
-                            =AND(
-                                #COLUMN_CELL = "",
-                                #COLUMN_CELL(team) <> ""
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF = "",
+                                #SELF_COLUMN(${GSheetProjectSettings.teamsRangeName}) <> ""
                             )
                         `)
                         .setBackground(GSheetProjectSettings.importantWarningColor),
@@ -112,13 +113,13 @@ class SheetLayoutProjects extends SheetLayout {
                 conditionalFormats: [
                     GSheetProjectSettings.inProgressesRangeName?.length
                         ? builder => builder
-                            .whenFormulaSatisfied(`
-                            =AND(
-                                #COLUMN_CELL <> "",
-                                ISFORMULA(#COLUMN_CELL),
-                                #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) = "Yes"
-                            )
-                        `)
+                            .whenFormulaSatisfied(`=
+                                AND(
+                                    #SELF <> "",
+                                    ISFORMULA(#SELF),
+                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) = "Yes"
+                                )
+                            `)
                             .setItalic(true)
                             .setBackground(GSheetProjectSettings.unimportantWarningColor)
                         : null,
@@ -131,20 +132,20 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
                     builder => builder
-                        .whenFormulaSatisfied(`
-                            =AND(
-                                #COLUMN_CELL <> "",
-                                #COLUMN_CELL(deadline) <> "",
-                                #COLUMN_CELL > #COLUMN_CELL(deadline)
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.deadlineColumnName}) <> "",
+                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})
                             )
                         `)
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.errorColor),
                     builder => builder
-                        .whenFormulaSatisfied(`
-                            =AND(
-                                #COLUMN_CELL <> "",
-                                #COLUMN_CELL < TODAY()
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF <> "",
+                                #SELF < TODAY()
                             )
                         `)
                         .setBold(true)
@@ -152,8 +153,8 @@ class SheetLayoutProjects extends SheetLayout {
                 ],
             },
             {
-                key: 'deadline',
                 name: GSheetProjectSettings.deadlineColumnName,
+                rangeName: GSheetProjectSettings.deadlinesRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },

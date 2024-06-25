@@ -25,8 +25,8 @@ class ConditionalFormatting {
         }
         formula = Formulas.processFormula(formula)
             .replace(/^=+/, '')
-        const newRuleFormula = Formulas.processFormula(`
-            =AND(
+        const newRuleFormula = Formulas.processFormula(`=
+            AND(
                 ${formula},
                 "GSPs"<>"${orderedRule.scope}",
                 "GSPo"<>"${orderedRule.order + 0.2}"
@@ -37,8 +37,8 @@ class ConditionalFormatting {
         const newRules = [newRule]
 
         if (addIsFormulaRule) {
-            const newIsFormula = Formulas.processFormula(`
-                    =AND(
+            const newIsFormula = Formulas.processFormula(`=
+                    AND(
                         ISFORMULA(#SELF),
                         ${formula},
                         "GSPs"<>"${orderedRule.scope}",

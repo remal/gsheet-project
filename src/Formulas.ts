@@ -6,7 +6,7 @@ class Formulas {
         return formula.split(/[\r\n]+/)
             .map(line => line.replace(/^\s+/, ''))
             .filter(line => line.length)
-            .map(line => line.replaceAll(/^([*/+-]+ )/g, ' $1'))
+            .map(line => line.replaceAll(/^([<>&=*/+-]+ )/g, ' $1'))
             .map(line => line.replaceAll(/\s*\t\s*/g, ' '))
             .map(line => line.replaceAll(/"\s*&\s*""/g, '"'))
             .map(line => line.replaceAll(/([")])\s*&\s*([")])/g, '$1 & $2'))
@@ -16,8 +16,23 @@ class Formulas {
     }
 
     static addFormulaMarker(formula: string, marker: string): string {
-        formula = formula.replace(/^=/, '')
+        if (!marker?.length) {
+            return formula
+        }
+
+        formula = formula.replace(/^=+/, '')
         formula = `IF("GSPf"<>"${marker}", ${formula}, "")`
+        return '=' + formula
+    }
+
+    static addFormulaMarkers(formula: string, markers: string[]): string {
+        markers = markers.filter(it => it?.length)
+        if (!markers?.length) {
+            return formula
+        }
+
+        formula = formula.replace(/^=+/, '')
+        formula = `IF(AND(${markers.map(marker => `"GSPf"<>"${marker}"`).join(', ')}), ${formula}, "")`
         return '=' + formula
     }
 

@@ -56,12 +56,6 @@ function applyDefaultStylesOfGSheetProject() {
     })
 }
 
-function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
-    EntryPoint.entryPoint(() => {
-        IssueHierarchyFormatter.reorderAllIssuesAccordingToHierarchy()
-    })
-}
-
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded()
@@ -81,8 +75,7 @@ function onOpenGSheetProject(event?: SheetsOnOpen) {
         .createMenu("GSheetProject")
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
-        .addItem("Reorder rows according to hierarchy", reorderAllIssuesAccordingToHierarchyInGSheetProject.name)
-        //.addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
+        .addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi()
 }
@@ -116,8 +109,8 @@ function onEditGSheetProject(event?: Partial<Pick<SheetsOnEdit, 'range'>>) {
     EntryPoint.entryPoint(() => {
         Observability.timed(`Common format`, () => CommonFormatter.applyCommonFormatsToRowRange(range))
         //Observability.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
-        Observability.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range))
         Observability.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range))
+        Observability.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range))
         Observability.timed(`Reload issue data`, () => IssueDataDisplay.reloadIssueData(range))
     })
 }

@@ -4,6 +4,7 @@ abstract class AbstractIssueLogic {
         if (![
             GSheetProjectSettings.issueKeyColumnName,
             GSheetProjectSettings.childIssueKeyColumnName,
+            GSheetProjectSettings.teamColumnName,
         ].some(columnName =>
             RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName),
         )) {

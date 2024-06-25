@@ -4,7 +4,7 @@ class GSheetProjectSettings {
     static firstDataRow: Row = this.titleRow + 1
 
     static lockColumns: boolean = false
-    static lockRows: boolean = true
+    static lockRows: boolean = false
     static updateConditionalFormatRules: boolean = true
     static reorderHierarchyAutomatically: boolean = false
     static skipHiddenIssues: boolean = true
@@ -18,6 +18,7 @@ class GSheetProjectSettings {
     static estimatesRangeName: RangeName = "Estimates"
     static startsRangeName: RangeName = "Starts"
     static endsRangeName: RangeName = "Ends"
+    static deadlinesRangeName: RangeName = "Deadlines"
 
     static inProgressesRangeName: RangeName | undefined = undefined
     static codeCompletesRangeName: RangeName | undefined = undefined

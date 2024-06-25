@@ -57,8 +57,6 @@ abstract class SheetLayout {
 
         ProtectionLocks.lockAllColumns(sheet)
 
-        const columnByKey = new Map<string, { columnNumber: Column, info: ColumnInfo }>()
-
         let lastColumn = SheetUtils.getLastColumn(sheet)
         const maxRows = SheetUtils.getMaxRows(sheet)
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
@@ -68,10 +66,6 @@ abstract class SheetLayout {
         for (const [columnName, info] of columns.entries()) {
             const existingIndex = existingNormalizedNames.indexOf(columnName)
             if (existingIndex >= 0) {
-                if (info.key?.length) {
-                    const columnNumber = existingIndex + 1
-                    columnByKey.set(info.key, {columnNumber, info})
-                }
                 continue
             }
 
@@ -81,11 +75,6 @@ abstract class SheetLayout {
                 .setValue(info.name)
 
             ExecutionCache.resetCache()
-
-            if (info.key?.length) {
-                const columnNumber = lastColumn
-                columnByKey.set(info.key, {columnNumber, info})
-            }
 
             if (info.defaultTitleFontSize != null && info.defaultTitleFontSize > 0) {
                 titleRange.setFontSize(info.defaultTitleFontSize)
@@ -130,12 +119,12 @@ abstract class SheetLayout {
             const column = index + 1
 
             if (info.arrayFormula?.length) {
-                const formulaToExpect = `
-                    ={
+                const formulaToExpect = Formulas.processFormula(`=
+                    {
                         "${Formulas.escapeFormulaString(info.name)}";
                         ${Formulas.processFormula(info.arrayFormula)}
                     }
-                `
+                `)
                 const formula = existingFormulas.get()[index]
                 if (formula !== formulaToExpect) {
                     sheet.getRange(GSheetProjectSettings.titleRow, column)
@@ -154,28 +143,12 @@ abstract class SheetLayout {
             }
 
 
-            const processFormula = (formula: string): string => {
-                formula = Formulas.processFormula(formula)
-                formula = formula.replaceAll(/#COLUMN_CELL\(([^)]+)\)/g, (_, key) => {
-                    const columnNumber = columnByKey.get(key)?.columnNumber
-                    if (columnNumber == null) {
-                        throw new Error(`Column with key '${key}' can't be found`)
-                    }
-                    return sheet.getRange(GSheetProjectSettings.firstDataRow, columnNumber).getA1Notation()
-                })
-                formula = formula.replaceAll(/#COLUMN_CELL\b/g, () => {
-                    return range.getCell(1, 1).getA1Notation()
-                })
-                return formula
-            }
-
-
             let dataValidation: (DataValidation | null) = info.dataValidation != null
                 ? info.dataValidation()
                 : null
             if (dataValidation != null) {
                 if (dataValidation.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CUSTOM_FORMULA) {
-                    const formula = processFormula(dataValidation.getCriteriaValues()[0].toString())
+                    const formula = Formulas.processFormula(dataValidation.getCriteriaValues()[0].toString())
                     dataValidation = dataValidation.copy()
                         .requireFormulaSatisfied(formula)
                         .build()
@@ -193,7 +166,7 @@ abstract class SheetLayout {
                     originalConfigurer(builder)
                     const formula = ConditionalFormatRuleUtils.extractFormula(builder)
                     if (formula != null) {
-                        builder.whenFormulaSatisfied(processFormula(formula))
+                        builder.whenFormulaSatisfied(Formulas.processFormula(formula))
                     }
                     return builder
                 }
@@ -228,7 +201,6 @@ abstract class SheetLayout {
 }
 
 interface ColumnInfo {
-    key?: string
     name: ColumnName
     arrayFormula?: string
     rangeName?: RangeName

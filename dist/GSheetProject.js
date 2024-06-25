@@ -57,11 +57,6 @@ function applyDefaultStylesOfGSheetProject() {
         SheetLayouts.migrate();
     });
 }
-function reorderAllIssuesAccordingToHierarchyInGSheetProject() {
-    EntryPoint.entryPoint(() => {
-        IssueHierarchyFormatter.reorderAllIssuesAccordingToHierarchy();
-    });
-}
 function cleanupGSheetProject() {
     EntryPoint.entryPoint(() => {
         SheetLayouts.migrateIfNeeded();
@@ -79,8 +74,7 @@ function onOpenGSheetProject(event) {
         .createMenu("GSheetProject")
         .addItem("Refresh selected rows", refreshSelectedRowsOfGSheetProject.name)
         .addItem("Refresh all rows", refreshAllRowsOfGSheetProject.name)
-        .addItem("Reorder rows according to hierarchy", reorderAllIssuesAccordingToHierarchyInGSheetProject.name)
-        //.addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
+        .addItem("Reapply default formulas", reapplyDefaultFormulasOfGSheetProject.name)
         .addItem("Apply default styles", applyDefaultStylesOfGSheetProject.name)
         .addToUi();
 }
@@ -110,8 +104,8 @@ function onEditGSheetProject(event) {
     EntryPoint.entryPoint(() => {
         Observability.timed(`Common format`, () => CommonFormatter.applyCommonFormatsToRowRange(range));
         //Observability.timed(`Done logic`, () => DoneLogic.executeDoneLogic(range))
-        Observability.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range));
         Observability.timed(`Default formulas`, () => DefaultFormulas.insertDefaultFormulas(range));
+        Observability.timed(`Issue hierarchy`, () => IssueHierarchyFormatter.formatHierarchy(range));
         Observability.timed(`Reload issue data`, () => IssueDataDisplay.reloadIssueData(range));
     });
 }
@@ -142,7 +136,7 @@ _a = GSheetProjectSettings;
 GSheetProjectSettings.titleRow = 1;
 GSheetProjectSettings.firstDataRow = _a.titleRow + 1;
 GSheetProjectSettings.lockColumns = false;
-GSheetProjectSettings.lockRows = true;
+GSheetProjectSettings.lockRows = false;
 GSheetProjectSettings.updateConditionalFormatRules = true;
 GSheetProjectSettings.reorderHierarchyAutomatically = false;
 GSheetProjectSettings.skipHiddenIssues = true;
@@ -155,6 +149,7 @@ GSheetProjectSettings.teamsRangeName = "Teams";
 GSheetProjectSettings.estimatesRangeName = "Estimates";
 GSheetProjectSettings.startsRangeName = "Starts";
 GSheetProjectSettings.endsRangeName = "Ends";
+GSheetProjectSettings.deadlinesRangeName = "Deadlines";
 GSheetProjectSettings.inProgressesRangeName = undefined;
 GSheetProjectSettings.codeCompletesRangeName = undefined;
 GSheetProjectSettings.settingsScheduleStartRangeName = 'ScheduleStart';
@@ -204,6 +199,7 @@ class AbstractIssueLogic {
         if (![
             GSheetProjectSettings.issueKeyColumnName,
             GSheetProjectSettings.childIssueKeyColumnName,
+            GSheetProjectSettings.teamColumnName,
         ].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
             return null;
         }
@@ -277,8 +273,8 @@ class CommonFormatter {
             scope: 'common',
             order: 10000,
             configurer: builder => builder
-                .whenFormulaSatisfied(`
-                        =ISFORMULA(A1)
+                .whenFormulaSatisfied(`=
+                        ISFORMULA(A1)
                     `)
                 .setItalic(true),
             //.setFontColor('#333'),
@@ -327,8 +323,8 @@ class ConditionalFormatting {
         }
         formula = Formulas.processFormula(formula)
             .replace(/^=+/, '');
-        const newRuleFormula = Formulas.processFormula(`
-            =AND(
+        const newRuleFormula = Formulas.processFormula(`=
+            AND(
                 ${formula},
                 "GSPs"<>"${orderedRule.scope}",
                 "GSPo"<>"${orderedRule.order + 0.2}"
@@ -338,8 +334,8 @@ class ConditionalFormatting {
         const newRule = builder.build();
         const newRules = [newRule];
         if (addIsFormulaRule) {
-            const newIsFormula = Formulas.processFormula(`
-                    =AND(
+            const newIsFormula = Formulas.processFormula(`=
+                    AND(
                         ISFORMULA(#SELF),
                         ${formula},
                         "GSPs"<>"${orderedRule.scope}",
@@ -543,6 +539,9 @@ class DefaultFormulas extends AbstractIssueLogic {
     static isDefaultFormula(formula) {
         return Formulas.extractFormulaMarkers(formula).includes(this.DEFAULT_FORMULA_MARKER);
     }
+    static isDefaultChildFormula(formula) {
+        return Formulas.extractFormulaMarkers(formula).includes(this.DEFAULT_CHILD_FORMULA_MARKER);
+    }
     static insertDefaultFormulas(range, rewriteExistingDefaultFormula = false) {
         const processedRange = this._processRange(range);
         if (processedRange == null) {
@@ -553,59 +552,133 @@ class DefaultFormulas extends AbstractIssueLogic {
         }
         const sheet = range.getSheet();
         const startRow = range.getRow();
-        const endRow = startRow + range.getNumRows() - 1;
-        const { issues, childIssues } = this._getIssueValues(range);
+        const rows = range.getNumRows();
+        const endRow = startRow + rows - 1;
+        const { issues, childIssues } = this._getIssueValues(sheet.getRange(GSheetProjectSettings.firstDataRow, range.getColumn(), endRow - GSheetProjectSettings.firstDataRow + 1, range.getNumColumns()));
+        const getParentIssueRow = (issueIndex) => {
+            const issue = issues[issueIndex];
+            if (!(issue === null || issue === void 0 ? void 0 : issue.length)) {
+                return undefined;
+            }
+            const index = issues.indexOf(issue);
+            if (index < 0) {
+                return undefined;
+            }
+            const childIssue = childIssues[index];
+            if (childIssue === null || childIssue === void 0 ? void 0 : childIssue.length) {
+                return undefined;
+            }
+            return GSheetProjectSettings.firstDataRow + index;
+        };
+        const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
         const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName);
+        const childIssueFormulas = LazyProxy.create(() => SheetUtils.getColumnsFormulas(sheet, { childIssues: childIssueColumn }, startRow, endRow).childIssues);
         const milestoneColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName);
+        const typeColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.typeColumnName);
+        const titleColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName);
         const teamColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.teamColumnName);
         const estimateColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName);
         const startColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.startColumnName);
         const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName);
         const deadlineColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName);
-        const addFormulas = (column, formulaGenerator) => Observability.timed([
-            DefaultFormulas.name,
-            sheet.getSheetName(),
-            addFormulas.name,
-            `column #${column}`,
-        ].join(': '), () => {
-            var _a, _b, _c, _d, _e, _f, _g;
-            const values = this._getStringValues(range, column);
-            const formulas = this._getFormulas(range, column);
+        const allValuesColumns = {};
+        [
+            milestoneColumn,
+            typeColumn,
+            titleColumn,
+            teamColumn,
+            estimateColumn,
+            startColumn,
+            endColumn,
+            deadlineColumn,
+        ].forEach(column => allValuesColumns[column.toString()] = column);
+        const allValues = LazyProxy.create(() => SheetUtils.getColumnsStringValues(sheet, allValuesColumns, startRow, endRow));
+        const getValues = (column) => {
+            var _a;
+            if (column === issueColumn) {
+                return issues.slice(-rows);
+            }
+            else if (column === childIssueColumn) {
+                return childIssues.slice(-rows);
+            }
+            return (_a = allValues[column.toString()]) !== null && _a !== void 0 ? _a : (() => {
+                throw new Error(`Column ${column} is not prefetched`);
+            })();
+        };
+        const allFormulas = LazyProxy.create(() => SheetUtils.getColumnsFormulas(sheet, allValuesColumns, startRow, endRow));
+        const getFormulas = (column) => {
+            var _a;
+            if (column === childIssueColumn) {
+                return childIssueFormulas;
+            }
+            return (_a = allFormulas[column.toString()]) !== null && _a !== void 0 ? _a : (() => {
+                throw new Error(`Column ${column} is not prefetched`);
+            })();
+        };
+        const addFormulas = (column, formulaGenerator) => {
+            var _a, _b, _c, _d, _e, _f, _g, _h;
+            const values = getValues(column);
+            const formulas = getFormulas(column);
             for (let row = startRow; row <= endRow; ++row) {
                 const index = row - startRow;
-                if (!((_a = issues[index]) === null || _a === void 0 ? void 0 : _a.length) && !((_b = childIssues[index]) === null || _b === void 0 ? void 0 : _b.length)) {
-                    if ((_c = formulas[index]) === null || _c === void 0 ? void 0 : _c.length) {
+                const issueIndex = row - GSheetProjectSettings.firstDataRow;
+                if (!((_a = issues[issueIndex]) === null || _a === void 0 ? void 0 : _a.length) && !((_b = childIssues[issueIndex]) === null || _b === void 0 ? void 0 : _b.length)) {
+                    if ((_c = formulas[issueIndex]) === null || _c === void 0 ? void 0 : _c.length) {
                         sheet.getRange(row, column).setFormula('');
                     }
                     continue;
                 }
-                if (rewriteExistingDefaultFormula && this.isDefaultFormula(formulas[index])) {
+                const isChild = !!((_d = childIssues[index]) === null || _d === void 0 ? void 0 : _d.length);
+                const isDefaultFormula = this.isDefaultFormula(formulas[index]);
+                const isDefaultChildFormula = this.isDefaultChildFormula(formulas[index]);
+                if ((isChild && isDefaultFormula)
+                    || (!isChild && isDefaultChildFormula)
+                    || (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula))) {
                     values[index] = '';
                     formulas[index] = '';
                 }
-                if (!((_d = values[index]) === null || _d === void 0 ? void 0 : _d.length) && !((_e = formulas[index]) === null || _e === void 0 ? void 0 : _e.length)) {
-                    console.info([
-                        DefaultFormulas.name,
-                        sheet.getSheetName(),
-                        addFormulas.name,
-                        `column #${column}`,
-                        `row #${row}`,
-                    ].join(': '));
-                    if (formulaGenerator != null) {
-                        const isReserve = (_f = issues[index]) === null || _f === void 0 ? void 0 : _f.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
-                        let formula = Formulas.processFormula((_g = formulaGenerator(row, isReserve)) !== null && _g !== void 0 ? _g : '');
-                        if (formula.length) {
-                            formula = Formulas.addFormulaMarker(formula, this.DEFAULT_FORMULA_MARKER);
-                            sheet.getRange(row, column).setFormula(formula);
-                        }
+                if (!((_e = values[index]) === null || _e === void 0 ? void 0 : _e.length) && !((_f = formulas[index]) === null || _f === void 0 ? void 0 : _f.length)) {
+                    const isReserve = (_g = issues[index]) === null || _g === void 0 ? void 0 : _g.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
+                    let formula = Formulas.processFormula((_h = formulaGenerator(row, isReserve, isChild, issueIndex, index)) !== null && _h !== void 0 ? _h : '');
+                    if (formula.length) {
+                        console.info([
+                            DefaultFormulas.name,
+                            sheet.getSheetName(),
+                            addFormulas.name,
+                            `column #${column}`,
+                            `row #${row}`,
+                        ].join(': '));
+                        formula = Formulas.addFormulaMarker(formula, isChild ? this.DEFAULT_CHILD_FORMULA_MARKER : this.DEFAULT_FORMULA_MARKER);
+                        sheet.getRange(row, column).setFormula(formula);
                     }
                 }
             }
+        };
+        addFormulas(milestoneColumn, (row, isReserve, isChild, issueIndex) => {
+            if (isChild) {
+                const parentIssueRow = getParentIssueRow(issueIndex);
+                if (parentIssueRow != null) {
+                    const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(parentIssueRow, milestoneColumn));
+                    return `=${milestoneA1Notation}`;
+                }
+            }
+            return undefined;
         });
-        addFormulas(childIssueColumn, (row, isReserve) => {
+        addFormulas(typeColumn, (row, isReserve, isChild, issueIndex) => {
+            if (isChild) {
+                const parentIssueRow = getParentIssueRow(issueIndex);
+                if (parentIssueRow != null) {
+                    const typeA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(parentIssueRow, typeColumn));
+                    return `=${typeA1Notation}`;
+                }
+            }
+            return undefined;
+        });
+        addFormulas(childIssueColumn, (row, isReserve, isChild, issueIndex) => {
             if (isReserve) {
-                return `
-                    =IF(
+                childIssues[issueIndex] = `placeholder: ${addFormulas.name}`;
+                return `=
+                    IF(
                         #SELF_COLUMN(${GSheetProjectSettings.teamsRangeName}) <> "",
                         #SELF_COLUMN(${GSheetProjectSettings.teamsRangeName})
                         & " - "
@@ -630,6 +703,18 @@ class DefaultFormulas extends AbstractIssueLogic {
                 `;
             }
             return undefined;
+        });
+        addFormulas(titleColumn, (row, isReserve, isChild, issueIndex) => {
+            if (isChild) {
+                const parentIssueRow = getParentIssueRow(issueIndex);
+                if (parentIssueRow != null) {
+                    const titleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(parentIssueRow, titleColumn));
+                    const childIssueA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, childIssueColumn));
+                    return `=${titleA1Notation} & " - " & ${childIssueA1Notation}`;
+                }
+            }
+            const issueA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, issueColumn));
+            return `=${issueA1Notation}`;
         });
         addFormulas(estimateColumn, (row, isReserve) => {
             if (isReserve) {
@@ -811,12 +896,12 @@ class DefaultFormulas extends AbstractIssueLogic {
             const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn));
             const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn));
             const bufferRangeName = GSheetProjectSettings.settingsScheduleBufferRangeName;
-            return `
-                =IF(
+            return `=
+                IF(
                     OR(
                         ${startA1Notation} = "",
                         ${estimateA1Notation} = "",
-                        ${estimateA1Notation} < 0
+                        ${estimateA1Notation} <= 0
                     ),
                     "",
                     WORKDAY(
@@ -827,10 +912,17 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `;
         });
-        addFormulas(deadlineColumn, (row, isReserve) => {
+        addFormulas(deadlineColumn, (row, isReserve, isChild, issueIndex) => {
+            if (isChild) {
+                const parentIssueRow = getParentIssueRow(issueIndex);
+                if (parentIssueRow != null) {
+                    const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(parentIssueRow, deadlineColumn));
+                    return `=${deadlineA1Notation}`;
+                }
+            }
             const milestoneA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, milestoneColumn));
-            return `
-                =IF(
+            return `=
+                IF(
                     ${milestoneA1Notation} = "",
                     "",
                     VLOOKUP(
@@ -847,6 +939,7 @@ class DefaultFormulas extends AbstractIssueLogic {
     }
 }
 DefaultFormulas.DEFAULT_FORMULA_MARKER = "default";
+DefaultFormulas.DEFAULT_CHILD_FORMULA_MARKER = "default-child";
 class DocumentFlags {
     static set(key, value = true) {
         key = `flag|${key}`;
@@ -965,7 +1058,7 @@ class Formulas {
         return formula.split(/[\r\n]+/)
             .map(line => line.replace(/^\s+/, ''))
             .filter(line => line.length)
-            .map(line => line.replaceAll(/^([*/+-]+ )/g, ' $1'))
+            .map(line => line.replaceAll(/^([<>&=*/+-]+ )/g, ' $1'))
             .map(line => line.replaceAll(/\s*\t\s*/g, ' '))
             .map(line => line.replaceAll(/"\s*&\s*""/g, '"'))
             .map(line => line.replaceAll(/([")])\s*&\s*([")])/g, '$1 & $2'))
@@ -974,8 +1067,20 @@ class Formulas {
             .trim();
     }
     static addFormulaMarker(formula, marker) {
-        formula = formula.replace(/^=/, '');
+        if (!(marker === null || marker === void 0 ? void 0 : marker.length)) {
+            return formula;
+        }
+        formula = formula.replace(/^=+/, '');
         formula = `IF("GSPf"<>"${marker}", ${formula}, "")`;
+        return '=' + formula;
+    }
+    static addFormulaMarkers(formula, markers) {
+        markers = markers.filter(it => it === null || it === void 0 ? void 0 : it.length);
+        if (!(markers === null || markers === void 0 ? void 0 : markers.length)) {
+            return formula;
+        }
+        formula = formula.replace(/^=+/, '');
+        formula = `IF(AND(${markers.map(marker => `"GSPf"<>"${marker}"`).join(', ')}), ${formula}, "")`;
         return '=' + formula;
     }
     static extractFormulaMarkers(formula) {
@@ -1299,239 +1404,47 @@ class IssueDataDisplay extends AbstractIssueLogic {
         this.reloadIssueData(range);
     }
 }
-class IssueHierarchyFormatter {
+class IssueHierarchyFormatter extends AbstractIssueLogic {
     static formatHierarchy(range) {
-        if (![GSheetProjectSettings.childIssueKeyColumnName].some(columnName => RangeUtils.doesRangeHaveSheetColumn(range, GSheetProjectSettings.sheetName, columnName))) {
+        var _a;
+        const processedRange = this._processRange(range);
+        if (processedRange == null) {
             return;
         }
-        let issuesRange = RangeUtils.toColumnRange(range, GSheetProjectSettings.issueKeyColumnName);
-        if (issuesRange == null) {
-            return;
+        else {
+            range = processedRange;
         }
-        const sheet = issuesRange.getSheet();
-        issuesRange = RangeUtils.withMinMaxRows(issuesRange, GSheetProjectSettings.firstDataRow, SheetUtils.getLastRow(sheet));
-        const issues = Observability.timed(`${IssueHierarchyFormatter.name}: getting issues`, () => issuesRange.getValues()
-            .map(it => { var _a; return (_a = it[0]) === null || _a === void 0 ? void 0 : _a.toString(); })
-            .filter(it => it === null || it === void 0 ? void 0 : it.length)
-            .filter(Utils.distinct()));
-        if (!issues.length) {
-            return;
-        }
-        if (GSheetProjectSettings.reorderHierarchyAutomatically) {
-            Observability.timed(`${IssueHierarchyFormatter.name}: ${this.reorderIssuesAccordingToHierarchy.name}`, () => this.reorderIssuesAccordingToHierarchy(issues));
-        }
-        Observability.timed(`${IssueHierarchyFormatter.name}: ${this.formatHierarchyIssues.name}`, () => this.formatHierarchyIssues(issues));
-    }
-    static reorderAllIssuesAccordingToHierarchy() {
-        this.reorderIssuesAccordingToHierarchy(undefined);
-    }
-    static reorderIssuesAccordingToHierarchy(issuesToReorder) {
-        if (issuesToReorder != null && !issuesToReorder.length) {
-            return;
-        }
-        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
-        ProtectionLocks.lockAllRows(sheet);
-        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
-        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName);
-        const { issues, childIssues, } = SheetUtils.getColumnsStringValues(sheet, {
-            issues: issuesColumn,
-            childIssues: childIssuesColumn,
-        }, GSheetProjectSettings.firstDataRow);
-        const notEmptyIssues = issues.filter(it => it === null || it === void 0 ? void 0 : it.length);
-        const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct());
-        Utils.trimArrayEndBy(issues, it => !(it === null || it === void 0 ? void 0 : it.length));
-        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length - 1);
-        childIssues.length = issues.length;
-        if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
-            return GSheetProjectSettings.firstDataRow + issues.length;
-        }
-        const moveIssues = (fromIndex, count, targetIndex) => {
-            if (fromIndex === targetIndex || count <= 0) {
-                return;
-            }
-            const fromRow = GSheetProjectSettings.firstDataRow + fromIndex;
-            const targetRow = GSheetProjectSettings.firstDataRow + targetIndex;
-            if (count === 1) {
-                console.info(`Moving row #${fromRow} to #${targetRow}`);
-            }
-            else {
-                console.info(`Moving rows #${fromRow}-${fromRow + count - 1} to #${targetRow}`);
-            }
-            const range = sheet.getRange(fromRow, 1, count, 1);
-            sheet.moveRows(range, targetRow);
-            Utils.moveArrayElements(issues, fromIndex, count, targetIndex);
-            Utils.moveArrayElements(childIssues, fromIndex, count, targetIndex);
-        };
-        const groupIndexes = (indexes, targetIndex) => {
-            while (indexes.length) {
-                let index = indexes.shift();
-                if (index === targetIndex) {
-                    continue;
-                }
-                let bulkSize = 1;
-                while (indexes.length) {
-                    const nextIndex = indexes[0];
-                    if (nextIndex === index + bulkSize) {
-                        ++bulkSize;
-                        indexes.shift();
-                    }
-                    else {
-                        break;
-                    }
-                }
-                moveIssues(index, bulkSize, targetIndex + 1);
-                if (index < targetIndex) {
-                    targetIndex += bulkSize - 1;
-                }
-                else {
-                    targetIndex += bulkSize - (index < targetIndex ? 1 : 0);
-                }
-            }
-        };
-        const hasGapsInIndexes = (indexes) => {
-            return indexes.length >= 2 && indexes[indexes.length - 1] - indexes[0] >= indexes.length;
-        };
-        for (const issue of notEmptyUniqueIssues) {
-            if (issuesToReorder != null && !issuesToReorder.includes(issue)) {
+        const sheet = range.getSheet();
+        const startRow = range.getRow();
+        const endRow = startRow + range.getNumRows() - 1;
+        const { issues, childIssues } = this._getIssueValues(sheet.getRange(GSheetProjectSettings.firstDataRow, range.getColumn(), endRow - GSheetProjectSettings.firstDataRow + 1, range.getNumColumns()));
+        const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
+        for (let row = startRow; row <= endRow; ++row) {
+            const index = row - GSheetProjectSettings.firstDataRow;
+            const issue = issues[index];
+            const childIssue = childIssues[index];
+            if (!(issue === null || issue === void 0 ? void 0 : issue.length)) {
                 continue;
             }
-            const getIndexes = () => issues
-                .map((it, index) => issue === it ? index : null)
-                .filter(index => index != null)
-                .map(index => index)
-                .toSorted(Utils.numericAsc());
-            const getIndexesWithoutChild = () => getIndexes()
-                .filter(index => { var _a; return !((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length); });
-            const getIndexesWithChild = () => getIndexes()
-                .filter(index => { var _a; return (_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length; });
-            { // group issues without child
-                const indexesWithoutChild = getIndexesWithoutChild();
-                if (hasGapsInIndexes(indexesWithoutChild)) {
-                    const firstIndexWithoutChild = indexesWithoutChild.shift();
-                    groupIndexes(indexesWithoutChild, firstIndexWithoutChild);
-                }
-            }
-            { // group indexes with child
-                const indexesWithChild = getIndexesWithChild();
-                if (indexesWithChild.length) {
-                    const indexesWithoutChild = getIndexesWithoutChild();
-                    if (indexesWithoutChild.length) {
-                        let targetIndex = getIndexesWithoutChild().pop();
-                        if (indexesWithChild[0] >= targetIndex) {
-                            ++targetIndex;
-                        }
-                        groupIndexes(indexesWithChild, targetIndex);
-                    }
-                    else if (hasGapsInIndexes(indexesWithChild)) {
-                        const firstIndexWithChild = indexesWithChild.shift();
-                        groupIndexes(indexesWithChild, firstIndexWithChild);
-                    }
-                }
-            }
-        }
-    }
-    static formatHierarchyIssues(issuesToFormat) {
-        if (!issuesToFormat.length) {
-            return;
-        }
-        const sheet = SheetUtils.getSheetByName(GSheetProjectSettings.sheetName);
-        ProtectionLocks.lockAllRows(sheet);
-        const issuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
-        const childIssuesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName);
-        const milestonesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.milestoneColumnName);
-        const typesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.typeColumnName);
-        const deadlinesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName);
-        const titlesColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.titleColumnName);
-        const { issues, childIssues, titles, milestones, types, deadlines, } = SheetUtils.getColumnsStringValues(sheet, {
-            issues: issuesColumn,
-            childIssues: childIssuesColumn,
-            titles: titlesColumn,
-            milestones: milestonesColumn,
-            types: typesColumn,
-            deadlines: deadlinesColumn,
-        }, GSheetProjectSettings.firstDataRow);
-        const notEmptyIssues = issues.filter(it => it === null || it === void 0 ? void 0 : it.length);
-        const notEmptyUniqueIssues = notEmptyIssues.filter(Utils.distinct());
-        if (notEmptyIssues.length === notEmptyUniqueIssues.length) {
-            return;
-        }
-        Utils.trimArrayEndBy(issues, it => !(it === null || it === void 0 ? void 0 : it.length));
-        SheetUtils.setLastRow(sheet, GSheetProjectSettings.firstDataRow + issues.length - 1);
-        childIssues.length = issues.length;
-        milestones.length = issues.length;
-        types.length = issues.length;
-        deadlines.length = issues.length;
-        const { titleFormulas, milestoneFormulas, typeFormulas, deadlineFormulas, } = SheetUtils.getColumnsFormulas(sheet, {
-            titleFormulas: titlesColumn,
-            milestoneFormulas: milestonesColumn,
-            typeFormulas: typesColumn,
-            deadlineFormulas: deadlinesColumn,
-        }, GSheetProjectSettings.firstDataRow);
-        titleFormulas.length = issues.length;
-        milestoneFormulas.length = issues.length;
-        typeFormulas.length = issues.length;
-        deadlineFormulas.length = issues.length;
-        const isEmptyCell = (values, formulas, index) => {
-            const formula = formulas[index];
-            if (DefaultFormulas.isDefaultFormula(formula)) {
-                return true;
-            }
-            const value = values[index];
-            return !(value === null || value === void 0 ? void 0 : value.length) && !(formula === null || formula === void 0 ? void 0 : formula.length);
-        };
-        for (const issue of notEmptyUniqueIssues) {
-            if (!issuesToFormat.includes(issue)) {
+            const issueRange = sheet.getRange(row, issueColumn);
+            if (!(childIssue === null || childIssue === void 0 ? void 0 : childIssue.length)) {
+                issueRange.setFontSize(GSheetProjectSettings.fontSize);
                 continue;
             }
-            const getIndexes = () => issues
-                .map((it, index) => issue === it ? index : null)
-                .filter(index => index != null)
-                .map(index => index)
-                .toSorted(Utils.numericAsc());
-            const getIndexesWithoutChild = () => getIndexes()
-                .filter(index => { var _a; return !((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length); });
-            const getIndexesWithChild = () => getIndexes()
-                .filter(index => { var _a; return (_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length; });
-            { // set formulas
-                const indexesWithoutChild = getIndexesWithoutChild();
-                const indexesWithChild = getIndexesWithChild();
-                if (indexesWithoutChild.length && indexesWithChild.length) {
-                    const firstIndexWithoutChild = indexesWithoutChild[0];
-                    const firstRowWithoutChild = GSheetProjectSettings.firstDataRow + firstIndexWithoutChild;
-                    const getIssueFormula = (column) => {
-                        return RangeUtils.getAbsoluteReferenceFormula(sheet.getRange(firstRowWithoutChild, column));
-                    };
-                    const firstIndexWithChild = indexesWithChild[0];
-                    const firstRowWithChild = GSheetProjectSettings.firstDataRow + firstIndexWithChild;
-                    sheet.getRange(firstRowWithChild, issuesColumn, indexesWithChild.length, 1)
-                        .setFormula(getIssueFormula(issuesColumn))
-                        .setFontSize(GSheetProjectSettings.fontSize - 2);
-                    indexesWithChild.forEach(index => {
-                        const row = GSheetProjectSettings.firstDataRow + index;
-                        if (isEmptyCell(titles, titleFormulas, index)) {
-                            const firstTitleWithoutChildNotation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(firstRowWithoutChild, titlesColumn));
-                            const childIssueNotation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, childIssuesColumn));
-                            const formula = Formulas.processFormula(`
-                                =${firstTitleWithoutChildNotation} & " - " & ${childIssueNotation}
-                            `);
-                            sheet.getRange(row, titlesColumn)
-                                .setFormula(formula);
-                        }
-                        if (isEmptyCell(milestones, milestoneFormulas, index)) {
-                            sheet.getRange(row, milestonesColumn)
-                                .setFormula(getIssueFormula(milestonesColumn));
-                        }
-                        if (isEmptyCell(types, typeFormulas, index)) {
-                            sheet.getRange(row, typesColumn)
-                                .setFormula(getIssueFormula(typesColumn));
-                        }
-                        if (isEmptyCell(deadlines, deadlineFormulas, index)) {
-                            sheet.getRange(row, deadlinesColumn)
-                                .setFormula(getIssueFormula(deadlinesColumn));
-                        }
-                    });
-                }
+            const parentIssueIndex = issues.indexOf(issue);
+            if (parentIssueIndex < 0) {
+                continue;
             }
+            if ((_a = childIssues[parentIssueIndex]) === null || _a === void 0 ? void 0 : _a.length) {
+                continue;
+            }
+            const parentIssueRow = GSheetProjectSettings.firstDataRow + parentIssueIndex;
+            const parentIssueRange = sheet.getRange(parentIssueRow, issueColumn);
+            issueRange
+                .setFormula(Formulas.processFormula(`=
+                    ${RangeUtils.getAbsoluteA1Notation(parentIssueRange)}
+                `))
+                .setFontSize(GSheetProjectSettings.fontSize - 2);
         }
     }
 }
@@ -2185,7 +2098,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}c4ebe6fa76c83357e4fbbf288d65b656d2ed2ae8b584dd5549515c511fb9b189:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}be50c06e105d3d752a175ead53105a9268c6593cd8ec17cd759b3db193363ce1:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2195,7 +2108,7 @@ class SheetLayout {
         return true;
     }
     migrate() {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e;
         const sheet = this.sheet;
         const conditionalFormattingScope = `layout:${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}`;
         let conditionalFormattingOrder = 0;
@@ -2211,7 +2124,6 @@ class SheetLayout {
             return;
         }
         ProtectionLocks.lockAllColumns(sheet);
-        const columnByKey = new Map();
         let lastColumn = SheetUtils.getLastColumn(sheet);
         const maxRows = SheetUtils.getMaxRows(sheet);
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
@@ -2221,10 +2133,6 @@ class SheetLayout {
         for (const [columnName, info] of columns.entries()) {
             const existingIndex = existingNormalizedNames.indexOf(columnName);
             if (existingIndex >= 0) {
-                if ((_b = info.key) === null || _b === void 0 ? void 0 : _b.length) {
-                    const columnNumber = existingIndex + 1;
-                    columnByKey.set(info.key, { columnNumber, info });
-                }
                 continue;
             }
             console.info(`Adding "${info.name}" column`);
@@ -2232,10 +2140,6 @@ class SheetLayout {
             const titleRange = sheet.getRange(GSheetProjectSettings.titleRow, lastColumn)
                 .setValue(info.name);
             ExecutionCache.resetCache();
-            if ((_c = info.key) === null || _c === void 0 ? void 0 : _c.length) {
-                const columnNumber = lastColumn;
-                columnByKey.set(info.key, { columnNumber, info });
-            }
             if (info.defaultTitleFontSize != null && info.defaultTitleFontSize > 0) {
                 titleRange.setFontSize(info.defaultTitleFontSize);
             }
@@ -2253,7 +2157,7 @@ class SheetLayout {
                 sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
                     .setNumberFormat(info.defaultFormat);
             }
-            if ((_d = info.defaultHorizontalAlignment) === null || _d === void 0 ? void 0 : _d.length) {
+            if ((_b = info.defaultHorizontalAlignment) === null || _b === void 0 ? void 0 : _b.length) {
                 sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
                     .setHorizontalAlignment(info.defaultHorizontalAlignment);
             }
@@ -2270,13 +2174,13 @@ class SheetLayout {
                 continue;
             }
             const column = index + 1;
-            if ((_e = info.arrayFormula) === null || _e === void 0 ? void 0 : _e.length) {
-                const formulaToExpect = `
-                    ={
+            if ((_c = info.arrayFormula) === null || _c === void 0 ? void 0 : _c.length) {
+                const formulaToExpect = Formulas.processFormula(`=
+                    {
                         "${Formulas.escapeFormulaString(info.name)}";
                         ${Formulas.processFormula(info.arrayFormula)}
                     }
-                `;
+                `);
                 const formula = existingFormulas.get()[index];
                 if (formula !== formulaToExpect) {
                     sheet.getRange(GSheetProjectSettings.titleRow, column)
@@ -2284,37 +2188,22 @@ class SheetLayout {
                 }
             }
             const range = sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows - GSheetProjectSettings.firstDataRow + 1, 1);
-            if ((_f = info.rangeName) === null || _f === void 0 ? void 0 : _f.length) {
+            if ((_d = info.rangeName) === null || _d === void 0 ? void 0 : _d.length) {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range);
             }
-            const processFormula = (formula) => {
-                formula = Formulas.processFormula(formula);
-                formula = formula.replaceAll(/#COLUMN_CELL\(([^)]+)\)/g, (_, key) => {
-                    var _a;
-                    const columnNumber = (_a = columnByKey.get(key)) === null || _a === void 0 ? void 0 : _a.columnNumber;
-                    if (columnNumber == null) {
-                        throw new Error(`Column with key '${key}' can't be found`);
-                    }
-                    return sheet.getRange(GSheetProjectSettings.firstDataRow, columnNumber).getA1Notation();
-                });
-                formula = formula.replaceAll(/#COLUMN_CELL\b/g, () => {
-                    return range.getCell(1, 1).getA1Notation();
-                });
-                return formula;
-            };
             let dataValidation = info.dataValidation != null
                 ? info.dataValidation()
                 : null;
             if (dataValidation != null) {
                 if (dataValidation.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CUSTOM_FORMULA) {
-                    const formula = processFormula(dataValidation.getCriteriaValues()[0].toString());
+                    const formula = Formulas.processFormula(dataValidation.getCriteriaValues()[0].toString());
                     dataValidation = dataValidation.copy()
                         .requireFormulaSatisfied(formula)
                         .build();
                 }
                 range.setDataValidation(dataValidation);
             }
-            (_g = info.conditionalFormats) === null || _g === void 0 ? void 0 : _g.forEach(configurer => {
+            (_e = info.conditionalFormats) === null || _e === void 0 ? void 0 : _e.forEach(configurer => {
                 if (configurer == null) {
                     return;
                 }
@@ -2323,7 +2212,7 @@ class SheetLayout {
                     originalConfigurer(builder);
                     const formula = ConditionalFormatRuleUtils.extractFormula(builder);
                     if (formula != null) {
-                        builder.whenFormulaSatisfied(processFormula(formula));
+                        builder.whenFormulaSatisfied(Formulas.processFormula(formula));
                     }
                     return builder;
                 };
@@ -2382,8 +2271,8 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.issueKeyColumnName,
                 rangeName: GSheetProjectSettings.issuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`
-                        =COUNTIFS(
+                    .requireFormulaSatisfied(`=
+                        COUNTIFS(
                             ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
                             ${GSheetProjectSettings.childIssuesRangeName}, "="
                         ) <= 1
@@ -2398,10 +2287,12 @@ class SheetLayoutProjects extends SheetLayout {
                 name: GSheetProjectSettings.childIssueKeyColumnName,
                 rangeName: GSheetProjectSettings.childIssuesRangeName,
                 dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`
-                        =COUNTIF(${GSheetProjectSettings.issuesRangeName}, "=" & #SELF) = 0
+                    .requireFormulaSatisfied(`=
+                        #SELF_COLUMN(${GSheetProjectSettings.issuesRangeName})
+                        =
+                        OFFSET(#SELF_COLUMN(${GSheetProjectSettings.issuesRangeName}), -1, 0)
                     `)
-                    .setHelpText(`Only one level of hierarchy is supported`)
+                    .setHelpText(`Children should be grouped under their parent`)
                     .build(),
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
@@ -2419,7 +2310,6 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'left',
             },
             {
-                key: 'team',
                 name: GSheetProjectSettings.teamColumnName,
                 rangeName: GSheetProjectSettings.teamsRangeName,
                 //dataValidation <-- should be from ${GSheetProjectSettings.settingsTeamsTableTeamRangeName} range, see https://issuetracker.google.com/issues/143913035
@@ -2433,15 +2323,15 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
                     builder => builder
-                        .whenFormulaSatisfied(`
-                            =#COLUMN_CELL < 0
+                        .whenFormulaSatisfied(`=
+                            #SELF < 0
                         `)
                         .setFontColor(GSheetProjectSettings.unimportantColor),
                     builder => builder
-                        .whenFormulaSatisfied(`
-                            =AND(
-                                #COLUMN_CELL = "",
-                                #COLUMN_CELL(team) <> ""
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF = "",
+                                #SELF_COLUMN(${GSheetProjectSettings.teamsRangeName}) <> ""
                             )
                         `)
                         .setBackground(GSheetProjectSettings.importantWarningColor),
@@ -2455,13 +2345,13 @@ class SheetLayoutProjects extends SheetLayout {
                 conditionalFormats: [
                     ((_a = GSheetProjectSettings.inProgressesRangeName) === null || _a === void 0 ? void 0 : _a.length)
                         ? builder => builder
-                            .whenFormulaSatisfied(`
-                            =AND(
-                                #COLUMN_CELL <> "",
-                                ISFORMULA(#COLUMN_CELL),
-                                #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) = "Yes"
-                            )
-                        `)
+                            .whenFormulaSatisfied(`=
+                                AND(
+                                    #SELF <> "",
+                                    ISFORMULA(#SELF),
+                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) = "Yes"
+                                )
+                            `)
                             .setItalic(true)
                             .setBackground(GSheetProjectSettings.unimportantWarningColor)
                         : null,
@@ -2474,20 +2364,20 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
                     builder => builder
-                        .whenFormulaSatisfied(`
-                            =AND(
-                                #COLUMN_CELL <> "",
-                                #COLUMN_CELL(deadline) <> "",
-                                #COLUMN_CELL > #COLUMN_CELL(deadline)
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.deadlineColumnName}) <> "",
+                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})
                             )
                         `)
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.errorColor),
                     builder => builder
-                        .whenFormulaSatisfied(`
-                            =AND(
-                                #COLUMN_CELL <> "",
-                                #COLUMN_CELL < TODAY()
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF <> "",
+                                #SELF < TODAY()
                             )
                         `)
                         .setBold(true)
@@ -2495,8 +2385,8 @@ class SheetLayoutProjects extends SheetLayout {
                 ],
             },
             {
-                key: 'deadline',
                 name: GSheetProjectSettings.deadlineColumnName,
+                rangeName: GSheetProjectSettings.deadlinesRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },
@@ -2541,6 +2431,7 @@ class SheetLayouts {
             GSheetProjectSettings.estimatesRangeName,
             GSheetProjectSettings.startsRangeName,
             GSheetProjectSettings.endsRangeName,
+            GSheetProjectSettings.deadlinesRangeName,
             GSheetProjectSettings.inProgressesRangeName,
             GSheetProjectSettings.codeCompletesRangeName,
             GSheetProjectSettings.settingsScheduleStartRangeName,

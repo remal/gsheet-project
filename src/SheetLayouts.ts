@@ -41,6 +41,7 @@ class SheetLayouts {
             GSheetProjectSettings.estimatesRangeName,
             GSheetProjectSettings.startsRangeName,
             GSheetProjectSettings.endsRangeName,
+            GSheetProjectSettings.deadlinesRangeName,
 
             GSheetProjectSettings.inProgressesRangeName,
             GSheetProjectSettings.codeCompletesRangeName,
