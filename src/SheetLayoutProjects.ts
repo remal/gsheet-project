@@ -144,12 +144,12 @@ class SheetLayoutProjects extends SheetLayout {
                     GSheetProjectSettings.codeCompletesRangeName?.length
                         ? builder => builder
                             .whenFormulaSatisfied(`=
-                            AND(
-                                #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) <> "",
-                                #SELF <> "",
-                                #SELF < TODAY()
-                            )
-                        `)
+                                AND(
+                                    #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) = "",
+                                    #SELF <> "",
+                                    #SELF < TODAY()
+                                )
+                            `)
                             .setBold(true)
                             .setFontColor(GSheetProjectSettings.warningColor)
                         : null,

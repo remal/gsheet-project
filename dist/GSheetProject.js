@@ -2107,7 +2107,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}4b88c3d62b651240080b9a7274a9209e0ad9687b9ff7d14416ee95bdb09d75cc:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}c4655b22f0d66d8b19ad5dd020d0f8d6abfffd5ae30e34f6fe8b2a1972399d90:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2385,12 +2385,12 @@ class SheetLayoutProjects extends SheetLayout {
                     ((_b = GSheetProjectSettings.codeCompletesRangeName) === null || _b === void 0 ? void 0 : _b.length)
                         ? builder => builder
                             .whenFormulaSatisfied(`=
-                            AND(
-                                #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) <> "",
-                                #SELF <> "",
-                                #SELF < TODAY()
-                            )
-                        `)
+                                AND(
+                                    #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) = "",
+                                    #SELF <> "",
+                                    #SELF < TODAY()
+                                )
+                            `)
                             .setBold(true)
                             .setFontColor(GSheetProjectSettings.warningColor)
                         : null,
