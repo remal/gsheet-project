@@ -2107,7 +2107,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}c45c317e5c27399294b0341839db2ddaff9bad1b5d702683e07c03f387ac6b7c:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}4b88c3d62b651240080b9a7274a9209e0ad9687b9ff7d14416ee95bdb09d75cc:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2256,7 +2256,7 @@ class SheetLayoutProjects extends SheetLayout {
         return GSheetProjectSettings.sheetName;
     }
     get columns() {
-        var _a;
+        var _a, _b;
         return [
             {
                 name: GSheetProjectSettings.iconColumnName,
@@ -2358,7 +2358,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 AND(
                                     #SELF <> "",
                                     ISFORMULA(#SELF),
-                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) = "Yes"
+                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> ""
                                 )
                             `)
                             .setItalic(true)
@@ -2382,15 +2382,18 @@ class SheetLayoutProjects extends SheetLayout {
                         `)
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.errorColor),
-                    builder => builder
-                        .whenFormulaSatisfied(`=
+                    ((_b = GSheetProjectSettings.codeCompletesRangeName) === null || _b === void 0 ? void 0 : _b.length)
+                        ? builder => builder
+                            .whenFormulaSatisfied(`=
                             AND(
+                                #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) <> "",
                                 #SELF <> "",
                                 #SELF < TODAY()
                             )
                         `)
-                        .setBold(true)
-                        .setFontColor(GSheetProjectSettings.warningColor),
+                            .setBold(true)
+                            .setFontColor(GSheetProjectSettings.warningColor)
+                        : null,
                 ],
             },
             {

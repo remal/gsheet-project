@@ -117,7 +117,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 AND(
                                     #SELF <> "",
                                     ISFORMULA(#SELF),
-                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) = "Yes"
+                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> ""
                                 )
                             `)
                             .setItalic(true)
@@ -141,15 +141,18 @@ class SheetLayoutProjects extends SheetLayout {
                         `)
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.errorColor),
-                    builder => builder
-                        .whenFormulaSatisfied(`=
+                    GSheetProjectSettings.codeCompletesRangeName?.length
+                        ? builder => builder
+                            .whenFormulaSatisfied(`=
                             AND(
+                                #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) <> "",
                                 #SELF <> "",
                                 #SELF < TODAY()
                             )
                         `)
-                        .setBold(true)
-                        .setFontColor(GSheetProjectSettings.warningColor),
+                            .setBold(true)
+                            .setFontColor(GSheetProjectSettings.warningColor)
+                        : null,
                 ],
             },
             {
