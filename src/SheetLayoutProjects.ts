@@ -115,9 +115,9 @@ class SheetLayoutProjects extends SheetLayout {
                         ? builder => builder
                             .whenFormulaSatisfied(`=
                                 AND(
-                                    #SELF <> "",
+                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
                                     ISFORMULA(#SELF),
-                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> ""
+                                    #SELF <> ""
                                 )
                             `)
                             .setItalic(true)

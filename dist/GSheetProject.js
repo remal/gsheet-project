@@ -2107,7 +2107,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}c4655b22f0d66d8b19ad5dd020d0f8d6abfffd5ae30e34f6fe8b2a1972399d90:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}57839ba715238b70205627c22a581acdf446cbd82a9c2027e9e06be48255f107:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2356,9 +2356,9 @@ class SheetLayoutProjects extends SheetLayout {
                         ? builder => builder
                             .whenFormulaSatisfied(`=
                                 AND(
-                                    #SELF <> "",
+                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
                                     ISFORMULA(#SELF),
-                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> ""
+                                    #SELF <> ""
                                 )
                             `)
                             .setItalic(true)
