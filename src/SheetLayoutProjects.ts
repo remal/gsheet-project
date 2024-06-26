@@ -135,7 +135,7 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
-                                #SELF_COLUMN(${GSheetProjectSettings.deadlineColumnName}) <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
                                 #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})
                             )
                         `)

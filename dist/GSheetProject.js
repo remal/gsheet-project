@@ -2120,7 +2120,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}1d6e89ac0bc0ba0ee0d4e577ef574206189f1c5938cc25f67576cc676503bfe1:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}63c47afd6420dba23dd3dee153c349496a4516064f7e5b8478c1dae6bbbba52f:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2389,7 +2389,7 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
-                                #SELF_COLUMN(${GSheetProjectSettings.deadlineColumnName}) <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
                                 #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})
                             )
                         `)
