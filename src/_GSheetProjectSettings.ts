@@ -37,6 +37,7 @@ class GSheetProjectSettings {
     static publicHolidaysRangeName: RangeName = 'PublicHolidays'
 
 
+    static notIssueKeyRegex: (RegExp | undefined) = new RegExp("^\\s*\\W")
     static issueTrackers: IssueTracker[] = []
     static issuesLoadTimeoutMillis: number = 5 * 60 * 1000
     static issuesMetrics: Record<ColumnName, IssuesMetric<string>> = {}
@@ -83,7 +84,11 @@ class GSheetProjectSettings {
         const hashableValues: Record<string, any> = {}
         const keys = Object.keys(GSheetProjectSettings).toSorted()
         for (const key of keys) {
-            const value = GSheetProjectSettings[key]
+            let value = GSheetProjectSettings[key]
+            if (value instanceof RegExp) {
+                value = value.toString()
+            }
+
             if (value == null
                 || typeof value === 'function'
                 || typeof value === 'object'

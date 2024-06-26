@@ -120,7 +120,10 @@ class GSheetProjectSettings {
         const hashableValues = {};
         const keys = Object.keys(_a).toSorted();
         for (const key of keys) {
-            const value = _a[key];
+            let value = _a[key];
+            if (value instanceof RegExp) {
+                value = value.toString();
+            }
             if (value == null
                 || typeof value === 'function'
                 || typeof value === 'object') {
@@ -161,6 +164,7 @@ GSheetProjectSettings.settingsMilestonesTableRangeName = 'MilestonesTable';
 GSheetProjectSettings.settingsMilestonesTableMilestoneRangeName = 'MilestonesTableMilestone';
 GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName = 'MilestonesTableDeadline';
 GSheetProjectSettings.publicHolidaysRangeName = 'PublicHolidays';
+GSheetProjectSettings.notIssueKeyRegex = new RegExp("^\\s*\\W");
 GSheetProjectSettings.issueTrackers = [];
 GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.issuesMetrics = {};
@@ -616,28 +620,35 @@ class DefaultFormulas extends AbstractIssueLogic {
             })();
         };
         const addFormulas = (column, formulaGenerator) => {
-            var _a, _b, _c, _d, _e, _f, _g, _h;
+            var _a, _b;
             const values = getValues(column);
             const formulas = getFormulas(column);
             for (let row = startRow; row <= endRow; ++row) {
-                const index = row - startRow;
                 const issueIndex = row - GSheetProjectSettings.firstDataRow;
-                if (!((_a = issues[issueIndex]) === null || _a === void 0 ? void 0 : _a.length) && !((_b = childIssues[issueIndex]) === null || _b === void 0 ? void 0 : _b.length)) {
-                    if ((_c = formulas[issueIndex]) === null || _c === void 0 ? void 0 : _c.length) {
+                const issue = issues[issueIndex];
+                const childIssue = childIssues[issueIndex];
+                const index = row - startRow;
+                let value = values[index];
+                let formula = formulas[index];
+                if ((_a = GSheetProjectSettings.notIssueKeyRegex) === null || _a === void 0 ? void 0 : _a.test(issue !== null && issue !== void 0 ? issue : '')) {
+                    continue;
+                }
+                if (!(issue === null || issue === void 0 ? void 0 : issue.length) && !(childIssue === null || childIssue === void 0 ? void 0 : childIssue.length)) {
+                    if (formula === null || formula === void 0 ? void 0 : formula.length) {
                         sheet.getRange(row, column).setFormula('');
                     }
                     continue;
                 }
-                const isChild = !!((_d = childIssues[issueIndex]) === null || _d === void 0 ? void 0 : _d.length);
-                const isDefaultFormula = this.isDefaultFormula(formulas[index]);
-                const isDefaultChildFormula = this.isDefaultChildFormula(formulas[index]);
+                const isChild = !!(childIssue === null || childIssue === void 0 ? void 0 : childIssue.length);
+                const isDefaultFormula = this.isDefaultFormula(formula);
+                const isDefaultChildFormula = this.isDefaultChildFormula(formula);
                 if ((isChild && isDefaultFormula)
                     || (!isChild && isDefaultChildFormula)
                     || (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula))) {
-                    values[index] = '';
-                    formulas[index] = '';
+                    value = '';
+                    formula = '';
                 }
-                if (!((_e = values[index]) === null || _e === void 0 ? void 0 : _e.length) && !((_f = formulas[index]) === null || _f === void 0 ? void 0 : _f.length)) {
+                if (!(value === null || value === void 0 ? void 0 : value.length) && !(formula === null || formula === void 0 ? void 0 : formula.length)) {
                     console.info([
                         DefaultFormulas.name,
                         sheet.getSheetName(),
@@ -645,8 +656,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                         `column #${column}`,
                         `row #${row}`,
                     ].join(': '));
-                    const isReserve = (_g = issues[issueIndex]) === null || _g === void 0 ? void 0 : _g.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
-                    let formula = Formulas.processFormula((_h = formulaGenerator(row, isReserve, isChild, issueIndex, index)) !== null && _h !== void 0 ? _h : '');
+                    const isReserve = issue === null || issue === void 0 ? void 0 : issue.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
+                    let formula = Formulas.processFormula((_b = formulaGenerator(row, isReserve, isChild, issueIndex, index)) !== null && _b !== void 0 ? _b : '');
                     if (formula.length) {
                         formula = Formulas.addFormulaMarkers(formula, isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER, isReserve ? this._DEFAULT_RESERVE_FORMULA_MARKER : null);
                         sheet.getRange(row, column).setFormula(formula);
@@ -1146,7 +1157,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
         });
         const processIndex = (index) => {
-            var _a, _b;
+            var _a, _b, _c;
             const row = range.getRow() + index;
             ProtectionLocks.lockRows(sheet, row);
             const cleanupColumns = (withTitle = false) => {
@@ -1187,6 +1198,10 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 originalIssueKeysText = issues[index];
             }
             else {
+                cleanupColumns(true);
+                return;
+            }
+            if ((_c = GSheetProjectSettings.notIssueKeyRegex) === null || _c === void 0 ? void 0 : _c.test(originalIssueKeysText)) {
                 cleanupColumns(true);
                 return;
             }
@@ -2107,7 +2122,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}57839ba715238b70205627c22a581acdf446cbd82a9c2027e9e06be48255f107:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}eb5b0951cba41f2cc241f9cae1c12a6a184340e703453ddb918016457702caaf:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

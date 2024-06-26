@@ -82,6 +82,12 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
 
 
+            if (GSheetProjectSettings.notIssueKeyRegex?.test(originalIssueKeysText)) {
+                cleanupColumns(true)
+                return
+            }
+
+
             const originalIssueKeysRange = sheet.getRange(row, currentIssueColumn)
             const isOriginalIssueKeysTextChanged = () => {
                 const now = Date.now()

@@ -113,27 +113,40 @@ class DefaultFormulas extends AbstractIssueLogic {
             const values = getValues(column)
             const formulas = getFormulas(column)
             for (let row = startRow; row <= endRow; ++row) {
-                const index = row - startRow
                 const issueIndex = row - GSheetProjectSettings.firstDataRow
-                if (!issues[issueIndex]?.length && !childIssues[issueIndex]?.length) {
-                    if (formulas[issueIndex]?.length) {
+                const issue = issues[issueIndex]
+                const childIssue = childIssues[issueIndex]
+
+                const index = row - startRow
+                let value = values[index]
+                let formula = formulas[index]
+
+
+                if (GSheetProjectSettings.notIssueKeyRegex?.test(issue ?? '')) {
+                    continue
+                }
+
+                if (!issue?.length && !childIssue?.length) {
+                    if (formula?.length) {
                         sheet.getRange(row, column).setFormula('')
                     }
                     continue
                 }
 
-                const isChild = !!childIssues[issueIndex]?.length
-                const isDefaultFormula = this.isDefaultFormula(formulas[index])
-                const isDefaultChildFormula = this.isDefaultChildFormula(formulas[index])
+
+                const isChild = !!childIssue?.length
+                const isDefaultFormula = this.isDefaultFormula(formula)
+                const isDefaultChildFormula = this.isDefaultChildFormula(formula)
                 if ((isChild && isDefaultFormula)
                     || (!isChild && isDefaultChildFormula)
                     || (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula))
                 ) {
-                    values[index] = ''
-                    formulas[index] = ''
+                    value = ''
+                    formula = ''
                 }
 
-                if (!values[index]?.length && !formulas[index]?.length) {
+
+                if (!value?.length && !formula?.length) {
                     console.info([
                         DefaultFormulas.name,
                         sheet.getSheetName(),
@@ -141,7 +154,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         `column #${column}`,
                         `row #${row}`,
                     ].join(': '))
-                    const isReserve = issues[issueIndex]?.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix)
+                    const isReserve = issue?.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix)
                     let formula = Formulas.processFormula(formulaGenerator(
                         row,
                         isReserve,
