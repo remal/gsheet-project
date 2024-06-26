@@ -122,11 +122,9 @@ class DefaultFormulas extends AbstractIssueLogic {
                 let formula = formulas[index]
 
 
-                if (GSheetProjectSettings.notIssueKeyRegex?.test(issue ?? '')) {
-                    continue
-                }
-
-                if (!issue?.length && !childIssue?.length) {
+                if (GSheetProjectSettings.notIssueKeyRegex?.test(issue ?? '')
+                    || (!issue?.length && !childIssue?.length)
+                ) {
                     if (formula?.length) {
                         sheet.getRange(row, column).setFormula('')
                     }

@@ -630,10 +630,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                 const index = row - startRow;
                 let value = values[index];
                 let formula = formulas[index];
-                if ((_a = GSheetProjectSettings.notIssueKeyRegex) === null || _a === void 0 ? void 0 : _a.test(issue !== null && issue !== void 0 ? issue : '')) {
-                    continue;
-                }
-                if (!(issue === null || issue === void 0 ? void 0 : issue.length) && !(childIssue === null || childIssue === void 0 ? void 0 : childIssue.length)) {
+                if (((_a = GSheetProjectSettings.notIssueKeyRegex) === null || _a === void 0 ? void 0 : _a.test(issue !== null && issue !== void 0 ? issue : ''))
+                    || (!(issue === null || issue === void 0 ? void 0 : issue.length) && !(childIssue === null || childIssue === void 0 ? void 0 : childIssue.length))) {
                     if (formula === null || formula === void 0 ? void 0 : formula.length) {
                         sheet.getRange(row, column).setFormula('');
                     }
@@ -2122,7 +2120,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}0f9a560549a645f131c5c505b829b4970ddbb894852a199ba0793bdff7bd61ba:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}1d6e89ac0bc0ba0ee0d4e577ef574206189f1c5938cc25f67576cc676503bfe1:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
