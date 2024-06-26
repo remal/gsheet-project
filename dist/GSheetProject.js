@@ -824,7 +824,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ${notEnoughPreviousLanes}
                     ),
                     ${GSheetProjectSettings.settingsScheduleStartRangeName},
-                    ${nextWorkdayLastEnd}
+                    MAX(${nextWorkdayLastEnd}, ${GSheetProjectSettings.settingsScheduleStartRangeName})
                 )
             `;
             const withResources = `
@@ -2122,7 +2122,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}eb5b0951cba41f2cc241f9cae1c12a6a184340e703453ddb918016457702caaf:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}0f9a560549a645f131c5c505b829b4970ddbb894852a199ba0793bdff7bd61ba:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

@@ -378,7 +378,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         ${notEnoughPreviousLanes}
                     ),
                     ${GSheetProjectSettings.settingsScheduleStartRangeName},
-                    ${nextWorkdayLastEnd}
+                    MAX(${nextWorkdayLastEnd}, ${GSheetProjectSettings.settingsScheduleStartRangeName})
                 )
             `
 
