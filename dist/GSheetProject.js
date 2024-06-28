@@ -5,8 +5,7 @@
  * @customFunction
  */
 function SHA256(value) {
-    var _a;
-    const string = (_a = value === null || value === void 0 ? void 0 : value.toString()) !== null && _a !== void 0 ? _a : '';
+    const string = value?.toString() ?? '';
     const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, string);
     return digest
         .map(num => num < 0 ? num + 256 : num)
@@ -79,7 +78,6 @@ function onOpenGSheetProject(event) {
         .addToUi();
 }
 function onChangeGSheetProject(event) {
-    var _a, _b;
     function onInsert() {
         EntryPoint.entryPoint(() => {
             CommonFormatter.applyCommonFormatsToAllSheets();
@@ -88,7 +86,7 @@ function onChangeGSheetProject(event) {
     function onRemove() {
         applyDefaultStylesOfGSheetProject();
     }
-    const changeType = (_b = (_a = event === null || event === void 0 ? void 0 : event.changeType) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : '';
+    const changeType = event?.changeType?.toString() ?? '';
     if (['INSERT_ROW', 'INSERT_COLUMN'].includes(changeType)) {
         onInsert();
     }
@@ -97,7 +95,7 @@ function onChangeGSheetProject(event) {
     }
 }
 function onEditGSheetProject(event) {
-    const range = event === null || event === void 0 ? void 0 : event.range;
+    const range = event?.range;
     if (range == null) {
         return;
     }
@@ -111,7 +109,7 @@ function onEditGSheetProject(event) {
 }
 function onFormSubmitGSheetProject(event) {
     onEditGSheetProject({
-        range: event === null || event === void 0 ? void 0 : event.range,
+        range: event?.range,
     });
 }
 var _a;
@@ -224,7 +222,7 @@ class AbstractIssueLogic {
             issues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName),
             childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName),
         }, startRow, endRow);
-        Utils.trimArrayEndBy(result.issues, it => !(it === null || it === void 0 ? void 0 : it.length));
+        Utils.trimArrayEndBy(result.issues, it => !it?.length);
         result.childIssues.length = result.issues.length;
         return result;
     }
@@ -237,12 +235,12 @@ class AbstractIssueLogic {
             childIssues: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName),
             lastDataReload: SheetUtils.getColumnByName(sheet, GSheetProjectSettings.lastDataReloadColumnName),
         }, startRow, endRow);
-        Utils.trimArrayEndBy(result.issues, it => { var _a; return !((_a = it === null || it === void 0 ? void 0 : it.toString()) === null || _a === void 0 ? void 0 : _a.length); });
+        Utils.trimArrayEndBy(result.issues, it => !it?.toString()?.length);
         result.childIssues.length = result.issues.length;
         result.lastDataReload.length = result.issues.length;
         return {
-            issues: result.issues.map(it => it === null || it === void 0 ? void 0 : it.toString()),
-            childIssues: result.childIssues.map(it => it === null || it === void 0 ? void 0 : it.toString()),
+            issues: result.issues.map(it => it?.toString()),
+            childIssues: result.childIssues.map(it => it?.toString()),
             lastDataReload: result.lastDataReload.map(it => Utils.parseDate(it)),
         };
     }
@@ -308,7 +306,6 @@ class ConditionalFormatRuleUtils {
 }
 class ConditionalFormatting {
     static addConditionalFormatRule(range, orderedRule, addIsFormulaRule = true) {
-        var _a;
         if (!GSheetProjectSettings.updateConditionalFormatRules) {
             return;
         }
@@ -353,30 +350,27 @@ class ConditionalFormatting {
             newRules.push(newIsFormulaRule);
         }
         const sheet = range.getSheet();
-        let rules = (_a = sheet.getConditionalFormatRules()) !== null && _a !== void 0 ? _a : [];
+        let rules = sheet.getConditionalFormatRules() ?? [];
         rules = rules.filter(rule => !(this._extractScope(rule) === orderedRule.scope && this._extractIntOrder(rule) === orderedRule.order));
         rules.push(...newRules);
         rules = rules.toSorted((r1, r2) => {
-            var _a, _b;
-            const o1 = (_a = this._extractFloatOrder(r1)) !== null && _a !== void 0 ? _a : 0;
-            const o2 = (_b = this._extractFloatOrder(r2)) !== null && _b !== void 0 ? _b : 0;
+            const o1 = this._extractFloatOrder(r1) ?? 0;
+            const o2 = this._extractFloatOrder(r2) ?? 0;
             return o1 - o2;
         });
         sheet.setConditionalFormatRules(rules);
     }
     static removeConditionalFormatRulesByScope(sheet, scopeToRemove) {
-        var _a;
         if (Utils.isString(sheet)) {
             sheet = SheetUtils.getSheetByName(sheet);
         }
-        const rules = (_a = sheet.getConditionalFormatRules()) !== null && _a !== void 0 ? _a : [];
+        const rules = sheet.getConditionalFormatRules() ?? [];
         const filteredRules = rules.filter(rule => this._extractScope(rule) !== scopeToRemove);
         if (filteredRules.length !== rules.length) {
             sheet.setConditionalFormatRules(filteredRules);
         }
     }
     static removeDuplicateConditionalFormatRules(sheet) {
-        var _a;
         if (sheet == null) {
             SpreadsheetApp.getActiveSpreadsheet().getSheets()
                 .filter(sheet => SheetUtils.isGridSheet(sheet))
@@ -386,14 +380,13 @@ class ConditionalFormatting {
         if (Utils.isString(sheet)) {
             sheet = SheetUtils.getSheetByName(sheet);
         }
-        const rules = (_a = sheet.getConditionalFormatRules()) !== null && _a !== void 0 ? _a : [];
+        const rules = sheet.getConditionalFormatRules() ?? [];
         const filteredRules = rules.filter(Utils.distinctBy(rule => JSON.stringify(Utils.toJsonObject(rule))));
         if (filteredRules.length !== rules.length) {
             sheet.setConditionalFormatRules(filteredRules);
         }
     }
     static combineConditionalFormatRules(sheet) {
-        var _a;
         if (sheet == null) {
             SpreadsheetApp.getActiveSpreadsheet().getSheets()
                 .filter(sheet => SheetUtils.isGridSheet(sheet))
@@ -403,7 +396,7 @@ class ConditionalFormatting {
         if (Utils.isString(sheet)) {
             sheet = SheetUtils.getSheetByName(sheet);
         }
-        const rules = (_a = sheet.getConditionalFormatRules()) !== null && _a !== void 0 ? _a : [];
+        const rules = sheet.getConditionalFormatRules() ?? [];
         if (rules.length <= 1) {
             return;
         }
@@ -561,7 +554,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const { issues, childIssues } = this._getIssueValues(sheet.getRange(GSheetProjectSettings.firstDataRow, range.getColumn(), endRow - GSheetProjectSettings.firstDataRow + 1, range.getNumColumns()));
         const getParentIssueRow = (issueIndex) => {
             const issue = issues[issueIndex];
-            if (!(issue === null || issue === void 0 ? void 0 : issue.length)) {
+            if (!issue?.length) {
                 return undefined;
             }
             const index = issues.indexOf(issue);
@@ -569,7 +562,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                 return undefined;
             }
             const childIssue = childIssues[index];
-            if (childIssue === null || childIssue === void 0 ? void 0 : childIssue.length) {
+            if (childIssue?.length) {
                 return undefined;
             }
             return GSheetProjectSettings.firstDataRow + index;
@@ -598,29 +591,26 @@ class DefaultFormulas extends AbstractIssueLogic {
         ].forEach(column => allValuesColumns[column.toString()] = column);
         const allValues = LazyProxy.create(() => SheetUtils.getColumnsStringValues(sheet, allValuesColumns, startRow, endRow));
         const getValues = (column) => {
-            var _a;
             if (column === issueColumn) {
                 return issues.slice(-rows);
             }
             else if (column === childIssueColumn) {
                 return childIssues.slice(-rows);
             }
-            return (_a = allValues[column.toString()]) !== null && _a !== void 0 ? _a : (() => {
+            return allValues[column.toString()] ?? (() => {
                 throw new Error(`Column ${column} is not prefetched`);
             })();
         };
         const allFormulas = LazyProxy.create(() => SheetUtils.getColumnsFormulas(sheet, allValuesColumns, startRow, endRow));
         const getFormulas = (column) => {
-            var _a;
             if (column === childIssueColumn) {
                 return childIssueFormulas;
             }
-            return (_a = allFormulas[column.toString()]) !== null && _a !== void 0 ? _a : (() => {
+            return allFormulas[column.toString()] ?? (() => {
                 throw new Error(`Column ${column} is not prefetched`);
             })();
         };
         const addFormulas = (column, formulaGenerator) => {
-            var _a, _b, _c;
             const values = getValues(column);
             const formulas = getFormulas(column);
             for (let row = startRow; row <= endRow; ++row) {
@@ -630,14 +620,14 @@ class DefaultFormulas extends AbstractIssueLogic {
                 const index = row - startRow;
                 let value = values[index];
                 let formula = formulas[index];
-                if (((_a = GSheetProjectSettings.notIssueKeyRegex) === null || _a === void 0 ? void 0 : _a.test(issue !== null && issue !== void 0 ? issue : ''))
-                    || (!(issue === null || issue === void 0 ? void 0 : issue.length) && !(childIssue === null || childIssue === void 0 ? void 0 : childIssue.length))) {
-                    if (formula === null || formula === void 0 ? void 0 : formula.length) {
+                if (GSheetProjectSettings.notIssueKeyRegex?.test(issue ?? '')
+                    || (!issue?.length && !childIssue?.length)) {
+                    if (formula?.length) {
                         sheet.getRange(row, column).setFormula('');
                     }
                     continue;
                 }
-                const isChild = !!(childIssue === null || childIssue === void 0 ? void 0 : childIssue.length);
+                const isChild = !!childIssue?.length;
                 const isDefaultFormula = this.isDefaultFormula(formula);
                 const isDefaultChildFormula = this.isDefaultChildFormula(formula);
                 if ((isChild && isDefaultFormula)
@@ -646,7 +636,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     value = '';
                     formula = '';
                 }
-                if (!(value === null || value === void 0 ? void 0 : value.length) && !(formula === null || formula === void 0 ? void 0 : formula.length)) {
+                if (!value?.length && !formula?.length) {
                     console.info([
                         DefaultFormulas.name,
                         sheet.getSheetName(),
@@ -654,8 +644,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                         `column #${column}`,
                         `row #${row}`,
                     ].join(': '));
-                    const isBuffer = !!((_b = GSheetProjectSettings.bufferIssueKeyRegex) === null || _b === void 0 ? void 0 : _b.test(issue !== null && issue !== void 0 ? issue : ''));
-                    let formula = Formulas.processFormula((_c = formulaGenerator(row, isBuffer, isChild, issueIndex, index)) !== null && _c !== void 0 ? _c : '');
+                    const isBuffer = !!GSheetProjectSettings.bufferIssueKeyRegex?.test(issue ?? '');
+                    let formula = Formulas.processFormula(formulaGenerator(row, isBuffer, isChild, issueIndex, index) ?? '');
                     if (formula.length) {
                         formula = Formulas.addFormulaMarkers(formula, isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER, isBuffer ? this._DEFAULT_RESERVE_FORMULA_MARKER : null);
                         sheet.getRange(row, column).setFormula(formula);
@@ -966,9 +956,8 @@ class DocumentFlags {
         }
     }
     static isSet(key) {
-        var _a;
         key = `flag|${key}`;
-        return (_a = PropertiesService.getDocumentProperties().getProperty(key)) === null || _a === void 0 ? void 0 : _a.length;
+        return PropertiesService.getDocumentProperties().getProperty(key)?.length;
     }
     static cleanupByPrefix(keyPrefix) {
         keyPrefix = `flag|${keyPrefix}`;
@@ -1001,13 +990,13 @@ class EntryPoint {
             return action();
         }
         let lock = null;
-        if (useLocks !== null && useLocks !== void 0 ? useLocks : GSheetProjectSettings.useLockService) {
+        if (useLocks ?? GSheetProjectSettings.useLockService) {
             lock = LockService.getDocumentLock();
         }
         try {
             this._isInEntryPoint = true;
             ExecutionCache.resetCache();
-            lock === null || lock === void 0 ? void 0 : lock.waitLock(GSheetProjectSettings.lockTimeoutMillis);
+            lock?.waitLock(GSheetProjectSettings.lockTimeoutMillis);
             return action();
         }
         catch (e) {
@@ -1016,7 +1005,7 @@ class EntryPoint {
         }
         finally {
             ProtectionLocks.release();
-            lock === null || lock === void 0 ? void 0 : lock.releaseLock();
+            lock?.releaseLock();
             this._isInEntryPoint = false;
         }
     }
@@ -1028,7 +1017,7 @@ class ExecutionCache {
         if (this._data.has(stringKey)) {
             return this._data.get(stringKey);
         }
-        if (timerLabel === null || timerLabel === void 0 ? void 0 : timerLabel.length) {
+        if (timerLabel?.length) {
             console.time(timerLabel);
         }
         let result;
@@ -1036,7 +1025,7 @@ class ExecutionCache {
             result = compute();
         }
         finally {
-            if (timerLabel === null || timerLabel === void 0 ? void 0 : timerLabel.length) {
+            if (timerLabel?.length) {
                 console.timeEnd(timerLabel);
             }
         }
@@ -1049,13 +1038,13 @@ class ExecutionCache {
     }
     static _getStringKey(key) {
         return JSON.stringify(key, (_, value) => {
-            if (Utils.isFunction(value === null || value === void 0 ? void 0 : value.getUniqueId)) {
+            if (Utils.isFunction(value?.getUniqueId)) {
                 return value.getUniqueId();
             }
-            else if (Utils.isFunction(value === null || value === void 0 ? void 0 : value.getSheetId)) {
+            else if (Utils.isFunction(value?.getSheetId)) {
                 return value.getSheetId();
             }
-            else if (Utils.isFunction(value === null || value === void 0 ? void 0 : value.getId)) {
+            else if (Utils.isFunction(value?.getId)) {
                 return value.getId();
             }
             return value;
@@ -1082,7 +1071,7 @@ class Formulas {
             .trim();
     }
     static addFormulaMarker(formula, marker) {
-        if (!(marker === null || marker === void 0 ? void 0 : marker.length)) {
+        if (!marker?.length) {
             return formula;
         }
         formula = formula.replace(/^=+/, '');
@@ -1090,8 +1079,8 @@ class Formulas {
         return '=' + formula;
     }
     static addFormulaMarkers(formula, ...markers) {
-        markers = markers.filter(it => it === null || it === void 0 ? void 0 : it.length);
-        if (!(markers === null || markers === void 0 ? void 0 : markers.length)) {
+        markers = markers.filter(it => it?.length);
+        if (!markers?.length) {
             return formula;
         }
         if (markers.length === 1) {
@@ -1102,7 +1091,7 @@ class Formulas {
         return '=' + formula;
     }
     static extractFormulaMarkers(formula) {
-        if (!(formula === null || formula === void 0 ? void 0 : formula.length)) {
+        if (!formula?.length) {
             return [];
         }
         const markers = Utils.arrayOf();
@@ -1155,7 +1144,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
         });
         const processIndex = (index) => {
-            var _a, _b, _c;
             const row = range.getRow() + index;
             ProtectionLocks.lockRows(sheet, row);
             const cleanupColumns = (withTitle = false) => {
@@ -1187,11 +1175,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             let currentIssueColumn;
             let originalIssueKeysText;
-            if ((_a = childIssues[index]) === null || _a === void 0 ? void 0 : _a.length) {
+            if (childIssues[index]?.length) {
                 currentIssueColumn = childIssueColumn;
                 originalIssueKeysText = childIssues[index];
             }
-            else if ((_b = issues[index]) === null || _b === void 0 ? void 0 : _b.length) {
+            else if (issues[index]?.length) {
                 currentIssueColumn = issueColumn;
                 originalIssueKeysText = issues[index];
             }
@@ -1199,7 +1187,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 cleanupColumns(true);
                 return;
             }
-            if ((_c = GSheetProjectSettings.notIssueKeyRegex) === null || _c === void 0 ? void 0 : _c.test(originalIssueKeysText)) {
+            if (GSheetProjectSettings.notIssueKeyRegex?.test(originalIssueKeysText)) {
                 cleanupColumns(true);
                 return;
             }
@@ -1244,11 +1232,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
                 issueKeys.push(issueKey);
                 const issueId = issueTracker.extractIssueId(issueKey);
-                if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
+                if (issueId?.length) {
                     issueKeyIds[issueKey] = issueId;
                 }
                 const searchQuery = issueTracker.extractSearchQuery(issueKey);
-                if (searchQuery === null || searchQuery === void 0 ? void 0 : searchQuery.length) {
+                if (searchQuery?.length) {
                     issueKeyQueries[issueKey] = searchQuery;
                 }
             }
@@ -1259,7 +1247,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             const allIssueLinks = allIssueKeys.map(issueKey => {
                 if (issueKeys.includes(issueKey)) {
                     const issueId = issueKeyIds[issueKey];
-                    if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
+                    if (issueId?.length) {
                         return {
                             title: issueTracker.canonizeIssueKey(issueKey),
                             url: issueTracker.getUrlForIssueId(issueId),
@@ -1267,7 +1255,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     }
                     else {
                         const searchQuery = issueKeyQueries[issueKey];
-                        if (searchQuery === null || searchQuery === void 0 ? void 0 : searchQuery.length) {
+                        if (searchQuery?.length) {
                             return {
                                 title: issueTracker.canonizeIssueKey(issueKey),
                                 url: issueTracker.getUrlForSearchQuery(searchQuery),
@@ -1292,7 +1280,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 `loading issues`,
             ].join(': '), () => {
                 const issueIds = Object.values(issueKeyIds).filter(Utils.distinct());
-                return issueTracker === null || issueTracker === void 0 ? void 0 : issueTracker.loadIssuesByIssueId(issueIds);
+                return issueTracker?.loadIssuesByIssueId(issueIds);
             }));
             const loadedChildIssues = LazyProxy.create(() => Observability.timed([
                 IssueDataDisplay.name,
@@ -1323,12 +1311,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     .filter(issue => !issueIds.includes(issue.id));
             }));
             const titles = issueKeys.map(issueKey => {
-                var _a, _b;
                 const issueId = issueKeyIds[issueKey];
-                if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
-                    return (_a = loadedIssues.find(issue => issue.id === issueId)) === null || _a === void 0 ? void 0 : _a.title;
+                if (issueId?.length) {
+                    return loadedIssues.find(issue => issue.id === issueId)?.title;
                 }
-                if ((_b = issueKeyQueries[issueKey]) === null || _b === void 0 ? void 0 : _b.length) {
+                if (issueKeyQueries[issueKey]?.length) {
                     return Observability.timed([
                         IssueDataDisplay.name,
                         this.reloadIssueData.name,
@@ -1338,8 +1325,8 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 }
                 return undefined;
             })
-                .map(title => title === null || title === void 0 ? void 0 : title.trim())
-                .filter(title => title === null || title === void 0 ? void 0 : title.length)
+                .map(title => title?.trim())
+                .filter(title => title?.length)
                 .map(title => title);
             if (isOriginalIssueKeysTextChanged()) {
                 return;
@@ -1400,8 +1387,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
             const iconRange = sheet.getRange(row, iconColumn);
             try {
                 Observability.timed(`loading issue data for row #${row}`, () => {
-                    var _a;
-                    if ((_a = GSheetProjectSettings.loadingText) === null || _a === void 0 ? void 0 : _a.length) {
+                    if (GSheetProjectSettings.loadingText?.length) {
                         iconRange.setValue(GSheetProjectSettings.loadingText);
                     }
                     else {
@@ -1428,7 +1414,6 @@ class IssueDataDisplay extends AbstractIssueLogic {
 }
 class IssueHierarchyFormatter extends AbstractIssueLogic {
     static formatHierarchy(range) {
-        var _a;
         const processedRange = this._processRange(range);
         if (processedRange == null) {
             return;
@@ -1445,11 +1430,11 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
             const index = row - GSheetProjectSettings.firstDataRow;
             const issue = issues[index];
             const childIssue = childIssues[index];
-            if (!(issue === null || issue === void 0 ? void 0 : issue.length)) {
+            if (!issue?.length) {
                 continue;
             }
             const issueRange = sheet.getRange(row, issueColumn);
-            if (!(childIssue === null || childIssue === void 0 ? void 0 : childIssue.length)) {
+            if (!childIssue?.length) {
                 issueRange.setFontSize(GSheetProjectSettings.fontSize);
                 continue;
             }
@@ -1457,7 +1442,7 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
             if (parentIssueIndex < 0) {
                 continue;
             }
-            if ((_a = childIssues[parentIssueIndex]) === null || _a === void 0 ? void 0 : _a.length) {
+            if (childIssues[parentIssueIndex]?.length) {
                 continue;
             }
             const parentIssueRow = GSheetProjectSettings.firstDataRow + parentIssueIndex;
@@ -1478,18 +1463,18 @@ class IssueTracker {
     canonizeIssueKey(issueKey) {
         {
             const issueId = this.extractIssueId(issueKey);
-            if (issueId === null || issueId === void 0 ? void 0 : issueId.length) {
+            if (issueId?.length) {
                 const canonizedKey = this.issueIdToIssueKey(issueId);
-                if (canonizedKey === null || canonizedKey === void 0 ? void 0 : canonizedKey.length) {
+                if (canonizedKey?.length) {
                     return canonizedKey;
                 }
             }
         }
         {
             const searchQuery = this.extractSearchQuery(issueKey);
-            if (searchQuery === null || searchQuery === void 0 ? void 0 : searchQuery.length) {
+            if (searchQuery?.length) {
                 const canonizedKey = this.searchQueryToIssueKey(searchQuery);
-                if (canonizedKey === null || canonizedKey === void 0 ? void 0 : canonizedKey.length) {
+                if (canonizedKey?.length) {
                     return canonizedKey;
                 }
             }
@@ -1506,25 +1491,25 @@ class IssueTracker {
         return this.getUrlForIssueIds([issueId]);
     }
     getUrlForIssueIds(issueIds) {
-        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+        if (!issueIds?.length) {
             return undefined;
         }
         throw Utils.throwNotImplemented(this.constructor.name, this.getUrlForIssueIds.name);
     }
     loadIssuesByIssueId(issueIds) {
-        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+        if (!issueIds?.length) {
             return [];
         }
         throw Utils.throwNotImplemented(this.constructor.name, this.loadIssuesByIssueId.name);
     }
     loadChildrenFor(issues) {
-        if (!(issues === null || issues === void 0 ? void 0 : issues.length)) {
+        if (!issues?.length) {
             return [];
         }
         throw Utils.throwNotImplemented(this.constructor.name, this.loadChildrenFor.name);
     }
     loadBlockersFor(issues) {
-        if (!(issues === null || issues === void 0 ? void 0 : issues.length)) {
+        if (!issues?.length) {
             return [];
         }
         throw Utils.throwNotImplemented(this.constructor.name, this.loadBlockersFor.name);
@@ -1542,7 +1527,7 @@ class IssueTracker {
         return this.extractSearchQuery(issueKey);
     }
     searchByQuery(query) {
-        if (!(query === null || query === void 0 ? void 0 : query.length)) {
+        if (!query?.length) {
             return [];
         }
         throw Utils.throwNotImplemented(this.constructor.name, this.searchByQuery.name);
@@ -1582,13 +1567,13 @@ class IssueTrackerExample extends IssueTracker {
         return `https://example.com/issues/${encodeURIComponent(issueId)}`;
     }
     getUrlForIssueIds(issueIds) {
-        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+        if (!issueIds?.length) {
             return null;
         }
         return `https://example.com/search?q=id:(${encodeURIComponent(issueIds.join('|'))})`;
     }
     loadIssuesByIssueId(issueIds) {
-        if (!(issueIds === null || issueIds === void 0 ? void 0 : issueIds.length)) {
+        if (!issueIds?.length) {
             return [];
         }
         return issueIds.map(id => new IssueExample(this, id));
@@ -1621,7 +1606,7 @@ class IssueTrackerExample extends IssueTracker {
         return `https://example.com/search?q=${encodeURIComponent(query)}`;
     }
     searchByQuery(query) {
-        if (!(query === null || query === void 0 ? void 0 : query.length)) {
+        if (!query?.length) {
             return [];
         }
         const hash = Math.abs(Utils.hashCode(query));
@@ -1768,8 +1753,7 @@ class NamedRangeUtils {
         return namedRanges.get(rangeName);
     }
     static getNamedRange(rangeName) {
-        var _a;
-        return (_a = this.findNamedRange(rangeName)) !== null && _a !== void 0 ? _a : (() => {
+        return this.findNamedRange(rangeName) ?? (() => {
             throw new Error(`"${rangeName}" named range can't be found`);
         })();
     }
@@ -1779,9 +1763,8 @@ class NamedRangeUtils {
 }
 class Observability {
     static reportError(message, exception) {
-        var _a;
         console.error(message);
-        SpreadsheetApp.getActiveSpreadsheet().toast((_a = message === null || message === void 0 ? void 0 : message.toString()) !== null && _a !== void 0 ? _a : '', "Automation error");
+        SpreadsheetApp.getActiveSpreadsheet().toast(message?.toString() ?? '', "Automation error");
         if (exception != null) {
             console.log(exception);
         }
@@ -1808,7 +1791,7 @@ class PropertyLocks {
         const start = Date.now();
         while (true) {
             const propertyValue = PropertiesService.getDocumentProperties().getProperty(property);
-            if (!(propertyValue === null || propertyValue === void 0 ? void 0 : propertyValue.length)) {
+            if (!propertyValue?.length) {
                 break;
             }
             const date = Utils.parseDate(propertyValue);
@@ -2078,17 +2061,16 @@ class RichTextUtils {
         let text = '';
         const linksWithOffsets = [];
         links.forEach(link => {
-            var _a, _b;
-            const title = ((_a = link.title) === null || _a === void 0 ? void 0 : _a.length)
+            const title = link.title?.length
                 ? link.title
                 : link.url;
-            if (!(title === null || title === void 0 ? void 0 : title.length)) {
+            if (!title?.length) {
                 return;
             }
             if (text.length) {
                 text += '\n';
             }
-            if ((_b = link.url) === null || _b === void 0 ? void 0 : _b.length) {
+            if (link.url?.length) {
                 linksWithOffsets.push({
                     url: link.url,
                     start: text.length,
@@ -2116,11 +2098,10 @@ class SheetLayout {
         return sheet;
     }
     get _documentFlagPrefix() {
-        var _a;
-        return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
+        return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}0167b934b35b1603a4ee62b71734f38fe29f42efeb6b417468ad365fc4182db1:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}534c10c89fbe8b8fd9802e63105e6eee7a7bfe37c75d31f013ae351cc0b65c55:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2130,9 +2111,8 @@ class SheetLayout {
         return true;
     }
     migrate() {
-        var _a, _b, _c, _d, _e;
         const sheet = this.sheet;
-        const conditionalFormattingScope = `layout:${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}`;
+        const conditionalFormattingScope = `layout:${this.constructor?.name || Utils.normalizeName(this.sheetName)}`;
         let conditionalFormattingOrder = 0;
         ConditionalFormatting.removeConditionalFormatRulesByScope(sheet, 'layout');
         ConditionalFormatting.removeConditionalFormatRulesByScope(sheet, conditionalFormattingScope);
@@ -2150,8 +2130,8 @@ class SheetLayout {
         const maxRows = SheetUtils.getMaxRows(sheet);
         const existingNormalizedNames = sheet.getRange(GSheetProjectSettings.titleRow, 1, 1, lastColumn)
             .getValues()[0]
-            .map(it => it === null || it === void 0 ? void 0 : it.toString())
-            .map(it => (it === null || it === void 0 ? void 0 : it.length) ? Utils.normalizeName(it) : '');
+            .map(it => it?.toString())
+            .map(it => it?.length ? Utils.normalizeName(it) : '');
         for (const [columnName, info] of columns.entries()) {
             const existingIndex = existingNormalizedNames.indexOf(columnName);
             if (existingIndex >= 0) {
@@ -2179,7 +2159,7 @@ class SheetLayout {
                 sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
                     .setNumberFormat(info.defaultFormat);
             }
-            if ((_b = info.defaultHorizontalAlignment) === null || _b === void 0 ? void 0 : _b.length) {
+            if (info.defaultHorizontalAlignment?.length) {
                 sheet.getRange(GSheetProjectSettings.firstDataRow, lastColumn, maxRows, 1)
                     .setHorizontalAlignment(info.defaultHorizontalAlignment);
             }
@@ -2196,7 +2176,7 @@ class SheetLayout {
                 continue;
             }
             const column = index + 1;
-            if ((_c = info.arrayFormula) === null || _c === void 0 ? void 0 : _c.length) {
+            if (info.arrayFormula?.length) {
                 const formulaToExpect = Formulas.processFormula(`=
                     {
                         "${Formulas.escapeFormulaString(info.name)}";
@@ -2210,7 +2190,7 @@ class SheetLayout {
                 }
             }
             const range = sheet.getRange(GSheetProjectSettings.firstDataRow, column, maxRows - GSheetProjectSettings.firstDataRow + 1, 1);
-            if ((_d = info.rangeName) === null || _d === void 0 ? void 0 : _d.length) {
+            if (info.rangeName?.length) {
                 SpreadsheetApp.getActiveSpreadsheet().setNamedRange(info.rangeName, range);
             }
             let dataValidation = info.dataValidation != null
@@ -2225,7 +2205,7 @@ class SheetLayout {
                 }
                 range.setDataValidation(dataValidation);
             }
-            (_e = info.conditionalFormats) === null || _e === void 0 ? void 0 : _e.forEach(configurer => {
+            info.conditionalFormats?.forEach(configurer => {
                 if (configurer == null) {
                     return;
                 }
@@ -2269,7 +2249,6 @@ class SheetLayoutProjects extends SheetLayout {
         return GSheetProjectSettings.sheetName;
     }
     get columns() {
-        var _a, _b;
         return [
             {
                 name: GSheetProjectSettings.iconColumnName,
@@ -2365,7 +2344,7 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
-                    ((_a = GSheetProjectSettings.inProgressesRangeName) === null || _a === void 0 ? void 0 : _a.length)
+                    GSheetProjectSettings.inProgressesRangeName?.length
                         ? builder => builder
                             .whenFormulaSatisfied(`=
                                 AND(
@@ -2395,7 +2374,7 @@ class SheetLayoutProjects extends SheetLayout {
                         `)
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.errorColor),
-                    ((_b = GSheetProjectSettings.codeCompletesRangeName) === null || _b === void 0 ? void 0 : _b.length)
+                    GSheetProjectSettings.codeCompletesRangeName?.length
                         ? builder => builder
                             .whenFormulaSatisfied(`=
                                 AND(
@@ -2468,7 +2447,7 @@ class SheetLayouts {
             GSheetProjectSettings.settingsMilestonesTableMilestoneRangeName,
             GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName,
             GSheetProjectSettings.publicHolidaysRangeName,
-        ].filter(it => it === null || it === void 0 ? void 0 : it.length).map(it => it);
+        ].filter(it => it?.length).map(it => it);
         const missingRangeNames = rangeNames.filter(name => NamedRangeUtils.findNamedRange(name) == null);
         if (missingRangeNames.length) {
             throw new Error(`Missing named range(s): '${missingRangeNames.join("', '")}'`);
@@ -2488,7 +2467,7 @@ class SheetLayoutSettings extends SheetLayout {
 SheetLayoutSettings.instance = new SheetLayoutSettings();
 class SheetUtils {
     static findSheetByName(sheetName) {
-        if (!(sheetName === null || sheetName === void 0 ? void 0 : sheetName.length)) {
+        if (!sheetName?.length) {
             return undefined;
         }
         const sheets = ExecutionCache.getOrCompute('sheets-by-name', () => {
@@ -2503,8 +2482,7 @@ class SheetUtils {
         return sheets.get(sheetName);
     }
     static getSheetByName(sheetName) {
-        var _a;
-        return (_a = this.findSheetByName(sheetName)) !== null && _a !== void 0 ? _a : (() => {
+        return this.findSheetByName(sheetName) ?? (() => {
             throw new Error(`"${sheetName}" sheet can't be found`);
         })();
     }
@@ -2572,7 +2550,7 @@ class SheetUtils {
         return sheet.getRange(1, 1, SheetUtils.getMaxRows(sheet), SheetUtils.getMaxColumns(sheet));
     }
     static findColumnByName(sheet, columnName) {
-        if (!(columnName === null || columnName === void 0 ? void 0 : columnName.length)) {
+        if (!columnName?.length) {
             return undefined;
         }
         if (Utils.isString(sheet)) {
@@ -2594,11 +2572,10 @@ class SheetUtils {
         return columns.get(columnName);
     }
     static getColumnByName(sheet, columnName) {
-        var _a;
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet);
         }
-        return (_a = this.findColumnByName(sheet, columnName)) !== null && _a !== void 0 ? _a : (() => {
+        return this.findColumnByName(sheet, columnName) ?? (() => {
             throw new Error(`"${sheet.getSheetName()}" sheet: "${columnName}" column can't be found`);
         })();
     }
@@ -2943,13 +2920,12 @@ class Utils {
         }
     }
     static parseDateOrThrow(value) {
-        var _a;
-        return (_a = this.parseDate(value)) !== null && _a !== void 0 ? _a : (() => {
+        return this.parseDate(value) ?? (() => {
             throw new Error(`Not a date: "${value}"`);
         })();
     }
     static hashCode(value) {
-        if (!(value === null || value === void 0 ? void 0 : value.length)) {
+        if (!value?.length) {
             return 0;
         }
         let hash = 0;
@@ -3021,7 +2997,7 @@ class Utils {
         return true;
     }
     static arrayOf(length, initValue) {
-        const array = new Array(length !== null && length !== void 0 ? length : 0);
+        const array = new Array(length ?? 0);
         if (initValue !== undefined) {
             array.fill(initValue);
         }
