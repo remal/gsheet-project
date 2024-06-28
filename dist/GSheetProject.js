@@ -944,7 +944,7 @@ class DefaultFormulas extends AbstractIssueLogic {
 }
 DefaultFormulas._DEFAULT_FORMULA_MARKER = "default";
 DefaultFormulas._DEFAULT_CHILD_FORMULA_MARKER = "default-child";
-DefaultFormulas._DEFAULT_BUFFER_FORMULA_MARKER = "default-reserve";
+DefaultFormulas._DEFAULT_BUFFER_FORMULA_MARKER = "default-buffer";
 class DocumentFlags {
     static set(key, value = true) {
         key = `flag|${key}`;
@@ -2101,7 +2101,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}fc5059173ed6c70854c27b976fd0685bdf65fa9b62e47442c0868126a710eddc:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}3c27008249ed05c338059a198ea628ad3015a6466464ef68a7ead4438ddaa27d:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

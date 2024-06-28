@@ -2,7 +2,7 @@ class DefaultFormulas extends AbstractIssueLogic {
 
     private static readonly _DEFAULT_FORMULA_MARKER = "default"
     private static readonly _DEFAULT_CHILD_FORMULA_MARKER = "default-child"
-    private static readonly _DEFAULT_BUFFER_FORMULA_MARKER = "default-reserve"
+    private static readonly _DEFAULT_BUFFER_FORMULA_MARKER = "default-buffer"
 
     static isDefaultFormula(formula: string | null | undefined): boolean {
         return Formulas.extractFormulaMarkers(formula).includes(this._DEFAULT_FORMULA_MARKER)
