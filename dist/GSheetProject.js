@@ -647,7 +647,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     const isBuffer = !!GSheetProjectSettings.bufferIssueKeyRegex?.test(issue ?? '');
                     let formula = Formulas.processFormula(formulaGenerator(row, isBuffer, isChild, issueIndex, index) ?? '');
                     if (formula.length) {
-                        formula = Formulas.addFormulaMarkers(formula, isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER, isBuffer ? this._DEFAULT_RESERVE_FORMULA_MARKER : null);
+                        formula = Formulas.addFormulaMarkers(formula, isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER, isBuffer ? this._DEFAULT_BUFFER_FORMULA_MARKER : null);
                         sheet.getRange(row, column).setFormula(formula);
                     }
                     else {
@@ -944,7 +944,7 @@ class DefaultFormulas extends AbstractIssueLogic {
 }
 DefaultFormulas._DEFAULT_FORMULA_MARKER = "default";
 DefaultFormulas._DEFAULT_CHILD_FORMULA_MARKER = "default-child";
-DefaultFormulas._DEFAULT_RESERVE_FORMULA_MARKER = "default-reserve";
+DefaultFormulas._DEFAULT_BUFFER_FORMULA_MARKER = "default-reserve";
 class DocumentFlags {
     static set(key, value = true) {
         key = `flag|${key}`;
@@ -2101,7 +2101,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}534c10c89fbe8b8fd9802e63105e6eee7a7bfe37c75d31f013ae351cc0b65c55:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}fc5059173ed6c70854c27b976fd0685bdf65fa9b62e47442c0868126a710eddc:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

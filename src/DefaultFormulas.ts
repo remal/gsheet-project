@@ -2,7 +2,7 @@ class DefaultFormulas extends AbstractIssueLogic {
 
     private static readonly _DEFAULT_FORMULA_MARKER = "default"
     private static readonly _DEFAULT_CHILD_FORMULA_MARKER = "default-child"
-    private static readonly _DEFAULT_RESERVE_FORMULA_MARKER = "default-reserve"
+    private static readonly _DEFAULT_BUFFER_FORMULA_MARKER = "default-reserve"
 
     static isDefaultFormula(formula: string | null | undefined): boolean {
         return Formulas.extractFormulaMarkers(formula).includes(this._DEFAULT_FORMULA_MARKER)
@@ -164,7 +164,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         formula = Formulas.addFormulaMarkers(
                             formula,
                             isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER,
-                            isBuffer ? this._DEFAULT_RESERVE_FORMULA_MARKER : null,
+                            isBuffer ? this._DEFAULT_BUFFER_FORMULA_MARKER : null,
                         )
                         sheet.getRange(row, column).setFormula(formula)
                     } else {
