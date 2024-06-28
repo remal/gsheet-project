@@ -152,10 +152,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                         `column #${column}`,
                         `row #${row}`,
                     ].join(': '))
-                    const isReserve = issue?.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix)
+                    const isBuffer = !!GSheetProjectSettings.bufferIssueKeyRegex?.test(issue ?? '')
                     let formula = Formulas.processFormula(formulaGenerator(
                         row,
-                        isReserve,
+                        isBuffer,
                         isChild,
                         issueIndex,
                         index,
@@ -164,7 +164,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                         formula = Formulas.addFormulaMarkers(
                             formula,
                             isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER,
-                            isReserve ? this._DEFAULT_RESERVE_FORMULA_MARKER : null,
+                            isBuffer ? this._DEFAULT_RESERVE_FORMULA_MARKER : null,
                         )
                         sheet.getRange(row, column).setFormula(formula)
                     } else {
@@ -175,8 +175,8 @@ class DefaultFormulas extends AbstractIssueLogic {
         }
 
 
-        addFormulas(childIssueColumn, (row, isReserve, isChild, issueIndex) => {
-            if (isReserve) {
+        addFormulas(childIssueColumn, (row, isBuffer, isChild, issueIndex) => {
+            if (isBuffer) {
                 childIssues[issueIndex] = `placeholder: ${addFormulas.name}`
                 return `=
                     IF(
@@ -208,7 +208,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         })
 
 
-        addFormulas(milestoneColumn, (row, isReserve, isChild, issueIndex) => {
+        addFormulas(milestoneColumn, (row, isBuffer, isChild, issueIndex) => {
             if (isChild) {
                 const parentIssueRow = getParentIssueRow(issueIndex)
                 if (parentIssueRow != null) {
@@ -223,7 +223,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             return undefined
         })
 
-        addFormulas(typeColumn, (row, isReserve, isChild, issueIndex) => {
+        addFormulas(typeColumn, (row, isBuffer, isChild, issueIndex) => {
             if (isChild) {
                 const parentIssueRow = getParentIssueRow(issueIndex)
                 if (parentIssueRow != null) {
@@ -238,7 +238,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             return undefined
         })
 
-        addFormulas(titleColumn, (row, isReserve, isChild, issueIndex) => {
+        addFormulas(titleColumn, (row, isBuffer, isChild, issueIndex) => {
             if (isChild) {
                 const parentIssueRow = getParentIssueRow(issueIndex)
                 if (parentIssueRow != null) {
@@ -267,8 +267,8 @@ class DefaultFormulas extends AbstractIssueLogic {
             return `=${issueA1Notation}`
         })
 
-        addFormulas(estimateColumn, (row, isReserve) => {
-            if (isReserve) {
+        addFormulas(estimateColumn, (row, isBuffer) => {
+            if (isBuffer) {
                 const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn))
                 const endA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, endColumn))
                 return `=LET(
@@ -285,7 +285,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             return undefined
         })
 
-        addFormulas(startColumn, (row, isReserve) => {
+        addFormulas(startColumn, (row, isBuffer) => {
             const teamTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(
                 GSheetProjectSettings.titleRow,
                 teamColumn,
@@ -410,7 +410,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `
 
-            if (isReserve) {
+            if (isBuffer) {
                 let previousMilestone = `
                     MAX(FILTER(
                         ${GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName},
@@ -459,8 +459,8 @@ class DefaultFormulas extends AbstractIssueLogic {
             return `=${notEnoughDataIf}`
         })
 
-        addFormulas(endColumn, (row, isReserve) => {
-            if (isReserve) {
+        addFormulas(endColumn, (row, isBuffer) => {
+            if (isBuffer) {
                 const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn))
                 const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn))
                 return `=IF(
@@ -490,7 +490,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             `
         })
 
-        addFormulas(deadlineColumn, (row, isReserve, isChild, issueIndex) => {
+        addFormulas(deadlineColumn, (row, isBuffer, isChild, issueIndex) => {
             if (isChild) {
                 const parentIssueRow = getParentIssueRow(issueIndex)
                 if (parentIssueRow != null) {
@@ -524,7 +524,7 @@ class DefaultFormulas extends AbstractIssueLogic {
 
 type DefaultFormulaGenerator = (
     row: Row,
-    isReserve: boolean,
+    isBuffer: boolean,
     isChild: boolean,
     issueIndex: number,
     index: number,

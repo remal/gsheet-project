@@ -37,14 +37,13 @@ class GSheetProjectSettings {
     static publicHolidaysRangeName: RangeName = 'PublicHolidays'
 
 
-    static notIssueKeyRegex: (RegExp | undefined) = new RegExp("^\\s*\\W")
+    static notIssueKeyRegex: (RegExp | undefined) = /^\s*\W/
+    static bufferIssueKeyRegex: (RegExp | undefined) = /^(buffer|reserve)/i
     static issueTrackers: IssueTracker[] = []
     static issuesLoadTimeoutMillis: number = 5 * 60 * 1000
     static issuesMetrics: Record<ColumnName, IssuesMetric<string>> = {}
     static counterIssuesMetrics: Record<ColumnName, IssuesCounterMetric> = {}
     static originalIssueKeysTextChangedTimeout: number = 500
-
-    static reserveIssueKeyPrefix: string = 'reserve/'
 
     static useLockService: boolean = true
     static lockTimeoutMillis: number = 5 * 60 * 1000

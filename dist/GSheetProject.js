@@ -164,13 +164,13 @@ GSheetProjectSettings.settingsMilestonesTableRangeName = 'MilestonesTable';
 GSheetProjectSettings.settingsMilestonesTableMilestoneRangeName = 'MilestonesTableMilestone';
 GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName = 'MilestonesTableDeadline';
 GSheetProjectSettings.publicHolidaysRangeName = 'PublicHolidays';
-GSheetProjectSettings.notIssueKeyRegex = new RegExp("^\\s*\\W");
+GSheetProjectSettings.notIssueKeyRegex = /^\s*\W/;
+GSheetProjectSettings.bufferIssueKeyRegex = /^(buffer|reserve)/i;
 GSheetProjectSettings.issueTrackers = [];
 GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.issuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
 GSheetProjectSettings.originalIssueKeysTextChangedTimeout = 500;
-GSheetProjectSettings.reserveIssueKeyPrefix = 'reserve/';
 GSheetProjectSettings.useLockService = true;
 GSheetProjectSettings.lockTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.sheetName = "Projects";
@@ -620,7 +620,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             })();
         };
         const addFormulas = (column, formulaGenerator) => {
-            var _a, _b;
+            var _a, _b, _c;
             const values = getValues(column);
             const formulas = getFormulas(column);
             for (let row = startRow; row <= endRow; ++row) {
@@ -654,10 +654,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                         `column #${column}`,
                         `row #${row}`,
                     ].join(': '));
-                    const isReserve = issue === null || issue === void 0 ? void 0 : issue.startsWith(GSheetProjectSettings.reserveIssueKeyPrefix);
-                    let formula = Formulas.processFormula((_b = formulaGenerator(row, isReserve, isChild, issueIndex, index)) !== null && _b !== void 0 ? _b : '');
+                    const isBuffer = !!((_b = GSheetProjectSettings.bufferIssueKeyRegex) === null || _b === void 0 ? void 0 : _b.test(issue !== null && issue !== void 0 ? issue : ''));
+                    let formula = Formulas.processFormula((_c = formulaGenerator(row, isBuffer, isChild, issueIndex, index)) !== null && _c !== void 0 ? _c : '');
                     if (formula.length) {
-                        formula = Formulas.addFormulaMarkers(formula, isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER, isReserve ? this._DEFAULT_RESERVE_FORMULA_MARKER : null);
+                        formula = Formulas.addFormulaMarkers(formula, isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER, isBuffer ? this._DEFAULT_RESERVE_FORMULA_MARKER : null);
                         sheet.getRange(row, column).setFormula(formula);
                     }
                     else {
@@ -666,8 +666,8 @@ class DefaultFormulas extends AbstractIssueLogic {
                 }
             }
         };
-        addFormulas(childIssueColumn, (row, isReserve, isChild, issueIndex) => {
-            if (isReserve) {
+        addFormulas(childIssueColumn, (row, isBuffer, isChild, issueIndex) => {
+            if (isBuffer) {
                 childIssues[issueIndex] = `placeholder: ${addFormulas.name}`;
                 return `=
                     IF(
@@ -696,7 +696,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             }
             return undefined;
         });
-        addFormulas(milestoneColumn, (row, isReserve, isChild, issueIndex) => {
+        addFormulas(milestoneColumn, (row, isBuffer, isChild, issueIndex) => {
             if (isChild) {
                 const parentIssueRow = getParentIssueRow(issueIndex);
                 if (parentIssueRow != null) {
@@ -706,7 +706,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             }
             return undefined;
         });
-        addFormulas(typeColumn, (row, isReserve, isChild, issueIndex) => {
+        addFormulas(typeColumn, (row, isBuffer, isChild, issueIndex) => {
             if (isChild) {
                 const parentIssueRow = getParentIssueRow(issueIndex);
                 if (parentIssueRow != null) {
@@ -716,7 +716,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             }
             return undefined;
         });
-        addFormulas(titleColumn, (row, isReserve, isChild, issueIndex) => {
+        addFormulas(titleColumn, (row, isBuffer, isChild, issueIndex) => {
             if (isChild) {
                 const parentIssueRow = getParentIssueRow(issueIndex);
                 if (parentIssueRow != null) {
@@ -730,8 +730,8 @@ class DefaultFormulas extends AbstractIssueLogic {
             const issueA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, issueColumn));
             return `=${issueA1Notation}`;
         });
-        addFormulas(estimateColumn, (row, isReserve) => {
-            if (isReserve) {
+        addFormulas(estimateColumn, (row, isBuffer) => {
+            if (isBuffer) {
                 const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn));
                 const endA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, endColumn));
                 return `=LET(
@@ -746,7 +746,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             }
             return undefined;
         });
-        addFormulas(startColumn, (row, isReserve) => {
+        addFormulas(startColumn, (row, isBuffer) => {
             const teamTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(GSheetProjectSettings.titleRow, teamColumn));
             const estimateTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(GSheetProjectSettings.titleRow, estimateColumn));
             const endTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(GSheetProjectSettings.titleRow, endColumn));
@@ -853,7 +853,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     )
                 )
             `;
-            if (isReserve) {
+            if (isBuffer) {
                 let previousMilestone = `
                     MAX(FILTER(
                         ${GSheetProjectSettings.settingsMilestonesTableDeadlineRangeName},
@@ -897,8 +897,8 @@ class DefaultFormulas extends AbstractIssueLogic {
             `;
             return `=${notEnoughDataIf}`;
         });
-        addFormulas(endColumn, (row, isReserve) => {
-            if (isReserve) {
+        addFormulas(endColumn, (row, isBuffer) => {
+            if (isBuffer) {
                 const startA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, startColumn));
                 const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn));
                 return `=IF(
@@ -926,7 +926,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `;
         });
-        addFormulas(deadlineColumn, (row, isReserve, isChild, issueIndex) => {
+        addFormulas(deadlineColumn, (row, isBuffer, isChild, issueIndex) => {
             if (isChild) {
                 const parentIssueRow = getParentIssueRow(issueIndex);
                 if (parentIssueRow != null) {
@@ -2120,7 +2120,7 @@ class SheetLayout {
         return `${((_a = this.constructor) === null || _a === void 0 ? void 0 : _a.name) || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}63c47afd6420dba23dd3dee153c349496a4516064f7e5b8478c1dae6bbbba52f:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}0167b934b35b1603a4ee62b71734f38fe29f42efeb6b417468ad365fc4182db1:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
