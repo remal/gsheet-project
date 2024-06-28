@@ -1,4 +1,4 @@
-call yarn run dist
+call build
 @if %ERRORLEVEL% neq 0 @exit /B %ERRORLEVEL%
 call git add --all .
 @if %ERRORLEVEL% neq 0 @exit /B %ERRORLEVEL%
