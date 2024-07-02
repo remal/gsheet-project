@@ -115,6 +115,32 @@ class SheetLayoutProjects extends SheetLayout {
                         ? builder => builder
                             .whenFormulaSatisfied(`=
                                 AND(
+                                    #SELF <> "",
+                                    #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
+                                    #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
+                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
+                                    ISFORMULA(#SELF),
+                                )
+                            `)
+                            .setBold(true)
+                            .setFontColor(GSheetProjectSettings.errorColor)
+                            .setItalic(true)
+                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
+                        : null,
+                    builder => builder
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
+                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})
+                            )
+                        `)
+                        .setBold(true)
+                        .setFontColor(GSheetProjectSettings.errorColor),
+                    GSheetProjectSettings.inProgressesRangeName?.length
+                        ? builder => builder
+                            .whenFormulaSatisfied(`=
+                                AND(
                                     #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
                                     ISFORMULA(#SELF),
                                     #SELF <> ""

@@ -2101,7 +2101,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}3c27008249ed05c338059a198ea628ad3015a6466464ef68a7ead4438ddaa27d:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}80c370c1c8b929aa1dff2901f045cb973dd168ee935a6463d623649772734e9b:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2344,6 +2344,32 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
+                    GSheetProjectSettings.inProgressesRangeName?.length
+                        ? builder => builder
+                            .whenFormulaSatisfied(`=
+                                AND(
+                                    #SELF <> "",
+                                    #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
+                                    #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
+                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
+                                    ISFORMULA(#SELF),
+                                )
+                            `)
+                            .setBold(true)
+                            .setFontColor(GSheetProjectSettings.errorColor)
+                            .setItalic(true)
+                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
+                        : null,
+                    builder => builder
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
+                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})
+                            )
+                        `)
+                        .setBold(true)
+                        .setFontColor(GSheetProjectSettings.errorColor),
                     GSheetProjectSettings.inProgressesRangeName?.length
                         ? builder => builder
                             .whenFormulaSatisfied(`=
