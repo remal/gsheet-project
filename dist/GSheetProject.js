@@ -2101,7 +2101,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}80c370c1c8b929aa1dff2901f045cb973dd168ee935a6463d623649772734e9b:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}ddb21d38cdbd2ffc34dcdd5eda47639ceb42cd54e6f41c8f158cf35ede7a0721:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2861,6 +2861,9 @@ class Utils {
         return result;
     }
     static extractRegex(string, regexp, group) {
+        if (string == null) {
+            return null;
+        }
         if (this.isString(regexp)) {
             regexp = new RegExp(regexp);
         }
