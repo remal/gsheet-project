@@ -153,7 +153,11 @@ class Utils {
         return result
     }
 
-    static extractRegex(string: string, regexp: string | RegExp, group?: number | string): string | null {
+    static extractRegex(string: string | null | undefined, regexp: string | RegExp, group?: number | string): string | null {
+        if (string == null) {
+            return null;
+        }
+
         if (this.isString(regexp)) {
             regexp = new RegExp(regexp)
         }
