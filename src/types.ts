@@ -6,6 +6,12 @@ type Row = number
 type Column = number
 type Formula = string
 
+type OnIssuesLoaded = (
+    issues: Issue[],
+    sheet: Sheet,
+    row: Row,
+) => void
+
 type IssuesMetric<T> = (
     issues: Issue[],
     childIssues: Issue[],
@@ -24,6 +30,8 @@ type IssuesCounterMetric = (
 type Range = GoogleAppsScript.Spreadsheet.Range
 type RangeList = GoogleAppsScript.Spreadsheet.RangeList
 type Sheet = GoogleAppsScript.Spreadsheet.Sheet
+type Filter = GoogleAppsScript.Spreadsheet.Filter
+type FilterCriteria = GoogleAppsScript.Spreadsheet.FilterCriteria
 type Protection = GoogleAppsScript.Spreadsheet.Protection
 type NamedRange = GoogleAppsScript.Spreadsheet.NamedRange
 type DataValidation = GoogleAppsScript.Spreadsheet.DataValidation

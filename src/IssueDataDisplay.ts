@@ -257,6 +257,18 @@ class IssueDataDisplay extends AbstractIssueLogic {
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'))
 
 
+            if (GSheetProjectSettings.onIssuesLoaded != null) {
+                if (isOriginalIssueKeysTextChanged()) {
+                    return
+                }
+                GSheetProjectSettings.onIssuesLoaded(
+                    loadedIssues,
+                    sheet,
+                    row,
+                )
+            }
+
+
             for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.issuesMetrics)) {
                 const column = SheetUtils.findColumnByName(sheet, columnName)
                 if (column == null) {

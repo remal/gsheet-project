@@ -41,6 +41,7 @@ class GSheetProjectSettings {
     static bufferIssueKeyRegex: (RegExp | undefined) = /^(buffer|reserve)/i
     static issueTrackers: IssueTracker[] = []
     static issuesLoadTimeoutMillis: number = 5 * 60 * 1000
+    static onIssuesLoaded: OnIssuesLoaded | undefined = undefined
     static issuesMetrics: Record<ColumnName, IssuesMetric<string>> = {}
     static counterIssuesMetrics: Record<ColumnName, IssuesCounterMetric> = {}
     static originalIssueKeysTextChangedTimeout: number = 500

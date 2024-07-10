@@ -49,8 +49,11 @@ class SheetUtils {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
         }
+        if (lastRow < 1) {
+            lastRow = 1
+        }
 
-        ExecutionCache.put(['last-row', sheet], Math.max(lastRow, 1))
+        ExecutionCache.put(['last-row', sheet], lastRow)
     }
 
     static getLastColumn(sheet: Sheet | SheetName): Column {
@@ -66,6 +69,9 @@ class SheetUtils {
     static setLastColumn(sheet: Sheet | SheetName, lastColumn: Column) {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
+        }
+        if (lastColumn < 1) {
+            lastColumn = 1
         }
 
         ExecutionCache.put(['last-column', sheet], lastColumn)
@@ -85,8 +91,70 @@ class SheetUtils {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
         }
+        if (maxRows < 1) {
+            maxRows = 1
+        }
 
-        ExecutionCache.put(['max-rows', sheet], Math.max(maxRows, 1))
+        const currentMaxRows = sheet.getMaxRows()
+        if (currentMaxRows === maxRows) {
+            // do nothing
+
+        } else if (currentMaxRows < maxRows) {
+            const rowsToInsert = maxRows - currentMaxRows
+            sheet.insertRowsAfter(currentMaxRows, rowsToInsert)
+
+            sheet.getNamedRanges().forEach(namedRange => {
+                const range = namedRange.getRange()
+                if (range.getLastRow() >= currentMaxRows) {
+                    const newRange = range.offset(
+                        0,
+                        0,
+                        range.getNumRows() + rowsToInsert,
+                        range.getNumColumns(),
+                    )
+                    namedRange.setRange(newRange)
+                }
+            })
+
+            const filter = sheet.getFilter()
+            if (filter != null) {
+                const range = filter.getRange()
+                if (range.getLastRow() >= currentMaxRows) {
+                    filter.remove()
+
+                    const newRange = range.offset(
+                        0,
+                        0,
+                        range.getNumRows() + rowsToInsert,
+                        range.getNumColumns(),
+                    )
+                    newRange.createFilter()
+                }
+            }
+
+            const newConditionalFormatRules = sheet.getConditionalFormatRules().map(rule => {
+                const newRanges = rule.getRanges().map(range => {
+                    if (range.getLastRow() >= currentMaxRows) {
+                        return range.offset(
+                            0,
+                            0,
+                            range.getNumRows() + rowsToInsert,
+                            range.getNumColumns(),
+                        )
+                    } else {
+                        return range
+                    }
+                })
+
+                return rule.copy().setRanges(newRanges)
+            })
+            sheet.setConditionalFormatRules(newConditionalFormatRules)
+
+        } else {
+            return // do not reduce max rows
+        }
+
+        ExecutionCache.put(['max-rows', sheet], maxRows)
     }
 
     static getMaxColumns(sheet: Sheet | SheetName): Column {
@@ -102,6 +170,21 @@ class SheetUtils {
     static setMaxColumns(sheet: Sheet | SheetName, maxColumns: Column) {
         if (Utils.isString(sheet)) {
             sheet = this.getSheetByName(sheet)
+        }
+        if (maxColumns < 1) {
+            maxColumns = 1
+        }
+
+        const currentMaxColumns = sheet.getMaxColumns()
+        if (currentMaxColumns === maxColumns) {
+            // do nothing
+
+        } else if (currentMaxColumns < maxColumns) {
+            const columnsToInsert = maxColumns - currentMaxColumns
+            sheet.insertColumnsAfter(currentMaxColumns, columnsToInsert)
+
+        } else {
+            return // do not reduce max columns
         }
 
         ExecutionCache.put(['max-columns', sheet], maxColumns)
