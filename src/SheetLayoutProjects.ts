@@ -119,7 +119,7 @@ class SheetLayoutProjects extends SheetLayout {
                                     #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
                                     #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
                                     #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
-                                    ISFORMULA(#SELF),
+                                    ISFORMULA(#SELF)
                                 )
                             `)
                             .setBold(true)
@@ -132,11 +132,13 @@ class SheetLayoutProjects extends SheetLayout {
                             AND(
                                 #SELF <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
-                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})
+                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})б
+                                ISFORMULA(#SELF)
                             )
                         `)
                         .setBold(true)
-                        .setFontColor(GSheetProjectSettings.errorColor),
+                        .setFontColor(GSheetProjectSettings.errorColor)
+                        .setItalic(true),
                     GSheetProjectSettings.inProgressesRangeName?.length
                         ? builder => builder
                             .whenFormulaSatisfied(`=

@@ -2110,7 +2110,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}45b8339c8da0d352aa7402d7cd02fbe4f40e7dd02737862a095ceeb16cbd5945:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}1ba632451d0564d7dd3a4f849a519b6824d21ca9334d7df260042d963726551d:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2361,7 +2361,7 @@ class SheetLayoutProjects extends SheetLayout {
                                     #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
                                     #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
                                     #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
-                                    ISFORMULA(#SELF),
+                                    ISFORMULA(#SELF)
                                 )
                             `)
                             .setBold(true)
@@ -2374,11 +2374,13 @@ class SheetLayoutProjects extends SheetLayout {
                             AND(
                                 #SELF <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
-                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})
+                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})б
+                                ISFORMULA(#SELF)
                             )
                         `)
                         .setBold(true)
-                        .setFontColor(GSheetProjectSettings.errorColor),
+                        .setFontColor(GSheetProjectSettings.errorColor)
+                        .setItalic(true),
                     GSheetProjectSettings.inProgressesRangeName?.length
                         ? builder => builder
                             .whenFormulaSatisfied(`=
