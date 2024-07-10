@@ -70,9 +70,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
 
             let currentIssueColumn: Column
             let originalIssueKeysText: string
+            let isChildIssue = false
             if (childIssues[index]?.length) {
                 currentIssueColumn = childIssueColumn
                 originalIssueKeysText = childIssues[index]
+                isChildIssue = true
             } else if (issues[index]?.length) {
                 currentIssueColumn = issueColumn
                 originalIssueKeysText = issues[index]
@@ -265,6 +267,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     loadedIssues,
                     sheet,
                     row,
+                    isChildIssue,
                 )
             }
 

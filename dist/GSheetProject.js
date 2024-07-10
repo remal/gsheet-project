@@ -1176,9 +1176,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
             }
             let currentIssueColumn;
             let originalIssueKeysText;
+            let isChildIssue = false;
             if (childIssues[index]?.length) {
                 currentIssueColumn = childIssueColumn;
                 originalIssueKeysText = childIssues[index];
+                isChildIssue = true;
             }
             else if (issues[index]?.length) {
                 currentIssueColumn = issueColumn;
@@ -1337,7 +1339,7 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 if (isOriginalIssueKeysTextChanged()) {
                     return;
                 }
-                handler(loadedIssues, sheet, row);
+                handler(loadedIssues, sheet, row, isChildIssue);
             }
             for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.issuesMetrics)) {
                 const column = SheetUtils.findColumnByName(sheet, columnName);
@@ -2108,7 +2110,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}6ba954101d501efa75e90cd5f6729eb7fa4ca04571bd515a13de4a2aa52bc5ae:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}45b8339c8da0d352aa7402d7cd02fbe4f40e7dd02737862a095ceeb16cbd5945:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

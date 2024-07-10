@@ -10,6 +10,7 @@ type OnIssuesLoaded = (
     issues: Issue[],
     sheet: Sheet,
     row: Row,
+    isChildIssue: boolean,
 ) => void
 
 type IssuesMetric<T> = (
