@@ -166,10 +166,10 @@ GSheetProjectSettings.notIssueKeyRegex = /^\s*\W/;
 GSheetProjectSettings.bufferIssueKeyRegex = /^(buffer|reserve)/i;
 GSheetProjectSettings.issueTrackers = [];
 GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
-GSheetProjectSettings.onIssuesLoaded = undefined;
+GSheetProjectSettings.onIssuesLoadedHandlers = [];
 GSheetProjectSettings.issuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
-GSheetProjectSettings.originalIssueKeysTextChangedTimeout = 500;
+GSheetProjectSettings.originalIssueKeysTextChangedTimeout = 250;
 GSheetProjectSettings.useLockService = true;
 GSheetProjectSettings.lockTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.sheetName = "Projects";
@@ -1333,11 +1333,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
                 return;
             }
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'));
-            if (GSheetProjectSettings.onIssuesLoaded != null) {
+            for (const handler of GSheetProjectSettings.onIssuesLoadedHandlers) {
                 if (isOriginalIssueKeysTextChanged()) {
                     return;
                 }
-                GSheetProjectSettings.onIssuesLoaded(loadedIssues, sheet, row);
+                handler(loadedIssues, sheet, row);
             }
             for (const [columnName, issuesMetric] of Object.entries(GSheetProjectSettings.issuesMetrics)) {
                 const column = SheetUtils.findColumnByName(sheet, columnName);
@@ -2108,7 +2108,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}3dde1b39b1061c2b85b49b03f2e58bedcff341eca1c47f2ba2d9e4d4e9ac9f30:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}7b97aa4a3e4f8b8af5fd81df5d592f514b85372c9d7766633f7830e317bf8568:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

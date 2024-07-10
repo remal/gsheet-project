@@ -257,11 +257,11 @@ class IssueDataDisplay extends AbstractIssueLogic {
             sheet.getRange(row, titleColumn).setValue(titles.join('\n'))
 
 
-            if (GSheetProjectSettings.onIssuesLoaded != null) {
+            for (const handler of GSheetProjectSettings.onIssuesLoadedHandlers) {
                 if (isOriginalIssueKeysTextChanged()) {
                     return
                 }
-                GSheetProjectSettings.onIssuesLoaded(
+                handler(
                     loadedIssues,
                     sheet,
                     row,
