@@ -2108,7 +2108,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}7b97aa4a3e4f8b8af5fd81df5d592f514b85372c9d7766633f7830e317bf8568:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}6ba954101d501efa75e90cd5f6729eb7fa4ca04571bd515a13de4a2aa52bc5ae:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2812,6 +2812,14 @@ class Utils {
         }
         value = value.substring(0, 1).toLowerCase() + value.substring(1).toLowerCase();
         value = value.replaceAll(/[^a-z0-9]+([a-z0-9])/ig, (_, letter) => letter.toUpperCase());
+        return value;
+    }
+    static toUpperCamelCase(value) {
+        value = this.toLowerCamelCase(value);
+        if (value.length <= 1) {
+            return value.toUpperCase();
+        }
+        value = value.substring(0, 1).toUpperCase() + value.substring(1);
         return value;
     }
     static mapRecordValues(record, transformer) {

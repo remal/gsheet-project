@@ -21,6 +21,16 @@ class Utils {
         return value
     }
 
+    static toUpperCamelCase(value: string): string {
+        value = this.toLowerCamelCase(value)
+        if (value.length <= 1) {
+            return value.toUpperCase()
+        }
+
+        value = value.substring(0, 1).toUpperCase() + value.substring(1)
+        return value
+    }
+
     static mapRecordValues<V, VR>(
         record: Record<string, V>,
         transformer: (value: V, key: string) => VR,
@@ -153,7 +163,11 @@ class Utils {
         return result
     }
 
-    static extractRegex(string: string | null | undefined, regexp: string | RegExp, group?: number | string): string | null {
+    static extractRegex(
+        string: string | null | undefined,
+        regexp: string | RegExp,
+        group?: number | string,
+    ): string | null {
         if (string == null) {
             return null;
         }
