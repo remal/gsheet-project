@@ -307,14 +307,13 @@ class IssueDataDisplay extends AbstractIssueLogic {
                     loadedBlockerIssues,
                     sheet,
                     row,
-                )
+                ).filter(Utils.distinctBy(issue => issue.id))
                 if (!foundIssues.length) {
                     sheet.getRange(row, column).setValue('')
                     continue
                 }
 
-                const foundIssueIds = foundIssues.map(it => it.id)
-                    .filter(Utils.distinct())
+                const foundIssueIds = foundIssues.map(issue => issue.id)
                 const link = {
                     title: foundIssues.length.toString(),
                     url: issueTracker.getUrlForIssueIds(foundIssueIds),
