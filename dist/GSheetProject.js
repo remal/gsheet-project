@@ -150,6 +150,7 @@ GSheetProjectSettings.teamsRangeName = "Teams";
 GSheetProjectSettings.estimatesRangeName = "Estimates";
 GSheetProjectSettings.startsRangeName = "Starts";
 GSheetProjectSettings.endsRangeName = "Ends";
+GSheetProjectSettings.earliestStartsRangeName = "EarliestStarts";
 GSheetProjectSettings.deadlinesRangeName = "Deadlines";
 GSheetProjectSettings.inProgressesRangeName = undefined;
 GSheetProjectSettings.codeCompletesRangeName = undefined;
@@ -183,6 +184,7 @@ GSheetProjectSettings.lastDataReloadColumnName = "Last\nReload";
 GSheetProjectSettings.titleColumnName = "Title";
 GSheetProjectSettings.teamColumnName = "Team";
 GSheetProjectSettings.estimateColumnName = "Estimate\n(days)";
+GSheetProjectSettings.earliestStartColumnName = "Earliest\nStart";
 GSheetProjectSettings.deadlineColumnName = "Deadline";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
@@ -578,6 +580,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const estimateColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.estimateColumnName);
         const startColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.startColumnName);
         const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName);
+        const earliestStartColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.earliestStartColumnName);
         const deadlineColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName);
         const allValuesColumns = {};
         [
@@ -588,6 +591,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             estimateColumn,
             startColumn,
             endColumn,
+            earliestStartColumn,
             deadlineColumn,
         ].forEach(column => allValuesColumns[column.toString()] = column);
         const allValues = LazyProxy.create(() => SheetUtils.getColumnsStringValues(sheet, allValuesColumns, startRow, endRow));
@@ -742,6 +746,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             const estimateTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(GSheetProjectSettings.titleRow, estimateColumn));
             const endTitleA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(GSheetProjectSettings.titleRow, endColumn));
             const teamA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, teamColumn));
+            const earliestStartA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, earliestStartColumn));
             const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn));
             const notEnoughPreviousLanes = `
                 COUNTIFS(
@@ -832,15 +837,12 @@ class DefaultFormulas extends AbstractIssueLogic {
             `;
             let mainCalculation = `
                 LET(
-                    dependencyEndDate,
-                    DATE(2000, 1, 1),
-                    MAX(
-                        ${withResources},
-                        WORKDAY(
-                            dependencyEndDate,
-                            1,
-                            ${GSheetProjectSettings.publicHolidaysRangeName}
-                        )
+                    start,
+                    ${withResources},
+                    IF(
+                        ${earliestStartA1Notation} <> "",
+                        MAX(start, ${earliestStartA1Notation}),
+                        start
                     )
                 )
             `;
@@ -2109,7 +2111,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}710fe13a21b4c65936403032afaedb19c4a1e3b722b6033d0d460d30c66a547a:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}0a40b37a2e815a65f524df96be4fe7007f2ef2be7e6f0164c002e7710f4cc827:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2423,6 +2425,12 @@ class SheetLayoutProjects extends SheetLayout {
                             .setFontColor(GSheetProjectSettings.warningColor)
                         : null,
                 ],
+            },
+            {
+                name: GSheetProjectSettings.earliestStartColumnName,
+                rangeName: GSheetProjectSettings.earliestStartsRangeName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
             },
             {
                 name: GSheetProjectSettings.deadlineColumnName,

@@ -184,6 +184,12 @@ class SheetLayoutProjects extends SheetLayout {
                 ],
             },
             {
+                name: GSheetProjectSettings.earliestStartColumnName,
+                rangeName: GSheetProjectSettings.earliestStartsRangeName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+            },
+            {
                 name: GSheetProjectSettings.deadlineColumnName,
                 rangeName: GSheetProjectSettings.deadlinesRangeName,
                 defaultFormat: 'yyyy-MM-dd',
