@@ -43,7 +43,7 @@ class GSheetProjectSettings {
     static issueTrackers: IssueTracker[] = []
     static issuesLoadTimeoutMillis: number = 5 * 60 * 1000
     static onIssuesLoadedHandlers: OnIssuesLoaded[] = []
-    static issuesMetrics: Record<ColumnName, IssuesMetric<string>> = {}
+    static issuesMetrics: Record<ColumnName, IssuesMetric<any>> = {}
     static counterIssuesMetrics: Record<ColumnName, IssuesCounterMetric> = {}
     static originalIssueKeysTextChangedTimeout: number = 250
 
