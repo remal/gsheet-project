@@ -34,18 +34,6 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.issueKeyColumnName,
                 rangeName: GSheetProjectSettings.issuesRangeName,
-                dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`=
-                        COUNTIFS(
-                            ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
-                            ${GSheetProjectSettings.childIssuesRangeName}, "="
-                        ) <= 1
-                    `)
-                    .setHelpText(
-                        `Multiple rows with the same ${GSheetProjectSettings.issueKeyColumnName}`
-                        + ` without ${GSheetProjectSettings.childIssueKeyColumnName}`,
-                    )
-                    .build(),
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
