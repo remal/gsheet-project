@@ -2111,7 +2111,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}0a40b37a2e815a65f524df96be4fe7007f2ef2be7e6f0164c002e7710f4cc827:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}d637b6620b59698e1829665f5dea952c1071839523cacaa5695fc1ec92467535:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2281,16 +2281,6 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.issueKeyColumnName,
                 rangeName: GSheetProjectSettings.issuesRangeName,
-                dataValidation: () => SpreadsheetApp.newDataValidation()
-                    .requireFormulaSatisfied(`=
-                        COUNTIFS(
-                            ${GSheetProjectSettings.issuesRangeName}, "=" & #SELF,
-                            ${GSheetProjectSettings.childIssuesRangeName}, "="
-                        ) <= 1
-                    `)
-                    .setHelpText(`Multiple rows with the same ${GSheetProjectSettings.issueKeyColumnName}`
-                    + ` without ${GSheetProjectSettings.childIssueKeyColumnName}`)
-                    .build(),
                 defaultFormat: '',
                 defaultHorizontalAlignment: 'left',
             },
