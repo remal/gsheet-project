@@ -912,6 +912,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     OR(
                         ${startA1Notation} = "",
                         ${estimateA1Notation} = "",
+                        NOT(ISNUMBER(${estimateA1Notation})),
                         ${estimateA1Notation} <= 0
                     ),
                     "",
@@ -2115,7 +2116,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}be621fe7358ecd344274ea3d594beac1fc9c7ec1ff295a53ec25510c45e63c4e:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}faf35b41f4e3bb10d137426339bd48862e0274a3b3cf9603dc1c3fb948807e52:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
