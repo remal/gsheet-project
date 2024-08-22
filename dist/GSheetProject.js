@@ -889,7 +889,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                 IF(
                     ${teamA1Notation} = "",
                     "",
-                    ${mainCalculation}
+                    ${withResources}
                 )
             `;
             return `=${notEnoughDataIf}`;
@@ -2115,7 +2115,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}9d9e418b4bbf337536b876474cd5ace1381f6de4f8b898061c50b4ccc37be81f:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}320009248fa2d120d20c6ff67415bc53539ab653c3b66a38fd1cdad9c4b5110f:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
