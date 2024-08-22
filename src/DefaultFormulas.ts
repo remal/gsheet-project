@@ -482,6 +482,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     OR(
                         ${startA1Notation} = "",
                         ${estimateA1Notation} = "",
+                        NOT(ISNUMBER(${estimateA1Notation})),
                         ${estimateA1Notation} <= 0
                     ),
                     "",
