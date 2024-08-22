@@ -80,7 +80,10 @@ class SheetLayoutProjects extends SheetLayout {
                 conditionalFormats: [
                     builder => builder
                         .whenFormulaSatisfied(`=
-                            #SELF < 0
+                            OR(
+                                NOT(ISNUMBER(#SELF)),
+                                #SELF < 0
+                            )
                         `)
                         .setFontColor(GSheetProjectSettings.unimportantColor),
                     builder => builder
