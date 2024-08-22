@@ -111,7 +111,7 @@ class SheetLayoutProjects extends SheetLayout {
                                     #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
                                     #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
                                     ISFORMULA(#SELF),
-                                    FORMULATEXT(#SELF) <> "=TODAY()",
+                                    FORMULATEXT(#SELF) <> "=TODAY()"
                                 )
                             `)
                             .setBold(true)
@@ -126,7 +126,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
                                 #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
                                 ISFORMULA(#SELF),
-                                FORMULATEXT(#SELF) <> "=TODAY()",
+                                FORMULATEXT(#SELF) <> "=TODAY()"
                             )
                         `)
                         .setBold(true)
