@@ -2115,7 +2115,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}320009248fa2d120d20c6ff67415bc53539ab653c3b66a38fd1cdad9c4b5110f:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}be621fe7358ecd344274ea3d594beac1fc9c7ec1ff295a53ec25510c45e63c4e:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2329,7 +2329,10 @@ class SheetLayoutProjects extends SheetLayout {
                 conditionalFormats: [
                     builder => builder
                         .whenFormulaSatisfied(`=
-                            #SELF < 0
+                            OR(
+                                NOT(ISNUMBER(#SELF)),
+                                #SELF < 0
+                            )
                         `)
                         .setFontColor(GSheetProjectSettings.unimportantColor),
                     builder => builder
