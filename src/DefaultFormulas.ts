@@ -383,25 +383,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                 )
             `
 
-            const withResources = `
-                LET(
-                    resources,
-                    VLOOKUP(
-                        ${teamA1Notation},
-                        ${GSheetProjectSettings.settingsTeamsTableRangeName},
-                        1
-                            + COLUMN(${GSheetProjectSettings.settingsTeamsTableResourcesRangeName})
-                            - COLUMN(${GSheetProjectSettings.settingsTeamsTableRangeName}),
-                        FALSE
-                    ),
-                    ${firstDataRowIf}
-                )
-            `
-
             let mainCalculation = `
                 LET(
                     start,
-                    ${withResources},
+                    ${firstDataRowIf},
                     IF(
                         ${earliestStartA1Notation} <> "",
                         MAX(start, ${earliestStartA1Notation}),
@@ -447,6 +432,25 @@ class DefaultFormulas extends AbstractIssueLogic {
                     )
                 `
             }
+
+            const withResources = `
+                LET(
+                    resources,
+                    VLOOKUP(
+                        ${teamA1Notation},
+                        ${GSheetProjectSettings.settingsTeamsTableRangeName},
+                        1
+                            + COLUMN(${GSheetProjectSettings.settingsTeamsTableResourcesRangeName})
+                            - COLUMN(${GSheetProjectSettings.settingsTeamsTableRangeName}),
+                        FALSE
+                    ),
+                    IF(
+                        resources,
+                        ${mainCalculation},
+                        ""
+                    )
+                )
+            `
 
             const notEnoughDataIf = `
                 IF(
