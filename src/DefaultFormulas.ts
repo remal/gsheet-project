@@ -456,7 +456,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                 IF(
                     ${teamA1Notation} = "",
                     "",
-                    ${mainCalculation}
+                    ${withResources}
                 )
             `
 
