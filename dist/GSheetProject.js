@@ -2116,7 +2116,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f075adbfa749f4d8e6c1c2b923c4b4387b026e264eec783f8195c9e9e4cfe4cd:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}afa7daedef473fa0a7f16e87ceb6711a694cf2a9001cc08ef03d0e60bacc6a27:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2360,7 +2360,8 @@ class SheetLayoutProjects extends SheetLayout {
                                     #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
                                     #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
                                     #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
-                                    ISFORMULA(#SELF)
+                                    ISFORMULA(#SELF),
+                                    FORMULATEXT(#SELF) <> "=TODAY()",
                                 )
                             `)
                             .setBold(true)
@@ -2374,7 +2375,8 @@ class SheetLayoutProjects extends SheetLayout {
                                 #SELF <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
                                 #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
-                                ISFORMULA(#SELF)
+                                ISFORMULA(#SELF),
+                                FORMULATEXT(#SELF) <> "=TODAY()",
                             )
                         `)
                         .setBold(true)
@@ -2386,6 +2388,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 AND(
                                     #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
                                     ISFORMULA(#SELF),
+                                    FORMULATEXT(#SELF) <> "=TODAY()",
                                     #SELF <> ""
                                 )
                             `)
