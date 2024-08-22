@@ -416,7 +416,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                             1,
                             ${GSheetProjectSettings.publicHolidaysRangeName}
                         ),
-                        ${withResources}
+                        ${firstDataRowIf}
                     )
                 `
 
