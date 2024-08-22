@@ -123,7 +123,7 @@ class SheetLayoutProjects extends SheetLayout {
                             AND(
                                 #SELF <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
-                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName})б
+                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
                                 ISFORMULA(#SELF)
                             )
                         `)
