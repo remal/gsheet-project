@@ -821,24 +821,10 @@ class DefaultFormulas extends AbstractIssueLogic {
                     MAX(${nextWorkdayLastEnd}, ${GSheetProjectSettings.settingsScheduleStartRangeName})
                 )
             `;
-            const withResources = `
-                LET(
-                    resources,
-                    VLOOKUP(
-                        ${teamA1Notation},
-                        ${GSheetProjectSettings.settingsTeamsTableRangeName},
-                        1
-                            + COLUMN(${GSheetProjectSettings.settingsTeamsTableResourcesRangeName})
-                            - COLUMN(${GSheetProjectSettings.settingsTeamsTableRangeName}),
-                        FALSE
-                    ),
-                    ${firstDataRowIf}
-                )
-            `;
             let mainCalculation = `
                 LET(
                     start,
-                    ${withResources},
+                    ${firstDataRowIf},
                     IF(
                         ${earliestStartA1Notation} <> "",
                         MAX(start, ${earliestStartA1Notation}),
@@ -866,7 +852,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                             1,
                             ${GSheetProjectSettings.publicHolidaysRangeName}
                         ),
-                        ${withResources}
+                        ${firstDataRowIf}
                     )
                 `;
                 mainCalculation = `
@@ -881,6 +867,24 @@ class DefaultFormulas extends AbstractIssueLogic {
                     )
                 `;
             }
+            const withResources = `
+                LET(
+                    resources,
+                    VLOOKUP(
+                        ${teamA1Notation},
+                        ${GSheetProjectSettings.settingsTeamsTableRangeName},
+                        1
+                            + COLUMN(${GSheetProjectSettings.settingsTeamsTableResourcesRangeName})
+                            - COLUMN(${GSheetProjectSettings.settingsTeamsTableRangeName}),
+                        FALSE
+                    ),
+                    IF(
+                        resources,
+                        ${mainCalculation},
+                        ""
+                    )
+                )
+            `;
             const notEnoughDataIf = `
                 IF(
                     ${teamA1Notation} = "",
@@ -2111,7 +2115,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}d637b6620b59698e1829665f5dea952c1071839523cacaa5695fc1ec92467535:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}9d9e418b4bbf337536b876474cd5ace1381f6de4f8b898061c50b4ccc37be81f:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
