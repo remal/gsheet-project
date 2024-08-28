@@ -45,7 +45,7 @@ class GSheetProjectSettings {
     static onIssuesLoadedHandlers: OnIssuesLoaded[] = []
     static issuesMetrics: Record<ColumnName, IssuesMetric<any>> = {}
     static counterIssuesMetrics: Record<ColumnName, IssuesCounterMetric> = {}
-    static originalIssueKeysTextChangedTimeout: number = 250
+    static originalIssueKeysTextChangedTimeout: number = 200
 
     static useLockService: boolean = true
     static lockTimeoutMillis: number = 5 * 60 * 1000
