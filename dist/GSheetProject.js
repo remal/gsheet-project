@@ -2097,7 +2097,7 @@ class RichTextUtils {
         const builder = SpreadsheetApp.newRichTextValue().setText(text);
         linksWithOffsets.forEach(link => builder.setLinkUrl(link.start, link.end, link.url));
         builder.setTextStyle(SpreadsheetApp.newTextStyle()
-            .setUnderline(false)
+            .setUnderline(true)
             .build());
         return builder.build();
     }
@@ -2116,7 +2116,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f91d74acec6b31465799e40daeb94d37cb2558f2eec226b3a0f4d159314404e8:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}130d0bb1bfec80e8e6b205f4520509f5079476aa5427e1a2de1de2bff01da66c:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
