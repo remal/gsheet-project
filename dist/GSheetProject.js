@@ -170,7 +170,7 @@ GSheetProjectSettings.issuesLoadTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.onIssuesLoadedHandlers = [];
 GSheetProjectSettings.issuesMetrics = {};
 GSheetProjectSettings.counterIssuesMetrics = {};
-GSheetProjectSettings.originalIssueKeysTextChangedTimeout = 250;
+GSheetProjectSettings.originalIssueKeysTextChangedTimeout = 200;
 GSheetProjectSettings.useLockService = true;
 GSheetProjectSettings.lockTimeoutMillis = 5 * 60 * 1000;
 GSheetProjectSettings.sheetName = "Projects";
@@ -2116,7 +2116,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}130d0bb1bfec80e8e6b205f4520509f5079476aa5427e1a2de1de2bff01da66c:${GSheetProjectSettings.computeStringSettingsHash()}`;
+        return `${this._documentFlagPrefix}2eb854400255e86a06733e46490ac967b3717cb14851237b079e12385203adde:${GSheetProjectSettings.computeStringSettingsHash()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
