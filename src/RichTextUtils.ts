@@ -44,7 +44,7 @@ class RichTextUtils {
         const builder = SpreadsheetApp.newRichTextValue().setText(text)
         linksWithOffsets.forEach(link => builder.setLinkUrl(link.start, link.end, link.url))
         builder.setTextStyle(SpreadsheetApp.newTextStyle()
-            .setUnderline(false)
+            .setUnderline(true)
             .build(),
         )
         return builder.build()
