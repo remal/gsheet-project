@@ -24,6 +24,7 @@ abstract class SheetLayout {
 
     migrateIfNeeded(): boolean {
         if (DocumentFlags.isSet(this._documentFlag)) {
+            console.log(`Skipping '${sheet.getSheetName()}' sheet migration`)
             return false
         }
 
@@ -33,7 +34,7 @@ abstract class SheetLayout {
 
     migrate() {
         const sheet = this.sheet
-        console.log(`Migrating ${sheet.getSheetName()}`)
+        console.log(`Migrating '${sheet.getSheetName()}' sheet`)
 
 
         const conditionalFormattingScope = `layout:${this.constructor?.name || Utils.normalizeName(this.sheetName)}`
