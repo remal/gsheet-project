@@ -34,7 +34,7 @@ abstract class SheetLayout {
 
     migrate() {
         const sheet = this.sheet
-        console.log(`Migrating '${sheet.getSheetName()}' sheet`)
+        console.warn(`Migrating '${sheet.getSheetName()}' sheet`)
 
 
         const conditionalFormattingScope = `layout:${this.constructor?.name || Utils.normalizeName(this.sheetName)}`
