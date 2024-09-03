@@ -24,7 +24,7 @@ abstract class SheetLayout {
 
     migrateIfNeeded(): boolean {
         if (DocumentFlags.isSet(this._documentFlag)) {
-            console.log(`Skipping '${sheet.getSheetName()}' sheet migration`)
+            console.log(`Skipping '${this.sheet.getSheetName()}' sheet migration`)
             return false
         }
 
