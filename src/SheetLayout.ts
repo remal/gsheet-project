@@ -19,7 +19,7 @@ abstract class SheetLayout {
     }
 
     private get _documentFlag(): string {
-        return `${this._documentFlagPrefix}$$$HASH$$$:${GSheetProjectSettings.computeStringSettingsHash()}`
+        return `${this._documentFlagPrefix}$$$HASH$$$:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`
     }
 
     migrateIfNeeded(): boolean {
