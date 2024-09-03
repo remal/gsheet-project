@@ -2116,7 +2116,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}975eba769cf8d66aeecc3dc3646ae02bb789b8d94169c3ee334b0e37a469e835:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}97b8caffa6f55c50f88d0d684f4851c79d6608011a50b0feeb93d2abc13d1e59:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2127,6 +2127,7 @@ class SheetLayout {
     }
     migrate() {
         const sheet = this.sheet;
+        console.log(`Migrating ${sheet.getSheetName()}`);
         const conditionalFormattingScope = `layout:${this.constructor?.name || Utils.normalizeName(this.sheetName)}`;
         let conditionalFormattingOrder = 0;
         ConditionalFormatting.removeConditionalFormatRulesByScope(sheet, 'layout');
