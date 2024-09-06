@@ -61,9 +61,9 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.lastDataReloadColumnName,
-                hiddenByDefault: true,
                 defaultFormat: `yyyy-MM-dd HH:mm:ss.SSS`,
                 defaultHorizontalAlignment: 'left',
+                hiddenByDefault: true,
             },
             {
                 name: GSheetProjectSettings.teamColumnName,
@@ -193,7 +193,8 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.daysTillDeadlineColumnName,
                 rangeName: GSheetProjectSettings.daysTillDeadlinesRangeName,
-                hiddenByDefault: true,
+                defaultFormat: '#,##0',
+                defaultHorizontalAlignment: 'center',
                 arrayFormula: `
                     ARRAYFORMULA(
                         IF(
@@ -203,17 +204,18 @@ class SheetLayoutProjects extends SheetLayout {
                         )
                     )
                 `,
+                hiddenByDefault: true,
             },
             /*
             {
                 name: GSheetProjectSettings.projectsIssueHashColumnName,
-                hiddenByDefault: true,
                 arrayFormula: `
                     MAP(
                         ARRAYFORMULA(${GSheetProjectSettings.projectsIssuesRangeName}),
                         LAMBDA(issue, IF(issue = "", "", ${SHA256.name}(issue)))
                     )
                 `,
+                hiddenByDefault: true,
             },
             */
             ...GSheetProjectSettings.additionalColumns,
