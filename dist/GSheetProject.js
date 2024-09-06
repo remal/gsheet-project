@@ -311,6 +311,11 @@ class ConditionalFormatRuleUtils {
         }
         return condition.getCriteriaValues()[0].toString();
     }
+    static extractRequiredFormula(rule) {
+        return this.extractFormula(rule) ?? (() => {
+            throw new Error('Not a boolean condition with formula');
+        })();
+    }
 }
 class ConditionalFormatting {
     static addConditionalFormatRule(range, orderedRule, addIsFormulaRule = true) {
@@ -323,15 +328,10 @@ class ConditionalFormatting {
         if (orderedRule.order <= 0) {
             throw new Error(`Order is <= 0: ${orderedRule.order}`);
         }
-        const builder = SpreadsheetApp.newConditionalFormatRule();
-        builder.setRanges([range]);
+        const builder = SpreadsheetApp.newConditionalFormatRule().setRanges([range]);
         orderedRule.configurer(builder);
-        let formula = ConditionalFormatRuleUtils.extractFormula(builder);
-        if (formula == null) {
-            throw new Error(`Not a boolean condition with formula`);
-        }
-        formula = Formulas.processFormula(formula)
-            .replace(/^=+/, '');
+        let formula = ConditionalFormatRuleUtils.extractRequiredFormula(builder);
+        formula = Formulas.processFormula(formula).replace(/^\s*=+\s*/, '');
         const newRuleFormula = Formulas.processFormula(`=
             AND(
                 ${formula},
@@ -339,20 +339,20 @@ class ConditionalFormatting {
                 "GSPo"<>"${orderedRule.order + 0.2}"
             )
         `);
-        builder.whenFormulaSatisfied(newRuleFormula);
+        builder.whenFormulaSatisfied(Formulas.deduplicateRowCells(newRuleFormula));
         const newRule = builder.build();
         const newRules = [newRule];
         if (addIsFormulaRule) {
             const newIsFormula = Formulas.processFormula(`=
-                    AND(
-                        ISFORMULA(#SELF),
-                        ${formula},
-                        "GSPs"<>"${orderedRule.scope}",
-                        "GSPo"<>"${orderedRule.order + 0.1}"
-                    )
-                `);
+                AND(
+                    ISFORMULA(#SELF),
+                    ${formula},
+                    "GSPs"<>"${orderedRule.scope}",
+                    "GSPo"<>"${orderedRule.order + 0.1}"
+                )
+            `);
             const newIsFormulaRule = newRule.copy()
-                .whenFormulaSatisfied(newIsFormula)
+                .whenFormulaSatisfied(Formulas.deduplicateRowCells(newIsFormula))
                 .setItalic(true)
                 .build();
             newRules.push(newIsFormulaRule);
@@ -1072,7 +1072,7 @@ class Formulas {
     static processFormula(formula) {
         formula = formula.replaceAll(/#SELF_COLUMN\(([^)]+)\)/g, 'INDIRECT("RC"&COLUMN($1), FALSE)');
         formula = formula.replaceAll(/#SELF(\b|&)/g, 'INDIRECT("RC", FALSE)$1');
-        return formula.split(/[\r\n]+/)
+        formula = formula.split(/[\r\n]+/)
             .map(line => line.replace(/^\s+/, ''))
             .filter(line => line.length)
             .map(line => line.replaceAll(/^([<>&=*/+-]+ )/g, ' $1'))
@@ -1082,6 +1082,28 @@ class Formulas {
             .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
             .join('')
             .trim();
+        return formula;
+    }
+    static deduplicateRowCells(formula) {
+        const startsWithEquals = formula.startsWith("=");
+        formula = formula.replace(/^=+/, '');
+        let rowCells = new Map();
+        formula = formula.replaceAll(/\bINDIRECT\("RC"(\s*&\s*COLUMN\((\w+)\))?, FALSE\)/ig, (match, _, range) => {
+            range = range ?? '';
+            rowCells.set(`rowCell${range}`, range);
+            return `rowCell${range}`;
+        });
+        rowCells = new Map([...rowCells.entries()].sort((e1, e2) => e1[0].localeCompare(e2[0])));
+        rowCells.forEach((range, name) => {
+            const rangeFormula = range.length
+                ? `INDIRECT("RC"&COLUMN(${range}), FALSE)`
+                : `INDIRECT("RC", FALSE)`;
+            formula = `LET(${name}, ${rangeFormula}, ${formula})`;
+        });
+        if (startsWithEquals) {
+            formula = `=${formula}`;
+        }
+        return formula;
     }
     static addFormulaMarker(formula, marker) {
         if (!marker?.length) {
@@ -2121,7 +2143,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}225591743ef82b4d1b8f256f33de83eec688bb6dca752697edf8ad6298041a07:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}dd5e3ee1210f731373e7879f353f22be099132b4a0ae439d192eba99dfeb639e:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2227,19 +2249,42 @@ class SheetLayout {
                 }
                 range.setDataValidation(dataValidation);
             }
-            info.conditionalFormats?.forEach(configurer => {
-                if (configurer == null) {
-                    return;
-                }
-                const originalConfigurer = configurer;
-                configurer = builder => {
-                    originalConfigurer(builder);
-                    const formula = ConditionalFormatRuleUtils.extractFormula(builder);
-                    if (formula != null) {
-                        builder.whenFormulaSatisfied(Formulas.processFormula(formula));
+            function getConfigurerOf(configurer) {
+                const untyped = configurer;
+                return untyped.configurer != null ? untyped.configurer : untyped;
+            }
+            function isMergeWithPrevious(configurer) {
+                const untyped = configurer;
+                return !!untyped.mergeWithPrevious;
+            }
+            const allConditionalFormats = info.conditionalFormats?.filter(it => it != null) ?? [];
+            const mergedConditionalFormats = [];
+            const conditionalFormats = [];
+            for (let index = allConditionalFormats.length - 1; 0 <= index; --index) {
+                const conditionalFormat = allConditionalFormats[index];
+                const configurer = getConfigurerOf(conditionalFormat);
+                conditionalFormats.unshift(configurer);
+                if (isMergeWithPrevious(conditionalFormat)) {
+                    for (let prevIndex = index - 1; 0 <= prevIndex; --prevIndex) {
+                        const prevConditionalFormat = allConditionalFormats[prevIndex];
+                        const prevConfigurer = getConfigurerOf(prevConditionalFormat);
+                        const mergedConfigurer = builder => {
+                            configurer(builder);
+                            const formula = ConditionalFormatRuleUtils.extractRequiredFormula(builder);
+                            prevConfigurer(builder);
+                            const prevFormula = ConditionalFormatRuleUtils.extractRequiredFormula(builder);
+                            let combinedFormula = '=AND(' + [
+                                formula,
+                                prevFormula,
+                            ].map(it => it.replace(/^\s*=+\s*/, '')) + ')';
+                            builder.whenFormulaSatisfied(combinedFormula);
+                        };
+                        mergedConditionalFormats.unshift(mergedConfigurer);
                     }
-                    return builder;
-                };
+                }
+            }
+            conditionalFormats.unshift(...mergedConditionalFormats);
+            conditionalFormats.forEach(configurer => {
                 const fullRule = {
                     scope: conditionalFormattingScope,
                     order: ++conditionalFormattingOrder,
@@ -2359,23 +2404,6 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
-                    GSheetProjectSettings.inProgressesRangeName?.length
-                        ? builder => builder
-                            .whenFormulaSatisfied(`=
-                                AND(
-                                    #SELF <> "",
-                                    #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
-                                    #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
-                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
-                                    ISFORMULA(#SELF),
-                                    FORMULATEXT(#SELF) <> "=TODAY()"
-                                )
-                            `)
-                            .setBold(true)
-                            .setFontColor(GSheetProjectSettings.errorColor)
-                            .setItalic(true)
-                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
-                        : null,
                     builder => builder
                         .whenFormulaSatisfied(`=
                             AND(
@@ -2390,17 +2418,20 @@ class SheetLayoutProjects extends SheetLayout {
                         .setFontColor(GSheetProjectSettings.errorColor)
                         .setItalic(true),
                     GSheetProjectSettings.inProgressesRangeName?.length
-                        ? builder => builder
-                            .whenFormulaSatisfied(`=
-                                AND(
-                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
-                                    ISFORMULA(#SELF),
-                                    FORMULATEXT(#SELF) <> "=TODAY()",
-                                    #SELF <> ""
-                                )
-                            `)
-                            .setItalic(true)
-                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
+                        ? {
+                            mergeWithPrevious: true,
+                            configurer: builder => builder
+                                .whenFormulaSatisfied(`=
+                                    AND(
+                                        #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
+                                        ISFORMULA(#SELF),
+                                        FORMULATEXT(#SELF) <> "=TODAY()",
+                                        #SELF <> ""
+                                    )
+                                `)
+                                .setItalic(true)
+                                .setBackground(GSheetProjectSettings.unimportantWarningColor),
+                        }
                         : null,
                 ],
             },
@@ -2424,6 +2455,7 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
                                     #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
@@ -2435,15 +2467,18 @@ class SheetLayoutProjects extends SheetLayout {
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.warningColor),
                     GSheetProjectSettings.codeCompletesRangeName?.length
-                        ? builder => builder
-                            .whenFormulaSatisfied(`=
-                                AND(
-                                    #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) = "",
-                                    #SELF <> "",
-                                    #SELF < TODAY()
-                                )
-                            `)
-                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
+                        ? {
+                            mergeWithPrevious: true,
+                            configurer: builder => builder
+                                .whenFormulaSatisfied(`=
+                                    AND(
+                                        #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) = "",
+                                        #SELF <> "",
+                                        #SELF < TODAY()
+                                    )
+                                `)
+                                .setBackground(GSheetProjectSettings.unimportantWarningColor),
+                        }
                         : null,
                 ],
             },

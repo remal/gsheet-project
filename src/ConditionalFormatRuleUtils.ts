@@ -13,4 +13,10 @@ class ConditionalFormatRuleUtils {
         return condition.getCriteriaValues()[0].toString()
     }
 
+    static extractRequiredFormula(rule: ConditionalFormatRule | ConditionalFormatRuleBuilder): string {
+        return this.extractFormula(rule) ?? (() => {
+            throw new Error('Not a boolean condition with formula')
+        })()
+    }
+
 }

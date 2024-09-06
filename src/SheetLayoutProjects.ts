@@ -102,23 +102,6 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
                 conditionalFormats: [
-                    GSheetProjectSettings.inProgressesRangeName?.length
-                        ? builder => builder
-                            .whenFormulaSatisfied(`=
-                                AND(
-                                    #SELF <> "",
-                                    #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}) <> "",
-                                    #SELF > #SELF_COLUMN(${GSheetProjectSettings.deadlinesRangeName}),
-                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
-                                    ISFORMULA(#SELF),
-                                    FORMULATEXT(#SELF) <> "=TODAY()"
-                                )
-                            `)
-                            .setBold(true)
-                            .setFontColor(GSheetProjectSettings.errorColor)
-                            .setItalic(true)
-                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
-                        : null,
                     builder => builder
                         .whenFormulaSatisfied(`=
                             AND(
@@ -133,17 +116,20 @@ class SheetLayoutProjects extends SheetLayout {
                         .setFontColor(GSheetProjectSettings.errorColor)
                         .setItalic(true),
                     GSheetProjectSettings.inProgressesRangeName?.length
-                        ? builder => builder
-                            .whenFormulaSatisfied(`=
-                                AND(
-                                    #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
-                                    ISFORMULA(#SELF),
-                                    FORMULATEXT(#SELF) <> "=TODAY()",
-                                    #SELF <> ""
-                                )
-                            `)
-                            .setItalic(true)
-                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
+                        ? {
+                            mergeWithPrevious: true,
+                            configurer: builder => builder
+                                .whenFormulaSatisfied(`=
+                                    AND(
+                                        #SELF_COLUMN(${GSheetProjectSettings.inProgressesRangeName}) <> "",
+                                        ISFORMULA(#SELF),
+                                        FORMULATEXT(#SELF) <> "=TODAY()",
+                                        #SELF <> ""
+                                    )
+                                `)
+                                .setItalic(true)
+                                .setBackground(GSheetProjectSettings.unimportantWarningColor),
+                        }
                         : null,
                 ],
             },
@@ -167,6 +153,7 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
                                     #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
@@ -178,15 +165,18 @@ class SheetLayoutProjects extends SheetLayout {
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.warningColor),
                     GSheetProjectSettings.codeCompletesRangeName?.length
-                        ? builder => builder
-                            .whenFormulaSatisfied(`=
-                                AND(
-                                    #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) = "",
-                                    #SELF <> "",
-                                    #SELF < TODAY()
-                                )
-                            `)
-                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
+                        ? {
+                            mergeWithPrevious: true,
+                            configurer: builder => builder
+                                .whenFormulaSatisfied(`=
+                                    AND(
+                                        #SELF_COLUMN(${GSheetProjectSettings.codeCompletesRangeName}) = "",
+                                        #SELF <> "",
+                                        #SELF < TODAY()
+                                    )
+                                `)
+                                .setBackground(GSheetProjectSettings.unimportantWarningColor),
+                        }
                         : null,
                 ],
             },

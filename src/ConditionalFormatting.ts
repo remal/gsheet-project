@@ -16,15 +16,12 @@ class ConditionalFormatting {
             throw new Error(`Order is <= 0: ${orderedRule.order}`)
         }
 
-        const builder = SpreadsheetApp.newConditionalFormatRule()
-        builder.setRanges([range])
+        const builder = SpreadsheetApp.newConditionalFormatRule().setRanges([range])
         orderedRule.configurer(builder)
-        let formula = ConditionalFormatRuleUtils.extractFormula(builder)
-        if (formula == null) {
-            throw new Error(`Not a boolean condition with formula`)
-        }
-        formula = Formulas.processFormula(formula)
-            .replace(/^=+/, '')
+
+        let formula = ConditionalFormatRuleUtils.extractRequiredFormula(builder)
+        formula = Formulas.processFormula(formula).replace(/^\s*=+\s*/, '')
+
         const newRuleFormula = Formulas.processFormula(`=
             AND(
                 ${formula},
@@ -32,21 +29,21 @@ class ConditionalFormatting {
                 "GSPo"<>"${orderedRule.order + 0.2}"
             )
         `)
-        builder.whenFormulaSatisfied(newRuleFormula)
+        builder.whenFormulaSatisfied(Formulas.deduplicateRowCells(newRuleFormula))
         const newRule = builder.build()
         const newRules = [newRule]
 
         if (addIsFormulaRule) {
             const newIsFormula = Formulas.processFormula(`=
-                    AND(
-                        ISFORMULA(#SELF),
-                        ${formula},
-                        "GSPs"<>"${orderedRule.scope}",
-                        "GSPo"<>"${orderedRule.order + 0.1}"
-                    )
-                `)
+                AND(
+                    ISFORMULA(#SELF),
+                    ${formula},
+                    "GSPs"<>"${orderedRule.scope}",
+                    "GSPo"<>"${orderedRule.order + 0.1}"
+                )
+            `)
             const newIsFormulaRule = newRule.copy()
-                .whenFormulaSatisfied(newIsFormula)
+                .whenFormulaSatisfied(Formulas.deduplicateRowCells(newIsFormula))
                 .setItalic(true)
                 .build()
             newRules.push(newIsFormulaRule)

@@ -3,7 +3,7 @@ class Formulas {
     static processFormula(formula: string): string {
         formula = formula.replaceAll(/#SELF_COLUMN\(([^)]+)\)/g, 'INDIRECT("RC"&COLUMN($1), FALSE)')
         formula = formula.replaceAll(/#SELF(\b|&)/g, 'INDIRECT("RC", FALSE)$1')
-        return formula.split(/[\r\n]+/)
+        formula = formula.split(/[\r\n]+/)
             .map(line => line.replace(/^\s+/, ''))
             .filter(line => line.length)
             .map(line => line.replaceAll(/^([<>&=*/+-]+ )/g, ' $1'))
@@ -13,6 +13,31 @@ class Formulas {
             .map(line => line + (line.endsWith(',') || line.endsWith(';') ? ' ' : ''))
             .join('')
             .trim()
+        return formula
+    }
+
+    static deduplicateRowCells(formula: string) {
+        const startsWithEquals = formula.startsWith("=")
+        formula = formula.replace(/^=+/, '')
+
+        let rowCells = new Map<string, string>()
+        formula = formula.replaceAll(/\bINDIRECT\("RC"(\s*&\s*COLUMN\((\w+)\))?, FALSE\)/ig, (match, _, range) => {
+            range = range ?? ''
+            rowCells.set(`rowCell${range}`, range)
+            return `rowCell${range}`
+        })
+        rowCells = new Map([...rowCells.entries()].sort((e1, e2) => e1[0].localeCompare(e2[0])))
+        rowCells.forEach((range, name) => {
+            const rangeFormula = range.length
+                ? `INDIRECT("RC"&COLUMN(${range}), FALSE)`
+                : `INDIRECT("RC", FALSE)`
+            formula = `LET(${name}, ${rangeFormula}, ${formula})`
+        })
+
+        if (startsWithEquals) {
+            formula = `=${formula}`
+        }
+        return formula
     }
 
     static addFormulaMarker(formula: string, marker: string | null | undefined): string {

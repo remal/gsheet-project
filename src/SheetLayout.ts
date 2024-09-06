@@ -158,20 +158,53 @@ abstract class SheetLayout {
                 range.setDataValidation(dataValidation)
             }
 
-            info.conditionalFormats?.forEach(configurer => {
-                if (configurer == null) {
-                    return
-                }
 
-                const originalConfigurer = configurer
-                configurer = builder => {
-                    originalConfigurer(builder)
-                    const formula = ConditionalFormatRuleUtils.extractFormula(builder)
-                    if (formula != null) {
-                        builder.whenFormulaSatisfied(Formulas.processFormula(formula))
+            function getConfigurerOf(
+                configurer: ConditionalFormatRuleConfigurer | ParametrizedConditionalFormatRuleConfigurer,
+            ): ConditionalFormatRuleConfigurer {
+                const untyped = configurer as any
+                return untyped.configurer != null ? untyped.configurer : untyped
+            }
+
+            function isMergeWithPrevious(
+                configurer: ConditionalFormatRuleConfigurer | ParametrizedConditionalFormatRuleConfigurer,
+            ) {
+                const untyped = configurer as any
+                return !!untyped.mergeWithPrevious
+            }
+
+            const allConditionalFormats = info.conditionalFormats?.filter(it => it != null) ?? []
+            const mergedConditionalFormats: ConditionalFormatRuleConfigurer[] = []
+            const conditionalFormats: ConditionalFormatRuleConfigurer[] = []
+            for (let index = allConditionalFormats.length - 1; 0 <= index; --index) {
+                const conditionalFormat = allConditionalFormats[index]
+                const configurer = getConfigurerOf(conditionalFormat)
+                conditionalFormats.unshift(configurer)
+
+                if (isMergeWithPrevious(conditionalFormat)) {
+                    for (let prevIndex = index - 1; 0 <= prevIndex; --prevIndex) {
+                        const prevConditionalFormat = allConditionalFormats[prevIndex]
+                        const prevConfigurer = getConfigurerOf(prevConditionalFormat)
+                        const mergedConfigurer: ConditionalFormatRuleConfigurer = builder => {
+                            configurer(builder)
+                            const formula = ConditionalFormatRuleUtils.extractRequiredFormula(builder)
+
+                            prevConfigurer(builder)
+                            const prevFormula = ConditionalFormatRuleUtils.extractRequiredFormula(builder)
+
+                            let combinedFormula = '=AND(' + [
+                                formula,
+                                prevFormula,
+                            ].map(it => it.replace(/^\s*=+\s*/, '')) + ')'
+                            builder.whenFormulaSatisfied(combinedFormula)
+                        }
+                        mergedConditionalFormats.unshift(mergedConfigurer)
                     }
-                    return builder
                 }
+            }
+            conditionalFormats.unshift(...mergedConditionalFormats)
+
+            conditionalFormats.forEach(configurer => {
                 const fullRule = {
                     scope: conditionalFormattingScope,
                     order: ++conditionalFormattingOrder,
@@ -207,12 +240,17 @@ interface ColumnInfo {
     arrayFormula?: string
     rangeName?: RangeName
     dataValidation?: () => (DataValidation | null)
-    conditionalFormats?: (ConditionalFormatRuleConfigurer | null | undefined)[]
+    conditionalFormats?: (ConditionalFormatRuleConfigurer | ParametrizedConditionalFormatRuleConfigurer | null | undefined)[]
     defaultTitleFontSize?: number
     defaultWidth?: number | WidthString
     defaultFormat?: string
     defaultHorizontalAlignment?: HorizontalAlignment
     hiddenByDefault?: boolean
+}
+
+interface ParametrizedConditionalFormatRuleConfigurer {
+    mergeWithPrevious?: boolean
+    configurer: ConditionalFormatRuleConfigurer
 }
 
 type WidthString = '#height' | '#default-height'
