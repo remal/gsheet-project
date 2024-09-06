@@ -2120,7 +2120,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}9265c2d13bb5bd7a819c33ce0ebe84561a148b783389f920aaee2f816ed1670e:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}8b11273c8c9bbfb20fb1e1145e7406641af0ee92984dfb5898e15e1fb299511f:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2200,7 +2200,7 @@ class SheetLayout {
             if (info.arrayFormula?.length) {
                 const formulaToExpect = Formulas.processFormula(`=
                     {
-                        "${Formulas.escapeFormulaString(info.name)}";
+                        "${Formulas.escapeFormulaString(info.name).replaceAll(/[\r\n]+/g, '"&CHAR(10)&"')}";
                         ${Formulas.processFormula(info.arrayFormula)}
                     }
                 `);
