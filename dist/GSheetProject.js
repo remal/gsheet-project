@@ -2121,7 +2121,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}8ead6aea3f006ae37a391ebcb7c4fd04dc15d2f98a7f5363d2d5e23b872a0dbf:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}3f95c842061032d5a626de15899b3dabce234df724f58c4c8ec05d0cdf85c33a:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2420,6 +2420,22 @@ class SheetLayoutProjects extends SheetLayout {
                         `)
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.errorColor),
+                    builder => builder
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
+                                #SELF <= LET(estimate, #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}),
+                                    IF(
+                                        estimate <> "",
+                                        CEILING(estimate / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                        1
+                                    )
+                                )
+                            )
+                        `)
+                        .setBold(true)
+                        .setFontColor(GSheetProjectSettings.warningColor),
                     GSheetProjectSettings.codeCompletesRangeName?.length
                         ? builder => builder
                             .whenFormulaSatisfied(`=
@@ -2429,9 +2445,7 @@ class SheetLayoutProjects extends SheetLayout {
                                     #SELF < TODAY()
                                 )
                             `)
-                            .setBold(true)
                             .setBackground(GSheetProjectSettings.unimportantWarningColor)
-                            .setFontColor(GSheetProjectSettings.warningColor)
                         : null,
                 ],
             },
