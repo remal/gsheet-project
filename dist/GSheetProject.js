@@ -2118,7 +2118,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}95b7835d2bb2bb8c67a627352d46de8fff3a17223ee1722ce72100657be34f29:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}5b15e8d34be36bd3db833816bd24cc5f8d6f83ae28a62329389108f88fa833cd:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2444,6 +2444,7 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
             },
             
+            ...GSheetProjectSettings.additionalColumns,
         ];
     }
 }
