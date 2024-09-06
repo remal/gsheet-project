@@ -190,6 +190,7 @@ GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
 //static issueHashColumnName: ColumnName = "Issue Hash"
 GSheetProjectSettings.settingsSheetName = "Settings";
+GSheetProjectSettings.additionalColumns = [];
 GSheetProjectSettings.loadingText = '\u2B6E'; // alternative: '\uD83D\uDD03'
 GSheetProjectSettings.indent = 4;
 GSheetProjectSettings.fontSize = 10;
@@ -197,6 +198,7 @@ GSheetProjectSettings.fontSize = 10;
 GSheetProjectSettings.errorColor = '#ff0000';
 GSheetProjectSettings.importantWarningColor = '#e06666';
 GSheetProjectSettings.warningColor = '#e69138';
+GSheetProjectSettings.infoColor = '#0000ff';
 GSheetProjectSettings.unimportantWarningColor = '#fce5cd';
 GSheetProjectSettings.unimportantColor = '#b7b7b7';
 class AbstractIssueLogic {
@@ -2116,7 +2118,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}3800d3e4ccd0decd68129cba5672cf5e568dfa68cd83bd51ba052a9a7f09a8fe:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}95b7835d2bb2bb8c67a627352d46de8fff3a17223ee1722ce72100657be34f29:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
