@@ -2121,7 +2121,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}3f95c842061032d5a626de15899b3dabce234df724f58c4c8ec05d0cdf85c33a:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}225591743ef82b4d1b8f256f33de83eec688bb6dca752697edf8ad6298041a07:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2425,12 +2425,10 @@ class SheetLayoutProjects extends SheetLayout {
                             AND(
                                 #SELF <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
-                                #SELF <= LET(estimate, #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}),
-                                    IF(
-                                        estimate <> "",
-                                        CEILING(estimate / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                        1
-                                    )
+                                #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
+                                    #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
+                                    CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                    1
                                 )
                             )
                         `)
