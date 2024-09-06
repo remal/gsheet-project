@@ -153,7 +153,10 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
-                                #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
+                                OR(
+                                    #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
+                                    #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) <= TODAY(),
+                                ),
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
                                     #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",

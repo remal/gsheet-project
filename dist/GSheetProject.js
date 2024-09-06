@@ -2143,7 +2143,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}dd5e3ee1210f731373e7879f353f22be099132b4a0ae439d192eba99dfeb639e:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}b125eb9355597859138c95d3074cff2cf52080400efafd23047bccbd7e520d5c:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2455,7 +2455,10 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
-                                #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
+                                OR(
+                                    #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
+                                    #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) <= TODAY(),
+                                ),
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
                                     #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
