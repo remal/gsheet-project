@@ -168,12 +168,10 @@ class SheetLayoutProjects extends SheetLayout {
                             AND(
                                 #SELF <> "",
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
-                                #SELF <= LET(estimate, #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}),
-                                    IF(
-                                        estimate <> "",
-                                        CEILING(estimate / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                        1
-                                    )
+                                #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
+                                    #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
+                                    CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                    1
                                 )
                             )
                         `)
