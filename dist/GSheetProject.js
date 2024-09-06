@@ -152,6 +152,7 @@ GSheetProjectSettings.startsRangeName = "Starts";
 GSheetProjectSettings.endsRangeName = "Ends";
 GSheetProjectSettings.earliestStartsRangeName = "EarliestStarts";
 GSheetProjectSettings.deadlinesRangeName = "Deadlines";
+GSheetProjectSettings.daysTillDeadlinesRangeName = "DaysTillDeadlines";
 GSheetProjectSettings.inProgressesRangeName = undefined;
 GSheetProjectSettings.codeCompletesRangeName = undefined;
 GSheetProjectSettings.settingsScheduleStartRangeName = 'ScheduleStart';
@@ -188,6 +189,7 @@ GSheetProjectSettings.earliestStartColumnName = "Earliest\nStart";
 GSheetProjectSettings.deadlineColumnName = "Deadline";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
+GSheetProjectSettings.daysTillDeadlineColumnName = "Days\nTill\nDeadline";
 //static issueHashColumnName: ColumnName = "Issue Hash"
 GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.additionalColumns = [];
@@ -2118,7 +2120,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}5b15e8d34be36bd3db833816bd24cc5f8d6f83ae28a62329389108f88fa833cd:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}28242093f6323fe3cea94cccdda2d3449eeb0a6ae3b37cc5b00e531fc56f77fb:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
