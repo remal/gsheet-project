@@ -20,6 +20,7 @@ class GSheetProjectSettings {
     static endsRangeName: RangeName = "Ends"
     static earliestStartsRangeName: RangeName = "EarliestStarts"
     static deadlinesRangeName: RangeName = "Deadlines"
+    static daysTillDeadlinesRangeName: RangeName = "DaysTillDeadlines"
 
     static inProgressesRangeName: RangeName | undefined = undefined
     static codeCompletesRangeName: RangeName | undefined = undefined
@@ -66,6 +67,7 @@ class GSheetProjectSettings {
     static deadlineColumnName: ColumnName = "Deadline"
     static startColumnName: ColumnName = "Start"
     static endColumnName: ColumnName = "End"
+    static daysTillDeadlineColumnName: ColumnName = "Days\nTill\nDeadline"
     //static issueHashColumnName: ColumnName = "Issue Hash"
 
     static settingsSheetName: SheetName = "Settings"
