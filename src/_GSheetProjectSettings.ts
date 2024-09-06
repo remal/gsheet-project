@@ -74,6 +74,8 @@ class GSheetProjectSettings {
 
     static additionalColumns: ColumnInfo[] = []
 
+    static daysTillDeadlineEstimateBufferDivider: number = 5
+
     static loadingText: string | undefined | null = '\u2B6E' // alternative: '\uD83D\uDD03'
     static indent: number = 4
     static fontSize: FontSize = 10
