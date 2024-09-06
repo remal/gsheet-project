@@ -193,6 +193,7 @@ GSheetProjectSettings.daysTillDeadlineColumnName = "Days\nTill\nDeadline";
 //static issueHashColumnName: ColumnName = "Issue Hash"
 GSheetProjectSettings.settingsSheetName = "Settings";
 GSheetProjectSettings.additionalColumns = [];
+GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider = 5;
 GSheetProjectSettings.loadingText = '\u2B6E'; // alternative: '\uD83D\uDD03'
 GSheetProjectSettings.indent = 4;
 GSheetProjectSettings.fontSize = 10;
@@ -2120,7 +2121,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}8b11273c8c9bbfb20fb1e1145e7406641af0ee92984dfb5898e15e1fb299511f:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}8ead6aea3f006ae37a391ebcb7c4fd04dc15d2f98a7f5363d2d5e23b872a0dbf:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
