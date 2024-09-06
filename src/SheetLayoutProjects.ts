@@ -201,6 +201,7 @@ class SheetLayoutProjects extends SheetLayout {
                 `,
             },
             */
+            ...GSheetProjectSettings.additionalColumns,
         ]
     }
 
