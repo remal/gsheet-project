@@ -2120,7 +2120,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}93f1b1f837ff3e9345290b5ff2f1357ec7368535f46f4ceb5a69cd0cf492ad3c:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}9265c2d13bb5bd7a819c33ce0ebe84561a148b783389f920aaee2f816ed1670e:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2317,9 +2317,9 @@ class SheetLayoutProjects extends SheetLayout {
             },
             {
                 name: GSheetProjectSettings.lastDataReloadColumnName,
-                hiddenByDefault: true,
                 defaultFormat: `yyyy-MM-dd HH:mm:ss.SSS`,
                 defaultHorizontalAlignment: 'left',
+                hiddenByDefault: true,
             },
             {
                 name: GSheetProjectSettings.teamColumnName,
@@ -2449,7 +2449,8 @@ class SheetLayoutProjects extends SheetLayout {
             {
                 name: GSheetProjectSettings.daysTillDeadlineColumnName,
                 rangeName: GSheetProjectSettings.daysTillDeadlinesRangeName,
-                hiddenByDefault: true,
+                defaultFormat: '#,##0',
+                defaultHorizontalAlignment: 'center',
                 arrayFormula: `
                     ARRAYFORMULA(
                         IF(
@@ -2459,6 +2460,7 @@ class SheetLayoutProjects extends SheetLayout {
                         )
                     )
                 `,
+                hiddenByDefault: true,
             },
             
             ...GSheetProjectSettings.additionalColumns,
