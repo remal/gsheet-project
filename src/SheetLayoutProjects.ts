@@ -163,6 +163,22 @@ class SheetLayoutProjects extends SheetLayout {
                         `)
                         .setBold(true)
                         .setFontColor(GSheetProjectSettings.errorColor),
+                    builder => builder
+                        .whenFormulaSatisfied(`=
+                            AND(
+                                #SELF <> "",
+                                #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
+                                #SELF <= LET(estimate, #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}),
+                                    IF(
+                                        estimate <> "",
+                                        CEILING(estimate / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                        1
+                                    )
+                                )
+                            )
+                        `)
+                        .setBold(true)
+                        .setFontColor(GSheetProjectSettings.warningColor),
                     GSheetProjectSettings.codeCompletesRangeName?.length
                         ? builder => builder
                             .whenFormulaSatisfied(`=
@@ -172,9 +188,7 @@ class SheetLayoutProjects extends SheetLayout {
                                     #SELF < TODAY()
                                 )
                             `)
-                            .setBold(true)
                             .setBackground(GSheetProjectSettings.unimportantWarningColor)
-                            .setFontColor(GSheetProjectSettings.warningColor)
                         : null,
                 ],
             },
