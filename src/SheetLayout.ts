@@ -123,7 +123,7 @@ abstract class SheetLayout {
             if (info.arrayFormula?.length) {
                 const formulaToExpect = Formulas.processFormula(`=
                     {
-                        "${Formulas.escapeFormulaString(info.name)}";
+                        "${Formulas.escapeFormulaString(info.name).replaceAll(/[\r\n]+/g, '"&CHAR(10)&"')}";
                         ${Formulas.processFormula(info.arrayFormula)}
                     }
                 `)
