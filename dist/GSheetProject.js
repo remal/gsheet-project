@@ -2120,7 +2120,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}28242093f6323fe3cea94cccdda2d3449eeb0a6ae3b37cc5b00e531fc56f77fb:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}93f1b1f837ff3e9345290b5ff2f1357ec7368535f46f4ceb5a69cd0cf492ad3c:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2429,6 +2429,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 )
                             `)
                             .setBold(true)
+                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
                             .setFontColor(GSheetProjectSettings.warningColor)
                         : null,
                 ],
@@ -2444,6 +2445,20 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.deadlinesRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.daysTillDeadlineColumnName,
+                rangeName: GSheetProjectSettings.daysTillDeadlinesRangeName,
+                hiddenByDefault: true,
+                arrayFormula: `
+                    ARRAYFORMULA(
+                        IF(
+                            (${GSheetProjectSettings.endsRangeName} <> "") * (${GSheetProjectSettings.deadlinesRangeName} <> ""),
+                            NETWORKDAYS(${GSheetProjectSettings.endsRangeName}, ${GSheetProjectSettings.deadlinesRangeName}, ${GSheetProjectSettings.publicHolidaysRangeName}),
+                            ""
+                        )
+                    )
+                `,
             },
             
             ...GSheetProjectSettings.additionalColumns,
