@@ -173,6 +173,7 @@ class SheetLayoutProjects extends SheetLayout {
                                 )
                             `)
                             .setBold(true)
+                            .setBackground(GSheetProjectSettings.unimportantWarningColor)
                             .setFontColor(GSheetProjectSettings.warningColor)
                         : null,
                 ],
@@ -188,6 +189,20 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.deadlinesRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.daysTillDeadlineColumnName,
+                rangeName: GSheetProjectSettings.daysTillDeadlinesRangeName,
+                hiddenByDefault: true,
+                arrayFormula: `
+                    ARRAYFORMULA(
+                        IF(
+                            (${GSheetProjectSettings.endsRangeName} <> "") * (${GSheetProjectSettings.deadlinesRangeName} <> ""),
+                            NETWORKDAYS(${GSheetProjectSettings.endsRangeName}, ${GSheetProjectSettings.deadlinesRangeName}, ${GSheetProjectSettings.publicHolidaysRangeName}),
+                            ""
+                        )
+                    )
+                `,
             },
             /*
             {
