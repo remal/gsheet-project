@@ -19,6 +19,7 @@ class GSheetProjectSettings {
     static startsRangeName: RangeName = "Starts"
     static endsRangeName: RangeName = "Ends"
     static earliestStartsRangeName: RangeName = "EarliestStarts"
+    static earliestStartWithBuffersRangeName: RangeName = "EarliestStartWithBuffers"
     static deadlinesRangeName: RangeName = "Deadlines"
     static daysTillDeadlinesRangeName: RangeName = "DaysTillDeadlines"
 
@@ -64,6 +65,7 @@ class GSheetProjectSettings {
     static teamColumnName: ColumnName = "Team"
     static estimateColumnName: ColumnName = "Estimate\n(days)"
     static earliestStartColumnName: ColumnName = "Earliest\nStart"
+    static earliestStartWithBufferColumnName: ColumnName = "Earliest\nStart\nwith Buffer"
     static deadlineColumnName: ColumnName = "Deadline"
     static startColumnName: ColumnName = "Start"
     static endColumnName: ColumnName = "End"

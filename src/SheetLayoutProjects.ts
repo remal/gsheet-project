@@ -153,15 +153,23 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
-                                OR(
-                                    #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
-                                    #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) <= TODAY(),
-                                ),
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
-                                #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
-                                    #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
-                                    CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                    1
+                                LET(
+                                    bufferDays,
+                                    IF(
+                                        #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
+                                        CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                        1
+                                    ),
+                                    OR(
+                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
+                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) <= TODAY(),
+                                    ),
+                                    #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
+                                        #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
+                                        CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                        1
+                                    )
                                 )
                             )
                         `)
@@ -188,6 +196,34 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.earliestStartsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.earliestStartWithBufferColumnName,
+                rangeName: GSheetProjectSettings.earliestStartWithBuffersRangeName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+                arrayFormula: `
+                    ARRAYFORMULA(
+                        IF(
+                            ${GSheetProjectSettings.earliestStartsRangeName} <> "",
+                            LET(
+                                estimateBuffer,
+                                IF(
+                                    ${GSheetProjectSettings.estimatesRangeName} <> "",
+                                    CEILING(${GSheetProjectSettings.estimatesRangeName} / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                    1
+                                ),
+                                WORKDAY(
+                                    ${GSheetProjectSettings.earliestStartsRangeName},
+                                    -1 * estimateBuffer,
+                                    ${GSheetProjectSettings.publicHolidaysRangeName}
+                                )
+                            ),
+                            ""
+                        )
+                    )
+                `,
+                hiddenByDefault: true,
             },
             {
                 name: GSheetProjectSettings.deadlineColumnName,

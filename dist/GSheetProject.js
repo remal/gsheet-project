@@ -151,6 +151,7 @@ GSheetProjectSettings.estimatesRangeName = "Estimates";
 GSheetProjectSettings.startsRangeName = "Starts";
 GSheetProjectSettings.endsRangeName = "Ends";
 GSheetProjectSettings.earliestStartsRangeName = "EarliestStarts";
+GSheetProjectSettings.earliestStartWithBuffersRangeName = "EarliestStartWithBuffers";
 GSheetProjectSettings.deadlinesRangeName = "Deadlines";
 GSheetProjectSettings.daysTillDeadlinesRangeName = "DaysTillDeadlines";
 GSheetProjectSettings.inProgressesRangeName = undefined;
@@ -186,6 +187,7 @@ GSheetProjectSettings.titleColumnName = "Title";
 GSheetProjectSettings.teamColumnName = "Team";
 GSheetProjectSettings.estimateColumnName = "Estimate\n(days)";
 GSheetProjectSettings.earliestStartColumnName = "Earliest\nStart";
+GSheetProjectSettings.earliestStartWithBufferColumnName = "Earliest\nStart\nwith Buffer";
 GSheetProjectSettings.deadlineColumnName = "Deadline";
 GSheetProjectSettings.startColumnName = "Start";
 GSheetProjectSettings.endColumnName = "End";
@@ -2143,7 +2145,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}b125eb9355597859138c95d3074cff2cf52080400efafd23047bccbd7e520d5c:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}5d5ee469533a669c867cf6df217e891a8a68d80799e682fc2bd75d677e687fd2:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2455,15 +2457,23 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
-                                OR(
-                                    #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
-                                    #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) <= TODAY(),
-                                ),
                                 #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
-                                #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
-                                    #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
-                                    CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                    1
+                                LET(
+                                    bufferDays,
+                                    IF(
+                                        #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
+                                        CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                        1
+                                    ),
+                                    OR(
+                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
+                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) <= TODAY(),
+                                    ),
+                                    #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
+                                        #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
+                                        CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                        1
+                                    )
                                 )
                             )
                         `)
@@ -2490,6 +2500,34 @@ class SheetLayoutProjects extends SheetLayout {
                 rangeName: GSheetProjectSettings.earliestStartsRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
+            },
+            {
+                name: GSheetProjectSettings.earliestStartWithBufferColumnName,
+                rangeName: GSheetProjectSettings.earliestStartWithBuffersRangeName,
+                defaultFormat: 'yyyy-MM-dd',
+                defaultHorizontalAlignment: 'center',
+                arrayFormula: `
+                    ARRAYFORMULA(
+                        IF(
+                            ${GSheetProjectSettings.earliestStartsRangeName} <> "",
+                            LET(
+                                estimateBuffer,
+                                IF(
+                                    ${GSheetProjectSettings.estimatesRangeName} <> "",
+                                    CEILING(${GSheetProjectSettings.estimatesRangeName} / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                    1
+                                ),
+                                WORKDAY(
+                                    ${GSheetProjectSettings.earliestStartsRangeName},
+                                    -1 * estimateBuffer,
+                                    ${GSheetProjectSettings.publicHolidaysRangeName}
+                                )
+                            ),
+                            ""
+                        )
+                    )
+                `,
+                hiddenByDefault: true,
             },
             {
                 name: GSheetProjectSettings.deadlineColumnName,
