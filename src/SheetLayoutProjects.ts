@@ -162,7 +162,7 @@ class SheetLayoutProjects extends SheetLayout {
                                         1
                                     ),
                                     OR(
-                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
+                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) = "",
                                         #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) <= TODAY(),
                                     ),
                                     #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
