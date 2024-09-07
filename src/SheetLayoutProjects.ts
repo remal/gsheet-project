@@ -161,14 +161,16 @@ class SheetLayoutProjects extends SheetLayout {
                                         CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
                                         1
                                     ),
-                                    OR(
-                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) = "",
-                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) <= TODAY()
-                                    ),
-                                    #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
-                                        #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
-                                        FLOOR(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                        0
+                                    AND(
+                                        OR(
+                                            #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) = "",
+                                            #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) <= TODAY()
+                                        ),
+                                        #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
+                                            #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
+                                            FLOOR(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                            0
+                                        )
                                     )
                                 )
                             )

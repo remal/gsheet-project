@@ -2145,7 +2145,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}00ecd23f8170d859ca3be8371da61a2060b4c06e234ff752418be08e06d4c354:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}489083073f807b8c591e1dfd84cf363eab157aed33ef0a4d9ccc8ded1c7b164d:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
@@ -2465,14 +2465,16 @@ class SheetLayoutProjects extends SheetLayout {
                                         CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
                                         1
                                     ),
-                                    OR(
-                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) = "",
-                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) <= TODAY()
-                                    ),
-                                    #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
-                                        #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
-                                        FLOOR(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                        0
+                                    AND(
+                                        OR(
+                                            #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) = "",
+                                            #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) <= TODAY()
+                                        ),
+                                        #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
+                                            #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
+                                            FLOOR(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                            0
+                                        )
                                     )
                                 )
                             )
