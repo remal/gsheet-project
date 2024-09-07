@@ -163,12 +163,12 @@ class SheetLayoutProjects extends SheetLayout {
                                     ),
                                     OR(
                                         #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) = "",
-                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartsRangeName}) <= TODAY(),
+                                        #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) <= TODAY(),
                                     ),
                                     #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
                                         #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
-                                        CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                        1
+                                        FLOOR(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                        0
                                     )
                                 )
                             )
@@ -210,8 +210,8 @@ class SheetLayoutProjects extends SheetLayout {
                                 estimateBuffer,
                                 IF(
                                     ${GSheetProjectSettings.estimatesRangeName} <> "",
-                                    CEILING(${GSheetProjectSettings.estimatesRangeName} / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                    1
+                                    FLOOR(${GSheetProjectSettings.estimatesRangeName} / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
+                                    0
                                 ),
                                 WORKDAY(
                                     ${GSheetProjectSettings.earliestStartsRangeName},
