@@ -42,12 +42,15 @@ class SheetLayouts {
             GSheetProjectSettings.startsRangeName,
             GSheetProjectSettings.endsRangeName,
             GSheetProjectSettings.deadlinesRangeName,
+            GSheetProjectSettings.warningDeadlinesRangeName,
 
             GSheetProjectSettings.inProgressesRangeName,
             GSheetProjectSettings.codeCompletesRangeName,
 
             GSheetProjectSettings.settingsScheduleStartRangeName,
             GSheetProjectSettings.settingsScheduleBufferRangeName,
+            GSheetProjectSettings.settingsScheduleWarningBufferRangeName,
+            GSheetProjectSettings.settingsScheduleWarningBufferEstimateCoefficientRangeName,
 
             GSheetProjectSettings.settingsTeamsTableRangeName,
             GSheetProjectSettings.settingsTeamsTableTeamRangeName,

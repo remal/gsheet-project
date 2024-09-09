@@ -153,26 +153,8 @@ class SheetLayoutProjects extends SheetLayout {
                         .whenFormulaSatisfied(`=
                             AND(
                                 #SELF <> "",
-                                #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <> "",
-                                LET(
-                                    bufferDays,
-                                    IF(
-                                        #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
-                                        CEILING(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                        1
-                                    ),
-                                    AND(
-                                        OR(
-                                            #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) = "",
-                                            #SELF_COLUMN(${GSheetProjectSettings.earliestStartWithBuffersRangeName}) <= TODAY()
-                                        ),
-                                        #SELF_COLUMN(${GSheetProjectSettings.daysTillDeadlinesRangeName}) <= IF(
-                                            #SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) <> "",
-                                            FLOOR(#SELF_COLUMN(${GSheetProjectSettings.estimatesRangeName}) / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                            0
-                                        )
-                                    )
-                                )
+                                #SELF_COLUMN(${GSheetProjectSettings.warningDeadlinesRangeName}) <> "",
+                                #SELF > #SELF_COLUMN(${GSheetProjectSettings.warningDeadlinesRangeName})
                             )
                         `)
                         .setBold(true)
@@ -200,53 +182,16 @@ class SheetLayoutProjects extends SheetLayout {
                 defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.earliestStartWithBufferColumnName,
-                rangeName: GSheetProjectSettings.earliestStartWithBuffersRangeName,
-                defaultFormat: 'yyyy-MM-dd',
-                defaultHorizontalAlignment: 'center',
-                arrayFormula: `
-                    ARRAYFORMULA(
-                        IF(
-                            ${GSheetProjectSettings.earliestStartsRangeName} <> "",
-                            LET(
-                                estimateBuffer,
-                                IF(
-                                    ${GSheetProjectSettings.estimatesRangeName} <> "",
-                                    FLOOR(${GSheetProjectSettings.estimatesRangeName} / ${GSheetProjectSettings.daysTillDeadlineEstimateBufferDivider}),
-                                    0
-                                ),
-                                WORKDAY(
-                                    ${GSheetProjectSettings.earliestStartsRangeName},
-                                    -1 * estimateBuffer,
-                                    ${GSheetProjectSettings.publicHolidaysRangeName}
-                                )
-                            ),
-                            ""
-                        )
-                    )
-                `,
-                hiddenByDefault: true,
-            },
-            {
                 name: GSheetProjectSettings.deadlineColumnName,
                 rangeName: GSheetProjectSettings.deadlinesRangeName,
                 defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
             },
             {
-                name: GSheetProjectSettings.daysTillDeadlineColumnName,
-                rangeName: GSheetProjectSettings.daysTillDeadlinesRangeName,
-                defaultFormat: '#,##0',
+                name: GSheetProjectSettings.warningDeadlineColumnName,
+                rangeName: GSheetProjectSettings.warningDeadlinesRangeName,
+                defaultFormat: 'yyyy-MM-dd',
                 defaultHorizontalAlignment: 'center',
-                arrayFormula: `
-                    ARRAYFORMULA(
-                        IF(
-                            (${GSheetProjectSettings.endsRangeName} <> "") * (${GSheetProjectSettings.deadlinesRangeName} <> ""),
-                            NETWORKDAYS(${GSheetProjectSettings.endsRangeName}, ${GSheetProjectSettings.deadlinesRangeName}, ${GSheetProjectSettings.publicHolidaysRangeName}),
-                            ""
-                        )
-                    )
-                `,
                 hiddenByDefault: true,
             },
             /*

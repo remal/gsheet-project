@@ -6,9 +6,7 @@ class GSheetProjectSettings {
     static lockColumns: boolean = false
     static lockRows: boolean = false
     static updateConditionalFormatRules: boolean = true
-    static reorderHierarchyAutomatically: boolean = false
     static skipHiddenIssues: boolean = true
-    //static restoreUndoneEnd: boolean = false
 
     static issuesRangeName: RangeName = 'Issues'
     static childIssuesRangeName: RangeName = 'ChildIssues'
@@ -19,15 +17,16 @@ class GSheetProjectSettings {
     static startsRangeName: RangeName = "Starts"
     static endsRangeName: RangeName = "Ends"
     static earliestStartsRangeName: RangeName = "EarliestStarts"
-    static earliestStartWithBuffersRangeName: RangeName = "EarliestStartWithBuffers"
     static deadlinesRangeName: RangeName = "Deadlines"
-    static daysTillDeadlinesRangeName: RangeName = "DaysTillDeadlines"
+    static warningDeadlinesRangeName: RangeName = "WarningDeadlines"
 
     static inProgressesRangeName: RangeName | undefined = undefined
     static codeCompletesRangeName: RangeName | undefined = undefined
 
     static settingsScheduleStartRangeName: RangeName = 'ScheduleStart'
     static settingsScheduleBufferRangeName: RangeName = 'ScheduleBuffer'
+    static settingsScheduleWarningBufferRangeName: RangeName = 'ScheduleWarningBuffer'
+    static settingsScheduleWarningBufferEstimateCoefficientRangeName: RangeName = 'ScheduleWarningBufferEstimateCoefficient'
 
     static settingsTeamsTableRangeName: RangeName = 'TeamsTable'
     static settingsTeamsTableTeamRangeName: RangeName = 'TeamsTableTeam'
@@ -65,11 +64,10 @@ class GSheetProjectSettings {
     static teamColumnName: ColumnName = "Team"
     static estimateColumnName: ColumnName = "Estimate\n(days)"
     static earliestStartColumnName: ColumnName = "Earliest\nStart"
-    static earliestStartWithBufferColumnName: ColumnName = "Earliest\nStart\nwith Buffer"
     static deadlineColumnName: ColumnName = "Deadline"
+    static warningDeadlineColumnName: ColumnName = "Warning\nDeadline"
     static startColumnName: ColumnName = "Start"
     static endColumnName: ColumnName = "End"
-    static daysTillDeadlineColumnName: ColumnName = "Days\nTill\nDeadline"
     //static issueHashColumnName: ColumnName = "Issue Hash"
 
     static settingsSheetName: SheetName = "Settings"

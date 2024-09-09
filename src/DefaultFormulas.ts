@@ -66,6 +66,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const endColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.endColumnName)
         const earliestStartColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.earliestStartColumnName)
         const deadlineColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.deadlineColumnName)
+        const warningDeadlineColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.warningDeadlineColumnName)
 
 
         const allValuesColumns = {} as Record<string, Column>
@@ -79,6 +80,7 @@ class DefaultFormulas extends AbstractIssueLogic {
             endColumn,
             earliestStartColumn,
             deadlineColumn,
+            warningDeadlineColumn,
         ].forEach(column => allValuesColumns[column.toString()] = column)
         const allValues = LazyProxy.create(() =>
             SheetUtils.getColumnsStringValues(sheet, allValuesColumns, startRow, endRow),
@@ -520,6 +522,30 @@ class DefaultFormulas extends AbstractIssueLogic {
                             - COLUMN(${GSheetProjectSettings.settingsMilestonesTableRangeName}),
                         FALSE
                     )
+                )
+            `
+        })
+
+        addFormulas(warningDeadlineColumn, (row, isBuffer, isChild, issueIndex) => {
+            if (isBuffer) {
+                return ''
+            }
+
+            const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn))
+            const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn))
+            return `=
+                IF(
+                    ${deadlineA1Notation} <> "",
+                    WORKDAY(
+                        ${deadlineA1Notation},
+                        -1 * (${GSheetProjectSettings.settingsScheduleWarningBufferRangeName} + IF(
+                            N(${estimateA1Notation}) > 0,
+                            FLOOR((${estimateA1Notation} - 1) / ${GSheetProjectSettings.settingsScheduleWarningBufferEstimateCoefficientRangeName}),
+                            0
+                        )),
+                        ${GSheetProjectSettings.publicHolidaysRangeName}
+                    ),
+                    ""
                 )
             `
         })
