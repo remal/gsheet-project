@@ -961,17 +961,33 @@ class DefaultFormulas extends AbstractIssueLogic {
             }
             const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn));
             const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn));
+            const earliestStartA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, earliestStartColumn));
             return `=
                 IF(
                     ${deadlineA1Notation} <> "",
-                    WORKDAY(
-                        ${deadlineA1Notation},
-                        -1 * (${GSheetProjectSettings.settingsScheduleWarningBufferRangeName} + IF(
+                    LET(
+                        warningBuffer,
+                        ${GSheetProjectSettings.settingsScheduleWarningBufferRangeName} + IF(
                             N(${estimateA1Notation}) > 0,
                             FLOOR((${estimateA1Notation} - 1) / ${GSheetProjectSettings.settingsScheduleWarningBufferEstimateCoefficientRangeName}),
                             0
-                        )),
-                        ${GSheetProjectSettings.publicHolidaysRangeName}
+                        ),
+                        IF(
+                            OR(
+                                ${earliestStartA1Notation} = "",
+                                WORKDAY(
+                                    ${earliestStartA1Notation},
+                                    -1 * warningBuffer,
+                                    ${GSheetProjectSettings.publicHolidaysRangeName}
+                                ) < TODAY()
+                            ),
+                            WORKDAY(
+                                ${deadlineA1Notation},
+                                -1 * warningBuffer,
+                                ${GSheetProjectSettings.publicHolidaysRangeName}
+                            ),
+                            ""
+                        )
                     ),
                     ""
                 )
@@ -2166,7 +2182,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}a0eb19ea6493f726792e1742cb8e6a2aaff01f8c79d9246eef1a8c6202664e50:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}f0d8e46292e911b84b50ac875a3ef84c35eb3d82d0b6b8deb8e65afedc0aea19:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {

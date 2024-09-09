@@ -533,17 +533,33 @@ class DefaultFormulas extends AbstractIssueLogic {
 
             const deadlineA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, deadlineColumn))
             const estimateA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, estimateColumn))
+            const earliestStartA1Notation = RangeUtils.getAbsoluteA1Notation(sheet.getRange(row, earliestStartColumn))
             return `=
                 IF(
                     ${deadlineA1Notation} <> "",
-                    WORKDAY(
-                        ${deadlineA1Notation},
-                        -1 * (${GSheetProjectSettings.settingsScheduleWarningBufferRangeName} + IF(
+                    LET(
+                        warningBuffer,
+                        ${GSheetProjectSettings.settingsScheduleWarningBufferRangeName} + IF(
                             N(${estimateA1Notation}) > 0,
                             FLOOR((${estimateA1Notation} - 1) / ${GSheetProjectSettings.settingsScheduleWarningBufferEstimateCoefficientRangeName}),
                             0
-                        )),
-                        ${GSheetProjectSettings.publicHolidaysRangeName}
+                        ),
+                        IF(
+                            OR(
+                                ${earliestStartA1Notation} = "",
+                                WORKDAY(
+                                    ${earliestStartA1Notation},
+                                    -1 * warningBuffer,
+                                    ${GSheetProjectSettings.publicHolidaysRangeName}
+                                ) < TODAY()
+                            ),
+                            WORKDAY(
+                                ${deadlineA1Notation},
+                                -1 * warningBuffer,
+                                ${GSheetProjectSettings.publicHolidaysRangeName}
+                            ),
+                            ""
+                        )
                     ),
                     ""
                 )
