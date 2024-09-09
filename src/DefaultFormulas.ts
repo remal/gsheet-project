@@ -551,7 +551,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                                     ${earliestStartA1Notation},
                                     -1 * warningBuffer,
                                     ${GSheetProjectSettings.publicHolidaysRangeName}
-                                ) < TODAY()
+                                ) <= WORKDAY(TODAY() + 1, -1, ${GSheetProjectSettings.publicHolidaysRangeName})
                             ),
                             WORKDAY(
                                 ${deadlineA1Notation},

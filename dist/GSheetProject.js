@@ -979,7 +979,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                                     ${earliestStartA1Notation},
                                     -1 * warningBuffer,
                                     ${GSheetProjectSettings.publicHolidaysRangeName}
-                                ) < TODAY()
+                                ) <= WORKDAY(TODAY() + 1, -1, ${GSheetProjectSettings.publicHolidaysRangeName})
                             ),
                             WORKDAY(
                                 ${deadlineA1Notation},
@@ -2182,7 +2182,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f0d8e46292e911b84b50ac875a3ef84c35eb3d82d0b6b8deb8e65afedc0aea19:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}f30195fa0acfb092244f5bf12d2a877699f0d52f3176e144e808c3039df06ade:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
