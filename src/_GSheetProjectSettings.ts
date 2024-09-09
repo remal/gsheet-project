@@ -83,7 +83,7 @@ class GSheetProjectSettings {
     // see https://spreadsheet.dev/how-to-get-the-hexadecimal-codes-of-colors-in-google-sheets
     static errorColor: Color = '#ff0000'
     static importantWarningColor: Color = '#e06666'
-    static warningColor: Color = '#e69138'
+    static warningColor: Color = '#b45f06'
     static infoColor: Color = '#0000ff'
     static unimportantWarningColor: Color = '#fce5cd'
     static unimportantColor: Color = '#b7b7b7'

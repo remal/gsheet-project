@@ -200,7 +200,7 @@ GSheetProjectSettings.fontSize = 10;
 // see https://spreadsheet.dev/how-to-get-the-hexadecimal-codes-of-colors-in-google-sheets
 GSheetProjectSettings.errorColor = '#ff0000';
 GSheetProjectSettings.importantWarningColor = '#e06666';
-GSheetProjectSettings.warningColor = '#e69138';
+GSheetProjectSettings.warningColor = '#b45f06';
 GSheetProjectSettings.infoColor = '#0000ff';
 GSheetProjectSettings.unimportantWarningColor = '#fce5cd';
 GSheetProjectSettings.unimportantColor = '#b7b7b7';
@@ -2182,7 +2182,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f30195fa0acfb092244f5bf12d2a877699f0d52f3176e144e808c3039df06ade:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}6116ab533ac0dbaa1c6aa343776c9e8c79a130c4f4320372432518b76ad79d9e:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
