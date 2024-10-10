@@ -25,12 +25,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const rows = range.getNumRows()
         const endRow = startRow + rows - 1
 
-        const {issues, childIssues} = this._getIssueValues(sheet.getRange(
-            GSheetProjectSettings.firstDataRow,
-            range.getColumn(),
-            endRow - GSheetProjectSettings.firstDataRow + 1,
-            range.getNumColumns(),
-        ))
+        const {issues, childIssues} = this._getIssueValues(range)
 
         const getParentIssueRow = (issueIndex: number): (number | undefined) => {
             const issue = issues[issueIndex]
