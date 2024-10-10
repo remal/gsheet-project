@@ -559,7 +559,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const startRow = range.getRow();
         const rows = range.getNumRows();
         const endRow = startRow + rows - 1;
-        const { issues, childIssues } = this._getIssueValues(range);
+        const { issues, childIssues } = this._getIssueValues(sheet.getRange(GSheetProjectSettings.firstDataRow, range.getColumn(), Math.max(endRow - GSheetProjectSettings.firstDataRow + 1, 1), range.getNumColumns()));
         const getParentIssueRow = (issueIndex) => {
             const issue = issues[issueIndex];
             if (!issue?.length) {
@@ -2182,7 +2182,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}9088f337f8f6726d46d2d94beb4c29bd41b38025c1bf4e8d7e0233d503ef2ac3:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}9c9268c42bf7fb0d2724eb4a52f41fcef16e00c7356d4f2cfcb08bf8bf45effe:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
