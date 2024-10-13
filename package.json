@@ -11,7 +11,7 @@
     "dist": "yarn run compile && yarn node prepare-dist"
   },
   "devDependencies": {
-    "@types/google-apps-script": "1.0.83",
+    "@types/google-apps-script": "1.0.84",
     "rimraf": "6.0.1",
     "typescript": "5.6.3"
   }
