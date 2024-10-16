@@ -655,8 +655,19 @@ class DefaultFormulas extends AbstractIssueLogic {
                 const isDefaultFormula = this.isDefaultFormula(formula);
                 const isDefaultChildFormula = this.isDefaultChildFormula(formula);
                 if ((isChild && isDefaultFormula)
-                    || (!isChild && isDefaultChildFormula)
-                    || (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula))) {
+                    || (!isChild && isDefaultChildFormula)) {
+                    value = '';
+                    formula = '';
+                }
+                else if (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula)) {
+                    console.info([
+                        DefaultFormulas.name,
+                        sheet.getSheetName(),
+                        addFormulas.name,
+                        `column #${column}`,
+                        `row #${row}`,
+                        'rewriting existing default formula',
+                    ].join(': '));
                     value = '';
                     formula = '';
                 }
@@ -2198,7 +2209,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}3752a86ddb31a76b71f6efe99caa974c288f7bdb73e2b4034baa18b2e23b3928:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}225ca1222b19e28b040ceb57c4d1222ffa53e8c2e94604cda04533ec90079dfa:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
