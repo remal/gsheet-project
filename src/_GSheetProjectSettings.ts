@@ -7,6 +7,7 @@ class GSheetProjectSettings {
     static lockRows: boolean = false
     static updateConditionalFormatRules: boolean = true
     static skipHiddenIssues: boolean = true
+    static rewriteExistingDefaultFormula: boolean = false
 
     static issuesRangeName: RangeName = 'Issues'
     static childIssuesRangeName: RangeName = 'ChildIssues'
