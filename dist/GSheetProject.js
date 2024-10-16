@@ -558,13 +558,8 @@ class DefaultFormulas extends AbstractIssueLogic {
         const sheet = range.getSheet();
         const startRow = range.getRow();
         const rows = range.getNumRows();
-        const endRow = range.getLastRow();
-        const { issues, childIssues } = this._getIssueValues(sheet.getRange(
-          GSheetProjectSettings.firstDataRow,
-          range.getColumn(),
-          Math.max(endRow - GSheetProjectSettings.firstDataRow + 1, 1),
-          range.getNumColumns()
-        ));
+        const endRow = startRow + rows - 1;
+        const { issues, childIssues } = this._getIssueValues(sheet.getRange(GSheetProjectSettings.firstDataRow, range.getColumn(), Math.max(endRow - GSheetProjectSettings.firstDataRow + 1, 1), range.getNumColumns()));
         const getParentIssueRow = (issueIndex) => {
             const issue = issues[issueIndex];
             if (!issue?.length) {
@@ -635,19 +630,11 @@ class DefaultFormulas extends AbstractIssueLogic {
                 const issue = issues[issueIndex];
                 const childIssue = childIssues[issueIndex];
                 const index = row - startRow;
-                let value = values[index]?.toString();
+                let value = values[index];
                 let formula = formulas[index];
                 if (GSheetProjectSettings.notIssueKeyRegex?.test(issue ?? '')
                     || (!issue?.length && !childIssue?.length)) {
                     if (formula?.length) {
-                        console.info([
-                            DefaultFormulas.name,
-                            sheet.getSheetName(),
-                            addFormulas.name,
-                            `column #${column}`,
-                            `row #${row}`,
-                            'cleaning formula for empty row',
-                        ].join(': '));
                         sheet.getRange(row, column).setFormula('');
                     }
                     continue;
@@ -662,9 +649,6 @@ class DefaultFormulas extends AbstractIssueLogic {
                     formula = '';
                 }
                 if (!value?.length && !formula?.length) {
-                    if (column === childIssueColumn) {
-                      console.error('!!!')
-                    }
                     const isBuffer = !!GSheetProjectSettings.bufferIssueKeyRegex?.test(issue ?? '');
                     console.info([
                         DefaultFormulas.name,
