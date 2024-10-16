@@ -140,6 +140,7 @@ GSheetProjectSettings.lockColumns = false;
 GSheetProjectSettings.lockRows = false;
 GSheetProjectSettings.updateConditionalFormatRules = true;
 GSheetProjectSettings.skipHiddenIssues = true;
+GSheetProjectSettings.rewriteExistingDefaultFormula = false;
 GSheetProjectSettings.issuesRangeName = 'Issues';
 GSheetProjectSettings.childIssuesRangeName = 'ChildIssues';
 GSheetProjectSettings.milestonesRangeName = "Milestones";
@@ -547,7 +548,7 @@ class DefaultFormulas extends AbstractIssueLogic {
     static isDefaultChildFormula(formula) {
         return Formulas.extractFormulaMarkers(formula).includes(this._DEFAULT_CHILD_FORMULA_MARKER);
     }
-    static insertDefaultFormulas(range, rewriteExistingDefaultFormula = false) {
+    static insertDefaultFormulas(range, rewriteExistingDefaultFormula) {
         const processedRange = this._processRange(range);
         if (processedRange == null) {
             return;
@@ -555,6 +556,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         else {
             range = processedRange;
         }
+        rewriteExistingDefaultFormula = rewriteExistingDefaultFormula ?? GSheetProjectSettings.rewriteExistingDefaultFormula;
         const sheet = range.getSheet();
         const startRow = range.getRow();
         const rows = range.getNumRows();
@@ -2196,7 +2198,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}d0a0cf0f4f0b5ac5d2f14dd00d5d6c8581d4c1934de03119efcab0f15f16a984:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}3752a86ddb31a76b71f6efe99caa974c288f7bdb73e2b4034baa18b2e23b3928:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
