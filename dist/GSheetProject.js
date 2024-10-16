@@ -565,15 +565,17 @@ class DefaultFormulas extends AbstractIssueLogic {
             if (!issue?.length) {
                 return undefined;
             }
-            const index = issues.indexOf(issue);
-            if (index < 0) {
+            let parentIssueIndex = issues.findLastIndex((curIssue, curIndex) => curIndex < issueIndex
+                && curIssue === issue
+                && !childIssues[curIndex]?.length);
+            if (parentIssueIndex < 0) {
+                parentIssueIndex = issues.findIndex((curIssue, curIndex) => curIssue === issue
+                    && !childIssues[curIndex]?.length);
+            }
+            if (parentIssueIndex < 0) {
                 return undefined;
             }
-            const childIssue = childIssues[index];
-            if (childIssue?.length) {
-                return undefined;
-            }
-            return GSheetProjectSettings.firstDataRow + index;
+            return GSheetProjectSettings.firstDataRow + parentIssueIndex;
         };
         const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
         const childIssueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.childIssueKeyColumnName);
@@ -2194,7 +2196,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}eb490f4c3787ec88914b51f0e9d7cd2789f09e33e72140143fbdf10c7f2a4374:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}d0a0cf0f4f0b5ac5d2f14dd00d5d6c8581d4c1934de03119efcab0f15f16a984:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
