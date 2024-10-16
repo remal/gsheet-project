@@ -10,12 +10,12 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
 
         const sheet = range.getSheet()
         const startRow = range.getRow()
-        const endRow = startRow + range.getNumRows() - 1
+        const endRow = range.getLastRow()
 
         const {issues, childIssues} = this._getIssueValues(sheet.getRange(
             GSheetProjectSettings.firstDataRow,
             range.getColumn(),
-            endRow - GSheetProjectSettings.firstDataRow + 1,
+            Math.max(endRow - GSheetProjectSettings.firstDataRow + 1, 1),
             range.getNumColumns(),
         ))
 
@@ -35,7 +35,17 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
                 continue
             }
 
-            const parentIssueIndex = issues.indexOf(issue)
+            let parentIssueIndex = issues.findLastIndex((curIssue, curIndex) =>
+                curIndex < index
+                && curIssue === issue
+                && !childIssues[curIndex]?.length
+            )
+            if (parentIssueIndex < 0) {
+                parentIssueIndex = issues.findIndex((curIssue, curIndex) =>
+                    && curIssue === issue
+                    && !childIssues[curIndex]?.length
+                )
+            }
             if (parentIssueIndex < 0) {
                 continue
             }
