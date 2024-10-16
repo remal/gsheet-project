@@ -1538,9 +1538,6 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
             if (parentIssueIndex < 0) {
                 continue;
             }
-            if (childIssues[parentIssueIndex]?.length) {
-                continue;
-            }
             const parentIssueRow = GSheetProjectSettings.firstDataRow + parentIssueIndex;
             const parentIssueRange = sheet.getRange(parentIssueRow, issueColumn);
             issueRange
@@ -2197,7 +2194,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}b7fae20ce71095783aab9fb5d752082b08f9619148d59af2c1c484a6203e8eb0:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}eb490f4c3787ec88914b51f0e9d7cd2789f09e33e72140143fbdf10c7f2a4374:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
