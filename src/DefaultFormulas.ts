@@ -160,7 +160,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     value = ''
                     formula = ''
                 } else if (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula)) {
-                    console.info([
+                    console.warn([
                         DefaultFormulas.name,
                         sheet.getSheetName(),
                         addFormulas.name,
