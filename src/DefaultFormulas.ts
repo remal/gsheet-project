@@ -149,14 +149,15 @@ class DefaultFormulas extends AbstractIssueLogic {
 
 
                 if (!value?.length && !formula?.length) {
+                    const isBuffer = !!GSheetProjectSettings.bufferIssueKeyRegex?.test(issue ?? '')
                     console.info([
                         DefaultFormulas.name,
                         sheet.getSheetName(),
                         addFormulas.name,
                         `column #${column}`,
                         `row #${row}`,
+                        `currentValue='${values[index]?.toString()}', isChild=${isChild}, isDefaultFormula=${isDefaultFormula}, isDefaultChildFormula=${isDefaultChildFormula}, isBuffer=${isBuffer}`,
                     ].join(': '))
-                    const isBuffer = !!GSheetProjectSettings.bufferIssueKeyRegex?.test(issue ?? '')
                     let formula = Formulas.processFormula(formulaGenerator(
                         row,
                         isBuffer,
