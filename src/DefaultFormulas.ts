@@ -12,13 +12,15 @@ class DefaultFormulas extends AbstractIssueLogic {
         return Formulas.extractFormulaMarkers(formula).includes(this._DEFAULT_CHILD_FORMULA_MARKER)
     }
 
-    static insertDefaultFormulas(range: Range, rewriteExistingDefaultFormula: boolean = false) {
+    static insertDefaultFormulas(range: Range, rewriteExistingDefaultFormula?: boolean | null) {
         const processedRange = this._processRange(range)
         if (processedRange == null) {
             return
         } else {
             range = processedRange
         }
+
+        rewriteExistingDefaultFormula = rewriteExistingDefaultFormula ?? GSheetProjectSettings.rewriteExistingDefaultFormula
 
         const sheet = range.getSheet()
         const startRow = range.getRow()
