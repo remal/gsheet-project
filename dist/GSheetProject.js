@@ -660,7 +660,7 @@ class DefaultFormulas extends AbstractIssueLogic {
                     formula = '';
                 }
                 else if (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula)) {
-                    console.info([
+                    console.warn([
                         DefaultFormulas.name,
                         sheet.getSheetName(),
                         addFormulas.name,
@@ -2209,7 +2209,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}225ca1222b19e28b040ceb57c4d1222ffa53e8c2e94604cda04533ec90079dfa:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}bc4765aaeb3fa4d65aa0b91fad1e43cdf63ecc32263aa59b8b01f55fe5b51478:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
