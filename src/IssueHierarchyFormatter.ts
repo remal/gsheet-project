@@ -42,7 +42,7 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
             )
             if (parentIssueIndex < 0) {
                 parentIssueIndex = issues.findIndex((curIssue, curIndex) =>
-                    && curIssue === issue
+                    curIssue === issue
                     && !childIssues[curIndex]?.length
                 )
             }
