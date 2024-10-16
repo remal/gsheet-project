@@ -156,8 +156,18 @@ class DefaultFormulas extends AbstractIssueLogic {
                 const isDefaultChildFormula = this.isDefaultChildFormula(formula)
                 if ((isChild && isDefaultFormula)
                     || (!isChild && isDefaultChildFormula)
-                    || (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula))
                 ) {
+                    value = ''
+                    formula = ''
+                } else if (rewriteExistingDefaultFormula && (isDefaultFormula || isDefaultChildFormula)) {
+                    console.info([
+                        DefaultFormulas.name,
+                        sheet.getSheetName(),
+                        addFormulas.name,
+                        `column #${column}`,
+                        `row #${row}`,
+                        'rewriting existing default formula',
+                    ].join(': '))
                     value = ''
                     formula = ''
                 }
