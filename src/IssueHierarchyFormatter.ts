@@ -49,9 +49,6 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
             if (parentIssueIndex < 0) {
                 continue
             }
-            if (childIssues[parentIssueIndex]?.length) {
-                continue
-            }
 
             const parentIssueRow = GSheetProjectSettings.firstDataRow + parentIssueIndex
             const parentIssueRange = sheet.getRange(parentIssueRow, issueColumn)
