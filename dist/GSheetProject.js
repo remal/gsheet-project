@@ -558,7 +558,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const sheet = range.getSheet();
         const startRow = range.getRow();
         const rows = range.getNumRows();
-        const endRow = startRow + rows - 1;
+        const endRow = range.getLastRow();
         const { issues, childIssues } = this._getIssueValues(sheet.getRange(GSheetProjectSettings.firstDataRow, range.getColumn(), Math.max(endRow - GSheetProjectSettings.firstDataRow + 1, 1), range.getNumColumns()));
         const getParentIssueRow = (issueIndex) => {
             const issue = issues[issueIndex];
@@ -627,14 +627,22 @@ class DefaultFormulas extends AbstractIssueLogic {
             const formulas = getFormulas(column);
             for (let row = startRow; row <= endRow; ++row) {
                 const issueIndex = row - GSheetProjectSettings.firstDataRow;
-                const issue = issues[issueIndex];
-                const childIssue = childIssues[issueIndex];
+                const issue = issues[issueIndex]?.toString();
+                const childIssue = childIssues[issueIndex]?.toString();
                 const index = row - startRow;
-                let value = values[index];
+                let value = values[index]?.toString();
                 let formula = formulas[index];
                 if (GSheetProjectSettings.notIssueKeyRegex?.test(issue ?? '')
                     || (!issue?.length && !childIssue?.length)) {
                     if (formula?.length) {
+                        console.info([
+                            DefaultFormulas.name,
+                            sheet.getSheetName(),
+                            addFormulas.name,
+                            `column #${column}`,
+                            `row #${row}`,
+                            'cleaning formula for empty row',
+                        ].join(': '));
                         sheet.getRange(row, column).setFormula('');
                     }
                     continue;
@@ -2189,7 +2197,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}f685577b5d083f65ce086bb435da7f68c5bda83dca307b3a7d9b3b45d5787b74:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}b7fae20ce71095783aab9fb5d752082b08f9619148d59af2c1c484a6203e8eb0:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
