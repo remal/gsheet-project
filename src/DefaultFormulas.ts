@@ -38,17 +38,22 @@ class DefaultFormulas extends AbstractIssueLogic {
                 return undefined
             }
 
-            const index = issues.indexOf(issue)
-            if (index < 0) {
+            let parentIssueIndex = issues.findLastIndex((curIssue, curIndex) =>
+                curIndex < issueIndex
+                && curIssue === issue
+                && !childIssues[curIndex]?.length
+            )
+            if (parentIssueIndex < 0) {
+                parentIssueIndex = issues.findIndex((curIssue, curIndex) =>
+                    curIssue === issue
+                    && !childIssues[curIndex]?.length
+                )
+            }
+            if (parentIssueIndex < 0) {
                 return undefined
             }
 
-            const childIssue = childIssues[index]
-            if (childIssue?.length) {
-                return undefined
-            }
-
-            return GSheetProjectSettings.firstDataRow + index
+            return GSheetProjectSettings.firstDataRow + parentIssueIndex
         }
 
         const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName)
