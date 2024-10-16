@@ -649,14 +649,15 @@ class DefaultFormulas extends AbstractIssueLogic {
                     formula = '';
                 }
                 if (!value?.length && !formula?.length) {
+                    const isBuffer = !!GSheetProjectSettings.bufferIssueKeyRegex?.test(issue ?? '');
                     console.info([
                         DefaultFormulas.name,
                         sheet.getSheetName(),
                         addFormulas.name,
                         `column #${column}`,
                         `row #${row}`,
+                        `currentValue='${values[index]?.toString()}', isChild=${isChild}, isDefaultFormula=${isDefaultFormula}, isDefaultChildFormula=${isDefaultChildFormula}, isBuffer=${isBuffer}`,
                     ].join(': '));
-                    const isBuffer = !!GSheetProjectSettings.bufferIssueKeyRegex?.test(issue ?? '');
                     let formula = Formulas.processFormula(formulaGenerator(row, isBuffer, isChild, issueIndex, index) ?? '');
                     if (formula.length) {
                         formula = Formulas.addFormulaMarkers(formula, isChild ? this._DEFAULT_CHILD_FORMULA_MARKER : this._DEFAULT_FORMULA_MARKER, isBuffer ? this._DEFAULT_BUFFER_FORMULA_MARKER : null);
@@ -1504,8 +1505,8 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
         }
         const sheet = range.getSheet();
         const startRow = range.getRow();
-        const endRow = startRow + range.getNumRows() - 1;
-        const { issues, childIssues } = this._getIssueValues(sheet.getRange(GSheetProjectSettings.firstDataRow, range.getColumn(), endRow - GSheetProjectSettings.firstDataRow + 1, range.getNumColumns()));
+        const endRow = range.getLastRow();
+        const { issues, childIssues } = this._getIssueValues(sheet.getRange(GSheetProjectSettings.firstDataRow, range.getColumn(), Math.max(endRow - GSheetProjectSettings.firstDataRow + 1, 1), range.getNumColumns()));
         const issueColumn = SheetUtils.getColumnByName(sheet, GSheetProjectSettings.issueKeyColumnName);
         for (let row = startRow; row <= endRow; ++row) {
             const index = row - GSheetProjectSettings.firstDataRow;
@@ -1519,7 +1520,13 @@ class IssueHierarchyFormatter extends AbstractIssueLogic {
                 issueRange.setFontSize(GSheetProjectSettings.fontSize);
                 continue;
             }
-            const parentIssueIndex = issues.indexOf(issue);
+            let parentIssueIndex = issues.findLastIndex((curIssue, curIndex) => curIndex < index
+                && curIssue === issue
+                && !childIssues[curIndex]?.length);
+            if (parentIssueIndex < 0) {
+                parentIssueIndex = issues.findIndex((curIssue, curIndex) => curIssue === issue
+                    && !childIssues[curIndex]?.length);
+            }
             if (parentIssueIndex < 0) {
                 continue;
             }
@@ -2182,7 +2189,7 @@ class SheetLayout {
         return `${this.constructor?.name || Utils.normalizeName(this.sheetName)}:migrate:`;
     }
     get _documentFlag() {
-        return `${this._documentFlagPrefix}9c9268c42bf7fb0d2724eb4a52f41fcef16e00c7356d4f2cfcb08bf8bf45effe:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
+        return `${this._documentFlagPrefix}f685577b5d083f65ce086bb435da7f68c5bda83dca307b3a7d9b3b45d5787b74:${GSheetProjectSettings.computeStringSettingsHash()}:${this.sheet.getMaxRows()}`;
     }
     migrateIfNeeded() {
         if (DocumentFlags.isSet(this._documentFlag)) {
