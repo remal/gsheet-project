@@ -23,7 +23,7 @@ class DefaultFormulas extends AbstractIssueLogic {
         const sheet = range.getSheet()
         const startRow = range.getRow()
         const rows = range.getNumRows()
-        const endRow = startRow + rows - 1
+        const endRow = range.getLastRow()
 
         const {issues, childIssues} = this._getIssueValues(sheet.getRange(
           GSheetProjectSettings.firstDataRow,
@@ -118,11 +118,11 @@ class DefaultFormulas extends AbstractIssueLogic {
             const formulas = getFormulas(column)
             for (let row = startRow; row <= endRow; ++row) {
                 const issueIndex = row - GSheetProjectSettings.firstDataRow
-                const issue = issues[issueIndex]
-                const childIssue = childIssues[issueIndex]
+                const issue = issues[issueIndex]?.toString()
+                const childIssue = childIssues[issueIndex]?.toString()
 
                 const index = row - startRow
-                let value = values[index]
+                let value = values[index]?.toString()
                 let formula = formulas[index]
 
 
@@ -130,6 +130,14 @@ class DefaultFormulas extends AbstractIssueLogic {
                     || (!issue?.length && !childIssue?.length)
                 ) {
                     if (formula?.length) {
+                        console.info([
+                            DefaultFormulas.name,
+                            sheet.getSheetName(),
+                            addFormulas.name,
+                            `column #${column}`,
+                            `row #${row}`,
+                            'cleaning formula for empty row',
+                        ].join(': '))
                         sheet.getRange(row, column).setFormula('')
                     }
                     continue
