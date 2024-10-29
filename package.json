@@ -3,7 +3,7 @@
   "name": "gsheet-project",
   "version": "1.0.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "packageManager": "yarn@4.5.1",
   "scripts": {
