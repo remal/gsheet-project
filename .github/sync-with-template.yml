@@ -17,3 +17,9 @@ includes:
 - .yarn/**
 - check-dependency-engines.*js
 - update-node-version-in-files.*js
+excludes:
+- .github/template-cleanup/**
+- .github/workflows/template-cleanup.*
+modifiable-sections-exclusions:
+- .yarn/plugins/**
+- .yarn/releases/**
