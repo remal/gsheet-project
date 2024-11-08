@@ -26,10 +26,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/google-apps-script@npm:1.0.84":
-  version: 1.0.84
-  resolution: "@types/google-apps-script@npm:1.0.84"
-  checksum: 10c0/fdcfbf11896eaccae45419db81d0d93ec60ea0dfac61af5966a627aaf3fad94263f68d30ee911ef68dbe044ced418851d00e9e73f8ecae9aa2ae0a7a09514858
+"@types/google-apps-script@npm:1.0.85":
+  version: 1.0.85
+  resolution: "@types/google-apps-script@npm:1.0.85"
+  checksum: 10c0/559b0dfaeb7fe7933ba8838a2acb79957c55210fc5fa7a1d3159e634d262825a028641d65644b9d4d91dbfef64b3479ee90a3b9c9b9aee2e98f453426eb4a16e
   languageName: node
   linkType: hard
 
@@ -157,7 +157,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "gsheet-project@workspace:."
   dependencies:
-    "@types/google-apps-script": "npm:1.0.84"
+    "@types/google-apps-script": "npm:1.0.85"
     rimraf: "npm:6.0.1"
     typescript: "npm:5.6.3"
   languageName: unknown
