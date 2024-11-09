@@ -2,9 +2,6 @@
   "$schema": "https://json.schemastore.org/package",
   "name": "gsheet-project",
   "version": "1.0.0",
-  "engines": {
-    "node": ">=22"
-  },
   "packageManager": "yarn@4.5.1",
   "scripts": {
     "compile": "rimraf build && tsc -project tsconfig.json --rootDir src --outDir build",
